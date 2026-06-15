@@ -90,10 +90,14 @@ export async function loadRagStore(
     datasetPath: string,
     opts: { metaPath?: string; historyDir?: string; datasetPath30Min?: string } = {},
 ): Promise<void> {
-    if (opts.historyDir) historyDirAbs = path.resolve(process.cwd(), opts.historyDir);
+    if (opts.historyDir) {
+        historyDirAbs = path.isAbsolute(opts.historyDir)
+            ? opts.historyDir
+            : path.resolve(process.cwd(), opts.historyDir);
+    }
     if (opts.metaPath) await loadMatchMeta(opts.metaPath);
     if (opts.datasetPath30Min) await loadLabel30(opts.datasetPath30Min);
-    const abs = path.resolve(process.cwd(), datasetPath);
+    const abs = path.isAbsolute(datasetPath) ? datasetPath : path.resolve(process.cwd(), datasetPath);
     let content: string;
     try {
         content = await fs.readFile(abs, 'utf8');
@@ -357,7 +361,7 @@ export interface MatchDetail {
 
 /** Nạp nhãn "có bàn trong 30' sau" từ dataset 30', khóa theo matchId:half:minute. */
 async function loadLabel30(datasetPath30: string): Promise<void> {
-    const abs = path.resolve(process.cwd(), datasetPath30);
+    const abs = path.isAbsolute(datasetPath30) ? datasetPath30 : path.resolve(process.cwd(), datasetPath30);
     try {
         const content = await fs.readFile(abs, 'utf8');
         label30ByKey.clear();
@@ -379,7 +383,7 @@ async function loadLabel30(datasetPath30: string): Promise<void> {
 }
 
 async function loadMatchMeta(metaPath: string): Promise<void> {
-    const abs = path.resolve(process.cwd(), metaPath);
+    const abs = path.isAbsolute(metaPath) ? metaPath : path.resolve(process.cwd(), metaPath);
     try {
         const raw = await fs.readFile(abs, 'utf8');
         const meta = JSON.parse(raw) as { perMatch?: Array<{ matchId?: string; file?: string; ftStatus?: string }> };

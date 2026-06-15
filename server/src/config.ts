@@ -1,5 +1,21 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+/** Thư mục `server/` (dist/ khi chạy production). */
+const SERVER_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+/** Root repo — `data/` và `History/` nằm ở đây. */
+const REPO_ROOT = path.resolve(SERVER_DIR, '..');
+
+function resolveDataPath(envVal: string | undefined, relFromRepo: string): string {
+  if (envVal?.trim()) {
+    return path.isAbsolute(envVal) ? envVal : path.resolve(SERVER_DIR, envVal);
+  }
+  return path.resolve(REPO_ROOT, relFromRepo);
+}
+
 export const config = {
   port: parseInt(process.env.PORT || '3001', 10),
+  /** Một origin hoặc nhiều origin cách nhau bởi dấu phẩy (Vercel + localhost dev). */
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
 
   b365: {
@@ -33,13 +49,13 @@ export const config = {
     metaPath5Min: process.env.GOAL_MODEL_META_PATH_5MIN || 'models/goal-imminent-5min-v1.meta.json',
     modelPath30Min: process.env.GOAL_MODEL_PATH_30MIN || 'models/goal-imminent-30min-v1.onnx',
     metaPath30Min: process.env.GOAL_MODEL_META_PATH_30MIN || 'models/goal-imminent-30min-v1.meta.json',
-    datasetPath: process.env.GOAL_DATASET_PATH || '../data/goal-dataset.jsonl',
+    datasetPath: resolveDataPath(process.env.GOAL_DATASET_PATH, 'data/goal-dataset.jsonl'),
     /** Dataset 30' — chỉ dùng để tra nhãn "30p sau có bàn?" cho tình huống tương tự (popup Chi tiết). */
-    datasetPath30Min: process.env.GOAL_DATASET_PATH_30MIN || '../data/goal-dataset-30min.jsonl',
+    datasetPath30Min: resolveDataPath(process.env.GOAL_DATASET_PATH_30MIN, 'data/goal-dataset-30min.jsonl'),
     /** Meta dataset (perMatch: matchId → file/ftStatus) — dùng để hiển thị "Chi tiết" tình huống tương tự. */
-    datasetMetaPath: process.env.GOAL_DATASET_META_PATH || '../data/goal-dataset-meta.json',
+    datasetMetaPath: resolveDataPath(process.env.GOAL_DATASET_META_PATH, 'data/goal-dataset-meta.json'),
     /** Thư mục History/*.md — đọc lazy để lấy giải + tỷ số chung cuộc cho popup chi tiết. */
-    historyDir: process.env.GOAL_HISTORY_DIR || '../History',
+    historyDir: resolveDataPath(process.env.GOAL_HISTORY_DIR, 'History'),
     enableLLM: process.env.GOAL_PREDICT_ENABLE_LLM !== 'false',
     /** Model DeepSeek cho /predict-goal/reason (OpenAI-compatible API). */
     deepseekModel: process.env.GOAL_PREDICT_DEEPSEEK_MODEL || 'deepseek-v4-flash',

@@ -34,7 +34,22 @@ export async function verifyB365Token(token: string): Promise<{
       body: JSON.stringify({ token }),
       signal: AbortSignal.timeout(15_000),
     });
-    const data = (await res.json()) as { ok?: boolean; error?: string; matchCount?: number };
+    const text = await res.text();
+    if (!text.trim()) {
+      return {
+        ok: false,
+        error: `Server trả phản hồi trống (HTTP ${res.status}). Kiểm tra VITE_AI_SERVER_URL phải có dạng https://... và CORS_ORIGIN trên Railway khớp URL frontend.`,
+      };
+    }
+    let data: { ok?: boolean; error?: string; matchCount?: number };
+    try {
+      data = JSON.parse(text) as typeof data;
+    } catch {
+      return {
+        ok: false,
+        error: `Server trả không phải JSON (HTTP ${res.status}): ${text.slice(0, 160)}`,
+      };
+    }
     if (data.ok) return { ok: true, matchCount: data.matchCount };
     return { ok: false, error: data.error || `Xác thực thất bại (${res.status}).` };
   } catch (e) {

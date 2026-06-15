@@ -15,13 +15,22 @@ export { logger } from './logger.js';
 
 const app = express();
 
-app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({ origin: config.corsOrigin, credentials: true }));
-app.use(express.json({ limit: '4mb' }));
+const corsOrigins = config.corsOrigin.split(',').map((s) => s.trim()).filter(Boolean);
 
-app.use('/api/b365-proxy', createB365ProxyRouter());
-app.use('/api/auth', createB365AuthRouter());
-app.use('/api/', rateLimit());
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || corsOrigins.length === 0 || corsOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error(`CORS blocked origin: ${origin}`));
+    },
+    credentials: true,
+  }),
+);
+app.use(express.json({ limit: '4mb' }));
 
 app.get('/api/health', (_req, res) => {
   res.json({
@@ -32,6 +41,10 @@ app.get('/api/health', (_req, res) => {
     timestamp: Date.now(),
   });
 });
+
+app.use('/api/b365-proxy', createB365ProxyRouter());
+app.use('/api/auth', createB365AuthRouter());
+app.use('/api/', rateLimit());
 
 app.use('/api/ai/predict-goal', similarMatchesRouter);
 app.use('/api/history', createHistorySaveRouter());

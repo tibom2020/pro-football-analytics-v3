@@ -14,7 +14,14 @@ function remainingMinutesFirstHalf(clockMinute: number, inSecondHalf: boolean): 
   return Math.max(0, end - clockMinute);
 }
 
-export const AI_SERVER_URL = (import.meta.env.VITE_AI_SERVER_URL as string) || 'http://localhost:3001';
+export const AI_SERVER_URL = normalizeServerUrl(import.meta.env.VITE_AI_SERVER_URL as string | undefined);
+
+function normalizeServerUrl(raw: string | undefined): string {
+  const base = (raw || 'http://localhost:3001').trim().replace(/\/+$/, '');
+  if (/^https?:\/\//i.test(base)) return base;
+  if (/^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(base)) return `http://${base}`;
+  return `https://${base}`;
+}
 
 // ---- Types (mirrored from server for client-side use) ----
 
