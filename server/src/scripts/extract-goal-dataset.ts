@@ -20,8 +20,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const REPO_ROOT = path.resolve(__dirname, '../../../');
-const HISTORY_DIR = path.resolve(REPO_ROOT, 'History');
-const DATA_DIR = path.resolve(REPO_ROOT, 'data');
+const SERVER_DIR = path.resolve(REPO_ROOT, 'server');
+const HISTORY_DIR = path.resolve(SERVER_DIR, 'History');
+const DATA_DIR = path.resolve(SERVER_DIR, 'datasets');
 
 interface PerMatchSummary {
     file: string;

@@ -19,11 +19,16 @@ function resolveDataPath(envVal: string | undefined, relFromRepo: string): strin
     if (fs.existsSync(p)) return p;
     console.warn(`[config] Env path không tồn tại, thử fallback: ${p}`);
   }
-  const candidates = [
-    path.resolve(SERVER_DIR, relFromRepo),
-    path.resolve(SERVER_DIR, '..', relFromRepo),
-    path.resolve(REPO_ROOT, relFromRepo),
-  ];
+  const candidates = [path.resolve(SERVER_DIR, relFromRepo)];
+  if (relFromRepo.startsWith('datasets/')) {
+    const base = path.basename(relFromRepo);
+    candidates.push(
+      path.resolve(SERVER_DIR, '..', 'data', base),
+      path.resolve(REPO_ROOT, 'data', base),
+    );
+  } else {
+    candidates.push(path.resolve(SERVER_DIR, '..', relFromRepo));
+  }
   for (const c of candidates) {
     if (fs.existsSync(c)) return c;
   }
@@ -66,11 +71,11 @@ export const config = {
     metaPath5Min: process.env.GOAL_MODEL_META_PATH_5MIN || 'models/goal-imminent-5min-v1.meta.json',
     modelPath30Min: process.env.GOAL_MODEL_PATH_30MIN || 'models/goal-imminent-30min-v1.onnx',
     metaPath30Min: process.env.GOAL_MODEL_META_PATH_30MIN || 'models/goal-imminent-30min-v1.meta.json',
-    datasetPath: resolveDataPath(process.env.GOAL_DATASET_PATH, 'data/goal-dataset.jsonl'),
+    datasetPath: resolveDataPath(process.env.GOAL_DATASET_PATH, 'datasets/goal-dataset.jsonl'),
     /** Dataset 30' — chỉ dùng để tra nhãn "30p sau có bàn?" cho tình huống tương tự (popup Chi tiết). */
-    datasetPath30Min: resolveDataPath(process.env.GOAL_DATASET_PATH_30MIN, 'data/goal-dataset-30min.jsonl'),
+    datasetPath30Min: resolveDataPath(process.env.GOAL_DATASET_PATH_30MIN, 'datasets/goal-dataset-30min.jsonl'),
     /** Meta dataset (perMatch: matchId → file/ftStatus) — dùng để hiển thị "Chi tiết" tình huống tương tự. */
-    datasetMetaPath: resolveDataPath(process.env.GOAL_DATASET_META_PATH, 'data/goal-dataset-meta.json'),
+    datasetMetaPath: resolveDataPath(process.env.GOAL_DATASET_META_PATH, 'datasets/goal-dataset-meta.json'),
     /** Thư mục History/*.md — đọc lazy để lấy giải + tỷ số chung cuộc cho popup chi tiết. */
     historyDir: resolveDataPath(process.env.GOAL_HISTORY_DIR, 'History'),
     enableLLM: process.env.GOAL_PREDICT_ENABLE_LLM !== 'false',

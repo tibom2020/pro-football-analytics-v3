@@ -19,7 +19,7 @@ function resolveHistoryDir(target: HistorySaveTarget = 'history'): string {
   if (env?.trim()) {
     return path.resolve(env.trim());
   }
-  return path.resolve(process.cwd(), '..', 'History');
+  return path.resolve(process.cwd(), 'History');
 }
 
 function isSafeBasename(name: string): boolean {
