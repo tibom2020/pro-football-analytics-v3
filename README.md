@@ -67,12 +67,12 @@ Browser → Vercel (React) → Railway /api/* → B365 API
 | `GOAL_DATASET_PATH` | `../data/goal-dataset.jsonl` |
 | `GOAL_DATASET_PATH_30MIN` | `../data/goal-dataset-30min.jsonl` |
 | `GOAL_DATASET_META_PATH` | `../data/goal-dataset-meta.json` |
-| `GOAL_HISTORY_DIR` | `../History` (nếu đã commit thư mục History) |
+| `GOAL_HISTORY_DIR` | `../History` (587 file .md — đã có trong repo) |
 
 6. Deploy → copy **Public URL** (vd `https://xxx.up.railway.app`).
 7. Kiểm tra: mở `https://xxx.up.railway.app/api/health` → `{ "status": "ok", "ragLoaded": true }`.
 
-> **Lưu ý:** Repo cần có `data/goal-dataset*.jsonl` + meta. Thư mục `History/` (586 file .md) nên commit hoặc mount volume nếu muốn biểu đồ trận tương tự đầy đủ.
+> **Dữ liệu RAG vs History:** `data/goal-dataset*.jsonl` cho tìm trận tương tự (cosine). `History/*.md` cho biểu đồ kèo đầy đủ + stats timeline + tên giải/tỷ số — **cả hai đều cần trên server production**. Thư mục `History/` (~23MB) đã commit trong repo.
 
 ### Bước 2 — Deploy frontend (Vercel)
 
