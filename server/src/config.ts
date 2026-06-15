@@ -1,16 +1,33 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /** Thư mục `server/` (dist/ khi chạy production). */
-const SERVER_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-/** Root repo — `data/` và `History/` nằm ở đây. */
-const REPO_ROOT = path.resolve(SERVER_DIR, '..');
+export const SERVER_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+/** Root repo — `data/` và `History/` nằm ở đây (khi deploy full monorepo). */
+export const REPO_ROOT = path.resolve(SERVER_DIR, '..');
 
+/**
+ * Tìm file/thư mục data — thử lần lượt:
+ * 1. server/data (sau bước copy trên Railway)
+ * 2. ../data từ server (local dev + monorepo)
+ * 3. REPO_ROOT/data (fallback)
+ */
 function resolveDataPath(envVal: string | undefined, relFromRepo: string): string {
   if (envVal?.trim()) {
-    return path.isAbsolute(envVal) ? envVal : path.resolve(SERVER_DIR, envVal);
+    const p = path.isAbsolute(envVal) ? envVal : path.resolve(SERVER_DIR, envVal);
+    if (fs.existsSync(p)) return p;
+    console.warn(`[config] Env path không tồn tại, thử fallback: ${p}`);
   }
-  return path.resolve(REPO_ROOT, relFromRepo);
+  const candidates = [
+    path.resolve(SERVER_DIR, relFromRepo),
+    path.resolve(SERVER_DIR, '..', relFromRepo),
+    path.resolve(REPO_ROOT, relFromRepo),
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return path.resolve(SERVER_DIR, '..', relFromRepo);
 }
 
 export const config = {

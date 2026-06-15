@@ -61,6 +61,8 @@ app.use('/api/history', createHistorySaveRouter());
 
 app.listen(config.port, () => {
   logger.info(`Pro Football AI server v3 (lite) on port ${config.port}`);
+  logger.info(`RAG dataset: ${config.goalPredict.datasetPath}`);
+  logger.info(`RAG History: ${config.goalPredict.historyDir}`);
   void loadRagStore(config.goalPredict.datasetPath, {
     metaPath: config.goalPredict.datasetMetaPath,
     historyDir: config.goalPredict.historyDir,

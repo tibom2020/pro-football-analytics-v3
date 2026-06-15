@@ -64,10 +64,12 @@ Browser → Vercel (React) → Railway /api/* → B365 API
 | `PORT` | `3001` (Railway thường inject `PORT` tự động — có thể bỏ) |
 | `CORS_ORIGIN` | `https://your-app.vercel.app` (URL Vercel sau bước 2) |
 | `B365_API_TOKEN` | Token từ b365api.com |
-| `GOAL_DATASET_PATH` | `../data/goal-dataset.jsonl` |
-| `GOAL_DATASET_PATH_30MIN` | `../data/goal-dataset-30min.jsonl` |
-| `GOAL_DATASET_META_PATH` | `../data/goal-dataset-meta.json` |
-| `GOAL_HISTORY_DIR` | `../History` (587 file .md — đã có trong repo) |
+| `CORS_ORIGIN` | `https://your-app.vercel.app,http://localhost:5173` |
+| `PORT` | `8080` |
+
+**Không set** `GOAL_DATASET_PATH` / `GOAL_HISTORY_DIR` trừ khi biết rõ — build tự copy `data/` + `History/` vào `server/`.
+
+**Root Directory:** để **trống** (repo gốc). `railway.toml` đã cấu hình build/start.
 
 6. Deploy → copy **Public URL** (vd `https://xxx.up.railway.app`).
 7. Kiểm tra: mở `https://xxx.up.railway.app/api/health` → `{ "status": "ok", "ragLoaded": true }`.

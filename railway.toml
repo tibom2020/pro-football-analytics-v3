@@ -1,5 +1,6 @@
 [build]
-buildCommand = "cd server && npm ci && npm run build"
+# Copy data + History vào server/ — Railway root=server không có ../data
+buildCommand = "cp -r data server/data && cp -r History server/History && cd server && npm ci && npm run build"
 
 [deploy]
 startCommand = "cd server && npm start"
