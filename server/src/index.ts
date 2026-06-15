@@ -42,6 +42,16 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
+/** Railway / health check — root không phải frontend, chỉ thông báo API. */
+app.get('/', (_req, res) => {
+  res.json({
+    service: 'Pro Football Analytics v3 — AI server',
+    status: 'ok',
+    health: '/api/health',
+    hint: 'Frontend deploy trên Vercel. Server này chỉ phục vụ /api/*.',
+  });
+});
+
 app.use('/api/b365-proxy', createB365ProxyRouter());
 app.use('/api/auth', createB365AuthRouter());
 app.use('/api/', rateLimit());
