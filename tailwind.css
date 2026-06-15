@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+    /* Styles for shot balls */
+    .ball-icon {
+        @apply absolute w-5 h-5 flex items-center justify-center rounded-full text-sm leading-none font-bold;
+        z-index: 6;
+        transform: translateX(-50%);
+        box-sizing: border-box; /* Include padding and border in the element's total width and height */
+    }
+    /* Sút trúng đích: viền xanh đậm + halo để tách rõ với sút không trúng */
+    .ball-on {
+        @apply bg-blue-50 text-blue-800 border-[3px] border-blue-600;
+        box-shadow:
+            0 0 0 2px rgba(37, 99, 235, 0.45),
+            0 0 10px rgba(59, 130, 246, 0.35);
+    }
+    .dark .ball-on {
+        @apply bg-white text-slate-800 border-[3px] border-sky-400;
+        box-shadow:
+            0 0 0 3px rgba(56, 189, 248, 0.55),
+            0 0 14px rgba(34, 211, 238, 0.45);
+    }
+    .ball-off {
+        @apply bg-gray-50 text-gray-500 border-2 border-gray-300; /* Light grey background, grey text, grey border */
+    }
+
+    /* Styles for Game Events */
+    .game-event-icon {
+        @apply absolute flex items-center justify-center text-sm;
+        transform: translateX(-50%);
+        z-index: 7;
+    }
+    /* Bàn thắng: quả bóng trên vùng biểu đồ, viền đỏ nổi bật */
+    .chart-goal-ball {
+        @apply w-7 h-7 rounded-full text-base leading-none;
+        @apply bg-white dark:bg-slate-900 border-[3px] border-red-600;
+        box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.35), 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+    .game-event-corner {
+        @apply w-5 h-5 bottom-[-20px]; /* dưới trục X */
+        z-index: 6;
+    }
+}
+
+@layer utilities {
+    .codex-pet {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transform-origin: 50% 88%;
+        background-image: url('/mochi-spritesheet.webp');
+        background-repeat: no-repeat;
+        background-size: 800% 800%;
+        background-position: 0 0;
+        image-rendering: pixelated;
+        filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.28));
+    }
+
+    .codex-pet-alert {
+        animation:
+            codex-pet-wave 0.6s steps(4) 0s 6,
+            codex-pet-hop 0.6s ease-in-out 0s 6;
+    }
+
+    .codex-pet-thinking {
+        animation: codex-pet-breathe 2.4s ease-in-out infinite;
+    }
+
+    @keyframes codex-pet-wave {
+        0%, 100% { background-position: 0 -42.857%; }
+        25% { background-position: -14.286% -42.857%; }
+        50% { background-position: -28.571% -42.857%; }
+        75% { background-position: -42.857% -42.857%; }
+    }
+
+    @keyframes codex-pet-hop {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        25% { transform: translateY(-7px) rotate(-7deg); }
+        55% { transform: translateY(0) rotate(5deg); }
+        75% { transform: translateY(-3px) rotate(-3deg); }
+    }
+
+    @keyframes codex-pet-breathe {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+        height: 6px;
+        width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: rgba(156, 163, 175, 0.5); /* gray-400 with opacity */
+        border-radius: 20px;
+    }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: rgba(71, 85, 105, 0.5); /* slate-600 with opacity */
+    }
+    .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+    }
+
+    /* Copilot trigger button positioning - moved to top-right, shifted left to be before Help/Debug */
+    /* Copilot trigger button positioning - targeting both container and button classes */
+    .copilotKitPopup,
+    .copilotKitSidebar,
+    .copilotKitButton, 
+    .copilot-kit-button {
+        position: fixed !important;
+        top: 12px !important;
+        right: 160px !important; /* Khoảng cách từ bên phải để nằm trước nút Help/Debug */
+        bottom: auto !important;
+        z-index: 9999 !important;
+    }
+}

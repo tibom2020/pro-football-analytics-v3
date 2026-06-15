@@ -1,0 +1,3798 @@
+{
+  "generatedAt": "2026-06-15T09:08:34.807Z",
+  "featureNames": [
+    "minute",
+    "half",
+    "total_goals_so_far",
+    "da_h_delta_3m",
+    "da_a_delta_3m",
+    "da_total_3m",
+    "shots_total_delta_3m",
+    "on_target_delta_3m",
+    "corners_delta_3m",
+    "yellow_delta_3m",
+    "ou13_handicap",
+    "ou13_over_odds",
+    "ou13_under_odds",
+    "ou13_under_rises_5m_count",
+    "ou13_under_rises_5m_sum",
+    "ou13_under_rises_max_step_5m",
+    "ou13_over_drops_5m_count",
+    "ou13_over_drops_5m_sum",
+    "ou13_over_max_step_5m",
+    "ah12_handicap",
+    "ah12_home_odds",
+    "ah12_away_odds",
+    "ah12_home_drops_5m_count",
+    "ah12_home_drops_5m_sum",
+    "ah12_home_max_step_5m",
+    "pressure_alert_count_3m",
+    "pressure_alert_max_3m",
+    "man_advantage",
+    "shot_accuracy_3m",
+    "on_target_acceleration",
+    "big_chance_missed_3m",
+    "expected_remaining_goals",
+    "minutes_remaining",
+    "da_total_10m",
+    "shots_total_delta_10m",
+    "da_share_home",
+    "shots_total",
+    "corners_total",
+    "da_total"
+  ],
+  "goalWindowMin": 15,
+  "labelColumn": "goal_within_window",
+  "totalFiles": 577,
+  "parsed": 535,
+  "failed": 6,
+  "totalRows": 28944,
+  "positiveRows": 11610,
+  "perMatch": [
+    {
+      "file": "match_10210731_Kolos-Kovalivka_vs_FC-Kudrivka_20260516-2043.md",
+      "matchId": "10210731",
+      "rows": 40,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10224969_Kasimpasa_vs_Alanyaspor_20260516-2120.md",
+      "matchId": "10224969",
+      "rows": 21,
+      "positives": 10,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10285547_PDRM_vs_Pulau-Pinang_20260516-2043.md",
+      "matchId": "10285547",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10306490_Persik-Kediri_vs_Borneo-FC_20260516-2117.md",
+      "matchId": "10306490",
+      "rows": 55,
+      "positives": 10,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10306492_PSM-Makassar_vs_Borneo-FC_20260516-2124.md",
+      "matchId": "10306492",
+      "rows": 81,
+      "positives": 42,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10307466_Bhayangkara-FC_vs_Persib-Bandung_20260516-2116.md",
+      "matchId": "10307466",
+      "rows": 17,
+      "positives": 6,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10307468_Dewa-United-FC_vs_Persijap-Jepara_20260516-2117.md",
+      "matchId": "10307468",
+      "rows": 82,
+      "positives": 15,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10307474_Persib-Bandung_vs_Arema-FC_20260516-2119.md",
+      "matchId": "10307474",
+      "rows": 74,
+      "positives": 15,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10307475_Malut-United-FC_vs_Persebaya-Surabaya_20260516-2119.md",
+      "matchId": "10307475",
+      "rows": 25,
+      "positives": 23,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10307476_Persita-Tangerang_vs_Bali-United_20260516-2119.md",
+      "matchId": "10307476",
+      "rows": 53,
+      "positives": 15,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10307478_Persis-Solo_vs_Bhayangkara-FC_20260516-2119.md",
+      "matchId": "10307478",
+      "rows": 76,
+      "positives": 30,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10307479_Dewa-United-FC_vs_Persib-Bandung_20260516-2120.md",
+      "matchId": "10307479",
+      "rows": 72,
+      "positives": 53,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10307480_Semen-Padang_vs_Persijap-Jepara_20260516-2120.md",
+      "matchId": "10307480",
+      "rows": 78,
+      "positives": 27,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10307481_Bali-United_vs_Malut-United-FC_20260516-2120.md",
+      "matchId": "10307481",
+      "rows": 74,
+      "positives": 52,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10307482_Persik-Kediri_vs_Persita-Tangerang_20260516-2120.md",
+      "matchId": "10307482",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10307483_PSBS-Biak_vs_Persija-Jakarta_20260516-2124.md",
+      "matchId": "10307483",
+      "rows": 75,
+      "positives": 3,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10307486_Arema-FC_vs_Persis-Solo_20260516-2125.md",
+      "matchId": "10307486",
+      "rows": 74,
+      "positives": 24,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10307672_Arema-FC_vs_Persebaya-Surabaya_20260516-2117.md",
+      "matchId": "10307672",
+      "rows": 52,
+      "positives": 14,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10307673_Persijap-Jepara_vs_PSBS-Biak_20260516-2119.md",
+      "matchId": "10307673",
+      "rows": 83,
+      "positives": 26,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10307674_PSM-Makassar_vs_Persik-Kediri_20260516-2119.md",
+      "matchId": "10307674",
+      "rows": 53,
+      "positives": 28,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10405917_Eintracht-Braunschweig_vs_Hertha-Berlin_20260516-2120.md",
+      "matchId": "10405917",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10443053_PSM-Makassar_vs_Bhayangkara-FC_20260516-2113.md",
+      "matchId": "10443053",
+      "rows": 78,
+      "positives": 35,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10444953_Persijap-Jepara_vs_Persija-Jakarta_20260516-2113.md",
+      "matchId": "10444953",
+      "rows": 81,
+      "positives": 37,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10444954_Persebaya-Surabaya_vs_PSBS-Biak_20260516-2114.md",
+      "matchId": "10444954",
+      "rows": 77,
+      "positives": 45,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10444972_Persib-Bandung_vs_PSIM-Yogyakarta_20260516-2113.md",
+      "matchId": "10444972",
+      "rows": 47,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10454528_Persik-Kediri_vs_Arema-FC_20260516-2114.md",
+      "matchId": "10454528",
+      "rows": 61,
+      "positives": 50,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10488460_Semen-Padang_vs_Persik-Kediri_20260516-2043.md",
+      "matchId": "10488460",
+      "rows": 84,
+      "positives": 27,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10490806_Union-Berlin_vs_Wolfsburg_20260516-2124.md",
+      "matchId": "10490806",
+      "rows": 21,
+      "positives": 6,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10490807_Bayer-Leverkusen_vs_Augsburg_20260516-2124.md",
+      "matchId": "10490807",
+      "rows": 44,
+      "positives": 12,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10492175_Werder-Bremen_vs_Hamburg_20260516-2121.md",
+      "matchId": "10492175",
+      "rows": 64,
+      "positives": 35,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10493508_Arema-FC_vs_PSM-Makassar_20260516-2113.md",
+      "matchId": "10493508",
+      "rows": 23,
+      "positives": 5,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10495206_TSG-Hoffenheim_vs_Borussia-Dortmund_20260516-2121.md",
+      "matchId": "10495206",
+      "rows": 53,
+      "positives": 13,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10527936_Bali-United_vs_Bhayangkara-FC_20260517-1758.md",
+      "matchId": "10527936",
+      "rows": 84,
+      "positives": 62,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10535884_Bayern-Munich_vs_VfB-Stuttgart_20260516-2120.md",
+      "matchId": "10535884",
+      "rows": 73,
+      "positives": 49,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10540839_Augsburg_vs_Eintracht-Frankfurt_20260516-2118.md",
+      "matchId": "10540839",
+      "rows": 64,
+      "positives": 23,
+      "ftStatus": "95'"
+    },
+    {
+      "file": "match_10544519_PSIM-Yogyakarta_vs_Madura-United_20260519-0910.md",
+      "matchId": "10544519",
+      "rows": 80,
+      "positives": 50,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10544520_Persijap-Jepara_vs_Borneo-FC_20260519-0910.md",
+      "matchId": "10544520",
+      "rows": 80,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10545918_PFK-Turan-Tovuz_vs_Sabah_20260522-2154.md",
+      "matchId": "10545918",
+      "rows": 35,
+      "positives": 15,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10547225_Rayo-Vallecano_vs_Real-Sociedad_20260516-2117.md",
+      "matchId": "10547225",
+      "rows": 31,
+      "positives": 25,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10555819_Septemvri-Sofia_vs_Spartak-Varna_20260516-2126.md",
+      "matchId": "10555819",
+      "rows": 20,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10577223_Heracles_vs_FC-Groningen_20260518-1004.md",
+      "matchId": "10577223",
+      "rows": 40,
+      "positives": 31,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10577229_St-Pauli_vs_Mainz_20260516-2114.md",
+      "matchId": "10577229",
+      "rows": 59,
+      "positives": 38,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10580986_Dewa-United-FC_vs_Bali-United_20260522-2059.md",
+      "matchId": "10580986",
+      "rows": 91,
+      "positives": 21,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10581235_Newcastle_vs_Bournemouth_20260516-2121.md",
+      "matchId": "10581235",
+      "rows": 49,
+      "positives": 18,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10581236_Leeds_vs_Wolverhampton_20260516-2121.md",
+      "matchId": "10581236",
+      "rows": 47,
+      "positives": 12,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10581237_Everton_vs_Liverpool_20260516-2120.md",
+      "matchId": "10581237",
+      "rows": 82,
+      "positives": 35,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10581239_Brentford_vs_Fulham_20260516-2125.md",
+      "matchId": "10581239",
+      "rows": 60,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10581586_Bayern-Munich_vs_Heidenheim_20260516-2114.md",
+      "matchId": "10581586",
+      "rows": 32,
+      "positives": 31,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10583129_PSV_vs_FC-Twente_20260518-1004.md",
+      "matchId": "10583129",
+      "rows": 38,
+      "positives": 30,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10583130_Heerenveen_vs_Ajax_20260518-1004.md",
+      "matchId": "10583130",
+      "rows": 42,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10586089_AZ_vs_NAC_20260518-1004.md",
+      "matchId": "10586089",
+      "rows": 43,
+      "positives": 15,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10650660_Melbourne-City_vs_Adelaide-United_20260516-2117.md",
+      "matchId": "10650660",
+      "rows": 71,
+      "positives": 26,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10650663_Western-Sydney-Wanderers_vs_Melbourne-Victory_20260516-2118.md",
+      "matchId": "10650663",
+      "rows": 60,
+      "positives": 32,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10650664_Newcastle-Jets_vs_Central-Coast-Mariners_20260516-2119.md",
+      "matchId": "10650664",
+      "rows": 47,
+      "positives": 33,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10650665_Macarthur-FC_vs_Wellington-Phoenix_20260516-2119.md",
+      "matchId": "10650665",
+      "rows": 66,
+      "positives": 29,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10650666_Adelaide-United_vs_Macarthur-FC_20260516-2120.md",
+      "matchId": "10650666",
+      "rows": 58,
+      "positives": 30,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10650667_Auckland-FC_vs_Central-Coast-Mariners_20260516-2121.md",
+      "matchId": "10650667",
+      "rows": 29,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10650668_Sydney-FC_vs_Perth-Glory_20260516-2125.md",
+      "matchId": "10650668",
+      "rows": 78,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10650669_Brisbane-Roar_vs_Melbourne-City_20260516-2125.md",
+      "matchId": "10650669",
+      "rows": 59,
+      "positives": 56,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10650670_Wellington-Phoenix_vs_Western-Sydney-Wanderers_20260516-2125.md",
+      "matchId": "10650670",
+      "rows": 53,
+      "positives": 25,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10656348_Celta-Vigo_vs_Elche_20260516-2114.md",
+      "matchId": "10656348",
+      "rows": 69,
+      "positives": 37,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10660182_PEC-Zwolle_vs_Feyenoord_20260518-1004.md",
+      "matchId": "10660182",
+      "rows": 40,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10673147_Villarreal_vs_Levante_20260516-2114.md",
+      "matchId": "10673147",
+      "rows": 64,
+      "positives": 55,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10679212_Cremonese_vs_Torino_20260516-2120.md",
+      "matchId": "10679212",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10702269_Pisa_vs_Genoa_20260516-2120.md",
+      "matchId": "10702269",
+      "rows": 48,
+      "positives": 39,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10702510_Brentford_vs_West-Ham_20260516-2114.md",
+      "matchId": "10702510",
+      "rows": 83,
+      "positives": 48,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10702929_Hamburg_vs_SC-Freiburg_20260516-2040.md",
+      "matchId": "10702929",
+      "rows": 14,
+      "positives": 9,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10704162_Fulham_vs_Aston-Villa_20260516-2118.md",
+      "matchId": "10704162",
+      "rows": 67,
+      "positives": 25,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10704163_Man-Utd_vs_Liverpool_20260516-2114.md",
+      "matchId": "10704163",
+      "rows": 82,
+      "positives": 79,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10704252_Udinese_vs_Parma_20260516-2124.md",
+      "matchId": "10704252",
+      "rows": 76,
+      "positives": 16,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10710195_Bournemouth_vs_Crystal-Palace_20260516-2114.md",
+      "matchId": "10710195",
+      "rows": 73,
+      "positives": 19,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10727904_Parma_vs_Pisa_20260516-2118.md",
+      "matchId": "10727904",
+      "rows": 46,
+      "positives": 12,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10729879_Genoa_vs_Como_20260516-2117.md",
+      "matchId": "10729879",
+      "rows": 34,
+      "positives": 5,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10729880_Fiorentina_vs_Sassuolo_20260516-2117.md",
+      "matchId": "10729880",
+      "rows": 21,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10737796_Al-Hazm_vs_Al-Hilal-Riyadh_20260516-2114.md",
+      "matchId": "10737796",
+      "rows": 35,
+      "positives": 32,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10746287_St-Pauli_vs_Wolfsburg_20260516-2301.md",
+      "matchId": "10746287",
+      "rows": 21,
+      "positives": 12,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10748048_Bologna_vs_Cagliari_20260516-2114.md",
+      "matchId": "10748048",
+      "rows": 62,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10751333_Istanbulspor_vs_Adana-Demirspor_20260516-2116.md",
+      "matchId": "10751333",
+      "rows": 18,
+      "positives": 18,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10757209_West-Ham_vs_Arsenal_20260516-2040.md",
+      "matchId": "10757209",
+      "rows": 78,
+      "positives": 12,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10781709_Udinese_vs_Torino_20260516-2114.md",
+      "matchId": "10781709",
+      "rows": 68,
+      "positives": 30,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10782234_Man-Utd_vs_Nottm-Forest_20260519-0910.md",
+      "matchId": "10782234",
+      "rows": 81,
+      "positives": 47,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10786403_AC-Milan_vs_Juventus_20260516-2117.md",
+      "matchId": "10786403",
+      "rows": 52,
+      "positives": 5,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10854333_Pisa_vs_Napoli_20260517-1903.md",
+      "matchId": "10854333",
+      "rows": 80,
+      "positives": 21,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10860520_Brighton_vs_Man-Utd_20260524-2355.md",
+      "matchId": "10860520",
+      "rows": 83,
+      "positives": 32,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10888370_Como_vs_Parma_20260517-1903.md",
+      "matchId": "10888370",
+      "rows": 91,
+      "positives": 33,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10890207_Liverpool_vs_Brentford_20260524-2355.md",
+      "matchId": "10890207",
+      "rows": 84,
+      "positives": 25,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10892954_Genoa_vs_AC-Milan_20260517-1903.md",
+      "matchId": "10892954",
+      "rows": 80,
+      "positives": 32,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10893525_Liverpool_vs_Crystal-Palace_20260516-2118.md",
+      "matchId": "10893525",
+      "rows": 67,
+      "positives": 31,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10893645_Parma_vs_Sassuolo_20260524-2355.md",
+      "matchId": "10893645",
+      "rows": 70,
+      "positives": 15,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10894402_Man-City_vs_Arsenal_20260516-2120.md",
+      "matchId": "10894402",
+      "rows": 79,
+      "positives": 25,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10895314_Roma_vs_Lazio_20260517-1903.md",
+      "matchId": "10895314",
+      "rows": 82,
+      "positives": 41,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10926037_Chelsea_vs_Nottm-Forest_20260516-2113.md",
+      "matchId": "10926037",
+      "rows": 42,
+      "positives": 11,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10926566_Arsenal_vs_Newcastle_20260516-2118.md",
+      "matchId": "10926566",
+      "rows": 76,
+      "positives": 2,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10941140_Liverpool_vs_Chelsea_20260516-2113.md",
+      "matchId": "10941140",
+      "rows": 75,
+      "positives": 42,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_10950992_Nottm-Forest_vs_Newcastle_20260516-2042.md",
+      "matchId": "10950992",
+      "rows": 81,
+      "positives": 28,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_10964538_Juventus_vs_Fiorentina_20260517-1903.md",
+      "matchId": "10964538",
+      "rows": 82,
+      "positives": 42,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11027585_Crystal-Palace_vs_Arsenal_20260524-2355.md",
+      "matchId": "11027585",
+      "rows": 51,
+      "positives": 25,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11032356_Man-City_vs_Aston-Villa_20260524-2355.md",
+      "matchId": "11032356",
+      "rows": 82,
+      "positives": 56,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11068797_LA-Galaxy_vs_Houston-Dynamo_20260524-1135.md",
+      "matchId": "11068797",
+      "rows": 87,
+      "positives": 25,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11068811_San-Jose-Earthquakes_vs_FC-Dallas_20260517-1132.md",
+      "matchId": "11068811",
+      "rows": 46,
+      "positives": 30,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11068813_Real-Salt-Lake_vs_Colorado-Rapids_20260517-1044.md",
+      "matchId": "11068813",
+      "rows": 40,
+      "positives": 2,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11068814_Seattle-Sounders_vs_LA-Galaxy_20260517-1017.md",
+      "matchId": "11068814",
+      "rows": 71,
+      "positives": 15,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11068871_Nashville-SC_vs_Charlotte-FC_20260516-2116.md",
+      "matchId": "11068871",
+      "rows": 79,
+      "positives": 65,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11068874_Inter-Miami-CF_vs_New-England-Revolution_20260516-2118.md",
+      "matchId": "11068874",
+      "rows": 70,
+      "positives": 29,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11068892_Los-Angeles-FC_vs_San-Jose-Earthquakes_20260516-2120.md",
+      "matchId": "11068892",
+      "rows": 58,
+      "positives": 31,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11068896_FC-Dallas_vs_LA-Galaxy_20260516-2121.md",
+      "matchId": "11068896",
+      "rows": 45,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11068899_New-York-City-FC_vs_Charlotte-FC_20260516-2121.md",
+      "matchId": "11068899",
+      "rows": 74,
+      "positives": 21,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11068903_Atlanta-United_vs_Nashville-SC_20260516-2121.md",
+      "matchId": "11068903",
+      "rows": 66,
+      "positives": 21,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11068906_Vancouver-Whitecaps_vs_Sporting-Kansas-City_20260516-2125.md",
+      "matchId": "11068906",
+      "rows": 62,
+      "positives": 13,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11089992_Haiti_vs_Scotland_20260614-1817.md",
+      "matchId": "11089992",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11089993_USA_vs_Paraguay_20260613-1311.md",
+      "matchId": "11089993",
+      "rows": 91,
+      "positives": 62,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11090014_Netherlands_vs_Japan_20260615-0615.md",
+      "matchId": "11090014",
+      "rows": 88,
+      "positives": 46,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11090015_Ivory-Coast_vs_Ecuador_20260615-1607.md",
+      "matchId": "11090015",
+      "rows": 91,
+      "positives": 14,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11139971_Puebla_vs_Queretaro_20260516-2119.md",
+      "matchId": "11139971",
+      "rows": 79,
+      "positives": 39,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11139972_Necaxa_vs_Chivas-Guadalajara_20260516-2119.md",
+      "matchId": "11139972",
+      "rows": 56,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11139973_Monterrey_vs_Puebla_20260516-2120.md",
+      "matchId": "11139973",
+      "rows": 81,
+      "positives": 35,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11139975_Chivas-Guadalajara_vs_Puebla_20260516-2121.md",
+      "matchId": "11139975",
+      "rows": 83,
+      "positives": 57,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11139976_Necaxa_vs_Tigres-UANL_20260516-2121.md",
+      "matchId": "11139976",
+      "rows": 87,
+      "positives": 21,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11139977_Mazatlan-FC_vs_Queretaro_20260516-2125.md",
+      "matchId": "11139977",
+      "rows": 11,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11140285_Club-America_vs_Atlas_20260516-2118.md",
+      "matchId": "11140285",
+      "rows": 83,
+      "positives": 8,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11140287_Mazatlan-FC_vs_Toluca_20260516-2119.md",
+      "matchId": "11140287",
+      "rows": 65,
+      "positives": 50,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11140288_Atlas_vs_Tigres-UANL_20260516-2119.md",
+      "matchId": "11140288",
+      "rows": 65,
+      "positives": 13,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11140289_Santos-Laguna_vs_Atlas_20260516-2120.md",
+      "matchId": "11140289",
+      "rows": 64,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11140290_Club-America_vs_Toluca_20260516-2121.md",
+      "matchId": "11140290",
+      "rows": 63,
+      "positives": 26,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11140291_Monterrey_vs_Pachuca_20260516-2120.md",
+      "matchId": "11140291",
+      "rows": 85,
+      "positives": 56,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11141494_Chivas-Guadalajara_vs_Tijuana_20260516-2118.md",
+      "matchId": "11141494",
+      "rows": 11,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11141495_Tijuana_vs_Pachuca_20260516-2119.md",
+      "matchId": "11141495",
+      "rows": 52,
+      "positives": 20,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11141496_Cruz-Azul_vs_Tijuana_20260516-2121.md",
+      "matchId": "11141496",
+      "rows": 81,
+      "positives": 11,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11143547_Vitoria_vs_Corinthians_20260516-2121.md",
+      "matchId": "11143547",
+      "rows": 63,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11143683_Palmeiras_vs_Cruzeiro_20260517-1017.md",
+      "matchId": "11143683",
+      "rows": 45,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11143695_Corinthians_vs_Vasco-da-Gama_20260516-2117.md",
+      "matchId": "11143695",
+      "rows": 70,
+      "positives": 28,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11143700_Vasco-da-Gama_vs_Sao-Paulo_20260516-2121.md",
+      "matchId": "11143700",
+      "rows": 38,
+      "positives": 26,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11143899_Chapecoense_vs_Botafogo_20260516-2121.md",
+      "matchId": "11143899",
+      "rows": 26,
+      "positives": 6,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11144156_Cruzeiro_vs_Gremio_20260516-2121.md",
+      "matchId": "11144156",
+      "rows": 69,
+      "positives": 31,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11145558_Juarez-FC_vs_Atletico-San-Luis_20260516-2118.md",
+      "matchId": "11145558",
+      "rows": 81,
+      "positives": 30,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11145560_Atletico-San-Luis_vs_Santos-Laguna_20260516-2119.md",
+      "matchId": "11145560",
+      "rows": 69,
+      "positives": 35,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11145561_Leon_vs_Club-America_20260516-2120.md",
+      "matchId": "11145561",
+      "rows": 85,
+      "positives": 51,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11145563_Leon_vs_Juarez-FC_20260516-2121.md",
+      "matchId": "11145563",
+      "rows": 58,
+      "positives": 21,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11145564_Atletico-San-Luis_vs_Unam-Pumas_20260516-2125.md",
+      "matchId": "11145564",
+      "rows": 27,
+      "positives": 4,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11145569_Santos-Laguna_vs_Club-America_20260516-2115.md",
+      "matchId": "11145569",
+      "rows": 62,
+      "positives": 16,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11162996_IK-Start_vs_Valerenga_20260528-0758.md",
+      "matchId": "11162996",
+      "rows": 69,
+      "positives": 15,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11172098_FC-Lahti_vs_IFK-Mariehamn_20260516-2040.md",
+      "matchId": "11172098",
+      "rows": 53,
+      "positives": 26,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11172102_FC-Ilves_vs_AC-Oulu_20260516-2043.md",
+      "matchId": "11172102",
+      "rows": 25,
+      "positives": 7,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11175067_Racing-Club_vs_Barracas-Central_20260516-2119.md",
+      "matchId": "11175067",
+      "rows": 60,
+      "positives": 22,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11175071_Lanus_vs_Central-Cordoba_20260516-2119.md",
+      "matchId": "11175071",
+      "rows": 38,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11175513_Ostersunds-FK_vs_IFK-Varnamo_20260516-2114.md",
+      "matchId": "11175513",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11175571_Norrby-IF_vs_IK-Oddevold_20260614-2115.md",
+      "matchId": "11175571",
+      "rows": 40,
+      "positives": 18,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11175573_Ljungskile_vs_Ostersunds-FK_20260615-0319.md",
+      "matchId": "11175573",
+      "rows": 26,
+      "positives": 19,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11175647_Falkenbergs-FF_vs_Orebro-SK_20260615-0319.md",
+      "matchId": "11175647",
+      "rows": 69,
+      "positives": 15,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11176206_Hammarby_vs_Malmo-FF_20260519-0910.md",
+      "matchId": "11176206",
+      "rows": 80,
+      "positives": 60,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11176381_Brommapojkarna_vs_Kalmar-FF_20260519-0910.md",
+      "matchId": "11176381",
+      "rows": 79,
+      "positives": 15,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11176437_Sirius_vs_GAIS_20260524-2355.md",
+      "matchId": "11176437",
+      "rows": 11,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11176438_Hammarby_vs_AIK_20260524-2355.md",
+      "matchId": "11176438",
+      "rows": 14,
+      "positives": 7,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11187583_Colorado-Switchbacks-FC_vs_Orange-County-SC_20260516-2043.md",
+      "matchId": "11187583",
+      "rows": 27,
+      "positives": 11,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11248314_Machida-Zelvia_vs_Urawa-Red-Diamonds_20260522-2059.md",
+      "matchId": "11248314",
+      "rows": 59,
+      "positives": 7,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11248315_Kawasaki-Frontale_vs_Machida-Zelvia_20260517-1903.md",
+      "matchId": "11248315",
+      "rows": 83,
+      "positives": 23,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11248316_JEF-Utd-Chiba_vs_Machida-Zelvia_20260516-2043.md",
+      "matchId": "11248316",
+      "rows": 37,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11248318_Kashima-Antlers_vs_Machida-Zelvia_20260516-2114.md",
+      "matchId": "11248318",
+      "rows": 69,
+      "positives": 18,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11248319_Mito-Hollyhock_vs_Machida-Zelvia_20260516-2117.md",
+      "matchId": "11248319",
+      "rows": 18,
+      "positives": 11,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11248333_Shimizu-S-Pulse_vs_Gamba-Osaka_20260524-1751.md",
+      "matchId": "11248333",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11248336_Gamba-Osaka_vs_Avispa-Fukuoka_20260516-2119.md",
+      "matchId": "11248336",
+      "rows": 24,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11248337_Kyoto-Sanga-FC_vs_Sanfrecce-Hiroshima_20260517-1502.md",
+      "matchId": "11248337",
+      "rows": 5,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11248338_V-Varen-Nagasaki_vs_Vissel-Kobe_20260517-1444.md",
+      "matchId": "11248338",
+      "rows": 74,
+      "positives": 40,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11248343_Gamba-Osaka_vs_Vissel-Kobe_20260516-2115.md",
+      "matchId": "11248343",
+      "rows": 35,
+      "positives": 23,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11248344_Fagiano-Okayama_vs_Sanfrecce-Hiroshima_20260516-2115.md",
+      "matchId": "11248344",
+      "rows": 53,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11248345_Kyoto-Sanga-FC_vs_Gamba-Osaka_20260516-2117.md",
+      "matchId": "11248345",
+      "rows": 20,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11248347_Avispa-Fukuoka_vs_Sanfrecce-Hiroshima_20260516-2117.md",
+      "matchId": "11248347",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11248350_V-Varen-Nagasaki_vs_Gamba-Osaka_20260516-2118.md",
+      "matchId": "11248350",
+      "rows": 31,
+      "positives": 15,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11248351_Sanfrecce-Hiroshima_vs_Cerezo-Osaka_20260516-2119.md",
+      "matchId": "11248351",
+      "rows": 50,
+      "positives": 4,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11248352_Gamba-Osaka_vs_Fagiano-Okayama_20260516-2120.md",
+      "matchId": "11248352",
+      "rows": 79,
+      "positives": 37,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11249105_JEF-Utd-Chiba_vs_Kashima-Antlers_20260517-1444.md",
+      "matchId": "11249105",
+      "rows": 74,
+      "positives": 29,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11249106_Yokohama-F-Marinos_vs_Kashiwa-Reysol_20260516-2039.md",
+      "matchId": "11249106",
+      "rows": 54,
+      "positives": 14,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11249107_Urawa-Red-Diamonds_vs_FC-Tokyo_20260516-2039.md",
+      "matchId": "11249107",
+      "rows": 20,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11249111_Yokohama-F-Marinos_vs_Kashima-Antlers_20260516-2043.md",
+      "matchId": "11249111",
+      "rows": 17,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11249112_Mito-Hollyhock_vs_Urawa-Red-Diamonds_20260516-2043.md",
+      "matchId": "11249112",
+      "rows": 67,
+      "positives": 37,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11249117_Tokyo-Verdy_vs_Kashiwa-Reysol_20260516-2114.md",
+      "matchId": "11249117",
+      "rows": 23,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11249121_Kashiwa-Reysol_vs_FC-Tokyo_20260516-2117.md",
+      "matchId": "11249121",
+      "rows": 21,
+      "positives": 21,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11249122_Urawa-Red-Diamonds_vs_Kawasaki-Frontale_20260516-2117.md",
+      "matchId": "11249122",
+      "rows": 65,
+      "positives": 26,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11249124_Tokyo-Verdy_vs_Kashima-Antlers_20260516-2117.md",
+      "matchId": "11249124",
+      "rows": 75,
+      "positives": 32,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11249126_Urawa-Red-Diamonds_vs_Yokohama-F-Marinos_20260516-2119.md",
+      "matchId": "11249126",
+      "rows": 74,
+      "positives": 50,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11249128_Kashiwa-Reysol_vs_Kashima-Antlers_20260516-2119.md",
+      "matchId": "11249128",
+      "rows": 66,
+      "positives": 30,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11249130_Tokyo-Verdy_vs_JEF-Utd-Chiba_20260516-2125.md",
+      "matchId": "11249130",
+      "rows": 34,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11249132_Yokohama-F-Marinos_vs_Kawasaki-Frontale_20260516-2125.md",
+      "matchId": "11249132",
+      "rows": 87,
+      "positives": 35,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11249165_Fagiano-Okayama_vs_Cerezo-Osaka_20260524-1251.md",
+      "matchId": "11249165",
+      "rows": 53,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11249167_Cerezo-Osaka_vs_Nagoya-Grampus_20260517-1502.md",
+      "matchId": "11249167",
+      "rows": 5,
+      "positives": 5,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11249168_Fagiano-Okayama_vs_Shimizu-S-Pulse_20260517-1444.md",
+      "matchId": "11249168",
+      "rows": 74,
+      "positives": 37,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11249170_Shimizu-S-Pulse_vs_Avispa-Fukuoka_20260516-2040.md",
+      "matchId": "11249170",
+      "rows": 16,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11249175_V-Varen-Nagasaki_vs_Nagoya-Grampus_20260516-2114.md",
+      "matchId": "11249175",
+      "rows": 83,
+      "positives": 50,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11249176_Cerezo-Osaka_vs_Avispa-Fukuoka_20260516-2114.md",
+      "matchId": "11249176",
+      "rows": 76,
+      "positives": 22,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11249178_Nagoya-Grampus_vs_Fagiano-Okayama_20260516-2117.md",
+      "matchId": "11249178",
+      "rows": 51,
+      "positives": 23,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11249179_Shimizu-S-Pulse_vs_V-Varen-Nagasaki_20260516-2117.md",
+      "matchId": "11249179",
+      "rows": 72,
+      "positives": 36,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11249183_Nagoya-Grampus_vs_Avispa-Fukuoka_20260516-2120.md",
+      "matchId": "11249183",
+      "rows": 66,
+      "positives": 34,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11249283_FC-Ryukyu_vs_Gainare-Tottori_20260517-1758.md",
+      "matchId": "11249283",
+      "rows": 44,
+      "positives": 14,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11254452_Tanjong-Pagar-United_vs_Hougang-United-FC_20260518-1905.md",
+      "matchId": "11254452",
+      "rows": 22,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11257069_Once-Caldas_vs_Atletico-Nacional-Medell_20260516-2116.md",
+      "matchId": "11257069",
+      "rows": 36,
+      "positives": 15,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11257087_America-de-Cali_vs_Millonarios_20260516-2120.md",
+      "matchId": "11257087",
+      "rows": 71,
+      "positives": 50,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11257205_Deportivo-Pasto_vs_Independiente-Santa-Fe_20260516-2119.md",
+      "matchId": "11257205",
+      "rows": 45,
+      "positives": 31,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11257874_Cobresal_vs_Nublense_20260530-0654.md",
+      "matchId": "11257874",
+      "rows": 50,
+      "positives": 15,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11257875_Palestino_vs_Audax-Italiano_20260601-0858.md",
+      "matchId": "11257875",
+      "rows": 21,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11257877_Universidad-de-Concepcio_vs_Union-La-Calera_20260530-1000.md",
+      "matchId": "11257877",
+      "rows": 88,
+      "positives": 15,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11264493_Blacktown-City_vs_Rockdale-Ilinden-FC_20260607-1407.md",
+      "matchId": "11264493",
+      "rows": 39,
+      "positives": 30,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11264499_Manly-Utd_vs_Sydney-United-58_20260612-1951.md",
+      "matchId": "11264499",
+      "rows": 87,
+      "positives": 31,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11264500_Rockdale-Ilinden-FC_vs_SD-Raiders_20260614-1817.md",
+      "matchId": "11264500",
+      "rows": 35,
+      "positives": 15,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11264505_Western-Sydney-Wanderers_vs_St-George-City-FA_20260614-1817.md",
+      "matchId": "11264505",
+      "rows": 70,
+      "positives": 30,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11273520_Bucheon_vs_Pohang-Steelers_20260517-1903.md",
+      "matchId": "11273520",
+      "rows": 87,
+      "positives": 31,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11273522_Daejeon-Hana-Citizen_vs_Pohang-Steelers_20260516-2113.md",
+      "matchId": "11273522",
+      "rows": 61,
+      "positives": 14,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11273527_Pohang-Steelers_vs_FC-Anyang_20260516-2120.md",
+      "matchId": "11273527",
+      "rows": 38,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11273942_Jeju-United_vs_FC-Seoul_20260516-2043.md",
+      "matchId": "11273942",
+      "rows": 65,
+      "positives": 23,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11273945_Incheon-Utd_vs_Gangwon-FC_20260516-2115.md",
+      "matchId": "11273945",
+      "rows": 84,
+      "positives": 29,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11273947_Ulsan-HD_vs_Daejeon-Hana-Citizen_20260516-2117.md",
+      "matchId": "11273947",
+      "rows": 76,
+      "positives": 47,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11273948_Gangwon-FC_vs_FC-Seoul_20260516-2119.md",
+      "matchId": "11273948",
+      "rows": 71,
+      "positives": 21,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11273949_FC-Anyang_vs_Ulsan-HD_20260516-2119.md",
+      "matchId": "11273949",
+      "rows": 76,
+      "positives": 14,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11273952_Ulsan-HD_vs_Gwangju-FC_20260516-2121.md",
+      "matchId": "11273952",
+      "rows": 44,
+      "positives": 26,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11273954_Gangwon-FC_vs_Jeonbuk-Motors_20260516-2125.md",
+      "matchId": "11273954",
+      "rows": 68,
+      "positives": 39,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11274291_Jeonbuk-Motors_vs_Gimcheon-Sangmu-FC_20260517-1638.md",
+      "matchId": "11274291",
+      "rows": 90,
+      "positives": 8,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11274297_Gimcheon-Sangmu-FC_vs_Incheon-Utd_20260516-2043.md",
+      "matchId": "11274297",
+      "rows": 20,
+      "positives": 11,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11274303_Jeju-United_vs_Jeonbuk-Motors_20260516-2115.md",
+      "matchId": "11274303",
+      "rows": 82,
+      "positives": 22,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11274304_Gwangju-FC_vs_FC-Anyang_20260516-2118.md",
+      "matchId": "11274304",
+      "rows": 77,
+      "positives": 59,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11274310_Bucheon_vs_Incheon-Utd_20260516-2125.md",
+      "matchId": "11274310",
+      "rows": 81,
+      "positives": 65,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11275588_Weston-Workers-FC_vs_Belmont-Swansea-United-S_20260613-1311.md",
+      "matchId": "11275588",
+      "rows": 97,
+      "positives": 33,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11287600_Gold-Coast-United_vs_Wynnum-Wolves_20260607-1407.md",
+      "matchId": "11287600",
+      "rows": 39,
+      "positives": 18,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11287627_Brisbane-Olympic-FC_vs_Brisbane-City_20260531-1915.md",
+      "matchId": "11287627",
+      "rows": 20,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11287827_St-George-Willawong-FC_vs_Redlands-United_20260607-2100.md",
+      "matchId": "11287827",
+      "rows": 59,
+      "positives": 23,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11298314_Grange-Thistle_vs_Souths-United_20260603-1632.md",
+      "matchId": "11298314",
+      "rows": 70,
+      "positives": 34,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11303494_Daegu-FC_vs_Ansan-Greeners-FC_20260524-1855.md",
+      "matchId": "11303494",
+      "rows": 24,
+      "positives": 8,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11304691_Gimpo-FC_vs_Jeonnam-Dragons_20260607-2100.md",
+      "matchId": "11304691",
+      "rows": 51,
+      "positives": 36,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11304692_Seoul-E-Land-FC_vs_Chungbuk-Cheongju_20260607-2100.md",
+      "matchId": "11304692",
+      "rows": 47,
+      "positives": 15,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11304693_Cheonan-City_vs_Suwon-FC_20260607-2100.md",
+      "matchId": "11304693",
+      "rows": 48,
+      "positives": 31,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11304696_Ansan-Greeners-FC_vs_Cheonan-City_20260601-0842.md",
+      "matchId": "11304696",
+      "rows": 80,
+      "positives": 44,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11304698_Hwaseong-FC_vs_Gyeongnam-FC_20260531-1623.md",
+      "matchId": "11304698",
+      "rows": 7,
+      "positives": 7,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11309355_Eastern-United_vs_Adelaide-Olympic_20260612-1951.md",
+      "matchId": "11309355",
+      "rows": 73,
+      "positives": 29,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11309395_West-Adelaide_vs_Adelaide-United-NPL_20260607-2100.md",
+      "matchId": "11309395",
+      "rows": 75,
+      "positives": 46,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11316434_South-Melbourne_vs_Avondale_20260525-1824.md",
+      "matchId": "11316434",
+      "rows": 39,
+      "positives": 20,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11316435_Hume-City_vs_Avondale_20260516-2040.md",
+      "matchId": "11316435",
+      "rows": 51,
+      "positives": 25,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11316467_Bentleigh-Greens_vs_Hume-City_20260606-0839.md",
+      "matchId": "11316467",
+      "rows": 33,
+      "positives": 11,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11316469_Hume-City_vs_South-Melbourne_20260530-1407.md",
+      "matchId": "11316469",
+      "rows": 77,
+      "positives": 24,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11316472_South-Melbourne_vs_Caroline-Springs-George-_20260518-1905.md",
+      "matchId": "11316472",
+      "rows": 81,
+      "positives": 42,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11316516_South-Melbourne_vs_Altona-Magic_20260607-2100.md",
+      "matchId": "11316516",
+      "rows": 46,
+      "positives": 17,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11322053_Austin-FC-II_vs_Los-Angeles-FC-II_20260608-2150.md",
+      "matchId": "11322053",
+      "rows": 20,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11322111_Tacoma-Defiance_vs_St-Louis-City-II_20260516-2125.md",
+      "matchId": "11322111",
+      "rows": 21,
+      "positives": 13,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11323220_Melbourne-Victory-NPL_vs_Melbourne-Knights_20260601-1936.md",
+      "matchId": "11323220",
+      "rows": 76,
+      "positives": 36,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11323265_Melbourne-Knights_vs_Brunswick-Juventus_20260612-1951.md",
+      "matchId": "11323265",
+      "rows": 78,
+      "positives": 9,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11323354_Bulleen-Lions_vs_Port-Melbourne-SC_20260601-1936.md",
+      "matchId": "11323354",
+      "rows": 76,
+      "positives": 18,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11324925_Manly-Utd-W_vs_Sydney-Olympic-FC-W_20260614-1817.md",
+      "matchId": "11324925",
+      "rows": 42,
+      "positives": 28,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11324927_NWS-Spirit-W_vs_Western-City-Rangers-W_20260613-1311.md",
+      "matchId": "11324927",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11366666_Tukums-2000_vs_BFC-Daugavpils_20260613-0359.md",
+      "matchId": "11366666",
+      "rows": 24,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11391227_Hai-Phong_vs_Nam-Dinh_20260607-2100.md",
+      "matchId": "11391227",
+      "rows": 2,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11391237_Ha-Noi-FC_vs_Nam-Dinh_20260524-2355.md",
+      "matchId": "11391237",
+      "rows": 65,
+      "positives": 34,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11391239_Becamex-HCMC_vs_Song-Lam-Nghe-An_20260524-2034.md",
+      "matchId": "11391239",
+      "rows": 63,
+      "positives": 13,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11391256_Da-Nang_vs_Becamex-HCMC_20260516-2043.md",
+      "matchId": "11391256",
+      "rows": 30,
+      "positives": 18,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11391257_Viettel-FC_vs_Ninh-Binh_20260516-2114.md",
+      "matchId": "11391257",
+      "rows": 47,
+      "positives": 1,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11391262_Ha-Noi-FC_vs_Da-Nang_20260516-2116.md",
+      "matchId": "11391262",
+      "rows": 33,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11391263_Nam-Dinh_vs_Cong-An-HCMC_20260516-2116.md",
+      "matchId": "11391263",
+      "rows": 77,
+      "positives": 44,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11391267_Ninh-Binh_vs_Ha-Noi-FC_20260516-2119.md",
+      "matchId": "11391267",
+      "rows": 3,
+      "positives": 3,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11391277_Ha-Noi-FC_vs_Becamex-HCMC_20260516-2126.md",
+      "matchId": "11391277",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11400188_Tecnico-Universitario_vs_Barcelona-Guayaquil_20260602-1028.md",
+      "matchId": "11400188",
+      "rows": 78,
+      "positives": 20,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11400197_Orense_vs_Leones-FC_20260516-2043.md",
+      "matchId": "11400197",
+      "rows": 49,
+      "positives": 32,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11406155_Kerala-Blasters_vs_FC-Goa_20260519-0909.md",
+      "matchId": "11406155",
+      "rows": 35,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11410053_Northeast-United_vs_Mohammedan-SC_20260519-2117.md",
+      "matchId": "11410053",
+      "rows": 86,
+      "positives": 32,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11410071_East-Bengal-Club_vs_Bengaluru_20260516-2126.md",
+      "matchId": "11410071",
+      "rows": 18,
+      "positives": 16,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11417200_Gremio-Novorizontino_vs_Nautico_20260615-0750.md",
+      "matchId": "11417200",
+      "rows": 38,
+      "positives": 27,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11419787_Vancouver-FC_vs_Cavalry-FC_20260518-1004.md",
+      "matchId": "11419787",
+      "rows": 38,
+      "positives": 15,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11419809_Inter-Toronto_vs_Atletico-Ottawa_20260516-2115.md",
+      "matchId": "11419809",
+      "rows": 58,
+      "positives": 42,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11419823_Vancouver-FC_vs_Atletico-Ottawa_20260607-1407.md",
+      "matchId": "11419823",
+      "rows": 86,
+      "positives": 41,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11422965_Atletico-Ottawa_vs_Supra-du-Quebec_20260610-1008.md",
+      "matchId": "11422965",
+      "rows": 21,
+      "positives": 14,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11425263_JK-Trans-Narva-II_vs_FC-Levadia-Tallinn-U19_20260516-2040.md",
+      "matchId": "11425263",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11428239_Canada_vs_Uzbekistan_20260602-1028.md",
+      "matchId": "11428239",
+      "rows": 81,
+      "positives": 26,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11428240_Belgium_vs_Tunisia_20260607-1407.md",
+      "matchId": "11428240",
+      "rows": 72,
+      "positives": 46,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11430490_Green-Gully-U23_vs_Avondale-U23_20260607-1407.md",
+      "matchId": "11430490",
+      "rows": 59,
+      "positives": 32,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11430512_Dandenong-Thunder-U23_vs_Preston-Lions-U23_20260516-2115.md",
+      "matchId": "11430512",
+      "rows": 42,
+      "positives": 35,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11431121_Bulleen-Lions-U23_vs_Port-Melbourne-U23_20260601-1832.md",
+      "matchId": "11431121",
+      "rows": 71,
+      "positives": 7,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11449236_Liaoning-Ironman_vs_Shanghai-Port_20260529-2050.md",
+      "matchId": "11449236",
+      "rows": 90,
+      "positives": 65,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11449241_Chengdu-Rongcheng_vs_Shanghai-Port_20260519-2117.md",
+      "matchId": "11449241",
+      "rows": 51,
+      "positives": 30,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11449247_Shanghai-Shenhua_vs_Chongqing-Tonglianglong_20260516-2113.md",
+      "matchId": "11449247",
+      "rows": 65,
+      "positives": 36,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11449251_Qingdao-Hainiu_vs_Shanghai-Port_20260516-2114.md",
+      "matchId": "11449251",
+      "rows": 76,
+      "positives": 42,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11449252_Shanghai-Shenhua_vs_Chengdu-Rongcheng_20260516-2116.md",
+      "matchId": "11449252",
+      "rows": 40,
+      "positives": 11,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11449258_Shanghai-Shenhua_vs_Qingdao-Hainiu_20260516-2119.md",
+      "matchId": "11449258",
+      "rows": 65,
+      "positives": 23,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11449262_Wuhan-Three-Towns_vs_Chengdu-Rongcheng_20260516-2125.md",
+      "matchId": "11449262",
+      "rows": 49,
+      "positives": 15,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11449825_Qingdao-West-Coast_vs_Beijing-Guoan_20260519-2117.md",
+      "matchId": "11449825",
+      "rows": 45,
+      "positives": 21,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11449828_Yunnan-Yukun_vs_Beijing-Guoan_20260516-2114.md",
+      "matchId": "11449828",
+      "rows": 66,
+      "positives": 41,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11449829_Beijing-Guoan_vs_Tianjin-Jinmen-Tigers_20260516-2118.md",
+      "matchId": "11449829",
+      "rows": 64,
+      "positives": 47,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11450865_Wuhan-Three-Towns_vs_Yunnan-Yukun_20260601-0842.md",
+      "matchId": "11450865",
+      "rows": 52,
+      "positives": 17,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11450866_Tianjin-Jinmen-Tigers_vs_Dalian-Young-Boy_20260601-0842.md",
+      "matchId": "11450866",
+      "rows": 50,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11450870_Shandong-Taishan_vs_Wuhan-Three-Towns_20260524-2034.md",
+      "matchId": "11450870",
+      "rows": 42,
+      "positives": 30,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11450872_Yunnan-Yukun_vs_Qingdao-West-Coast_20260524-2001.md",
+      "matchId": "11450872",
+      "rows": 87,
+      "positives": 63,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11450876_Shenzhen-Xinpengcheng_vs_Dalian-Young-Boy_20260519-2117.md",
+      "matchId": "11450876",
+      "rows": 90,
+      "positives": 17,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11450877_Tianjin-Jinmen-Tigers_vs_Henan_20260519-2117.md",
+      "matchId": "11450877",
+      "rows": 97,
+      "positives": 58,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11450878_Shandong-Taishan_vs_Chongqing-Tonglianglong_20260516-2039.md",
+      "matchId": "11450878",
+      "rows": 75,
+      "positives": 44,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11450879_Wuhan-Three-Towns_vs_Liaoning-Ironman_20260516-2007.md",
+      "matchId": "11450879",
+      "rows": 38,
+      "positives": 12,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11450886_Qingdao-West-Coast_vs_Wuhan-Three-Towns_20260516-2043.md",
+      "matchId": "11450886",
+      "rows": 32,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11450891_Zhejiang_vs_Shenzhen-Xinpengcheng_20260516-2114.md",
+      "matchId": "11450891",
+      "rows": 68,
+      "positives": 38,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11450892_Shandong-Taishan_vs_Qingdao-West-Coast_20260516-2116.md",
+      "matchId": "11450892",
+      "rows": 18,
+      "positives": 7,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11450894_Dalian-Young-Boy_vs_Chongqing-Tonglianglong_20260516-2116.md",
+      "matchId": "11450894",
+      "rows": 76,
+      "positives": 29,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11450895_Henan_vs_Liaoning-Ironman_20260516-2116.md",
+      "matchId": "11450895",
+      "rows": 75,
+      "positives": 44,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11450896_Qingdao-Hainiu_vs_Shandong-Taishan_20260516-2117.md",
+      "matchId": "11450896",
+      "rows": 40,
+      "positives": 17,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11450901_Qingdao-West-Coast_vs_Henan_20260516-2119.md",
+      "matchId": "11450901",
+      "rows": 26,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11480052_Snohomish-United_vs_Midlakes-United_20260607-1407.md",
+      "matchId": "11480052",
+      "rows": 40,
+      "positives": 9,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11480060_Stars-FC_vs_Southern-California-Eagl_20260602-1102.md",
+      "matchId": "11480060",
+      "rows": 71,
+      "positives": 31,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11489904_Portugal-U19_vs_Kazakhstan-U19_20260603-1632.md",
+      "matchId": "11489904",
+      "rows": 3,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11499389_Canberra-Juventus_vs_Tigers-FC_20260614-1818.md",
+      "matchId": "11499389",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11514998_Chennaiyin-FC_vs_Mohammedan-SC_20260516-2120.md",
+      "matchId": "11514998",
+      "rows": 61,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11520068_FK-Ulytau_vs_FK-Zhenys_20260614-2115.md",
+      "matchId": "11520068",
+      "rows": 38,
+      "positives": 32,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11520080_FC-Altai-Semey_vs_FC-Astana_20260528-0758.md",
+      "matchId": "11520080",
+      "rows": 50,
+      "positives": 30,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11520084_FK-Kaspyi-Aktau_vs_Irtysh-Pavlodar_20260522-2256.md",
+      "matchId": "11520084",
+      "rows": 53,
+      "positives": 33,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11536738_RFS-II_vs_Rezeknes-FA_20260614-2115.md",
+      "matchId": "11536738",
+      "rows": 40,
+      "positives": 24,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11548815_Auckland-City_vs_Melville-United_20260524-0943.md",
+      "matchId": "11548815",
+      "rows": 83,
+      "positives": 47,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11549028_Ferrymead-Bays_vs_Wanaka-AFC_20260607-1407.md",
+      "matchId": "11549028",
+      "rows": 62,
+      "positives": 51,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11558177_Chiangrai-Utd_vs_Ratchaburi-FC_20260516-2117.md",
+      "matchId": "11558177",
+      "rows": 86,
+      "positives": 17,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11577725_Shaanxi-Union_vs_Nanjing-City_20260529-1605.md",
+      "matchId": "11577725",
+      "rows": 68,
+      "positives": 3,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11586882_Kahraba-Ismailia_vs_Haras-El-Hedoud_20260519-0909.md",
+      "matchId": "11586882",
+      "rows": 35,
+      "positives": 15,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11586883_Talaea-El-Geish_vs_Pharco-FC_20260519-0909.md",
+      "matchId": "11586883",
+      "rows": 34,
+      "positives": 10,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11586897_Petrojet_vs_Wadi-Degla_20260516-2043.md",
+      "matchId": "11586897",
+      "rows": 40,
+      "positives": 39,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11588812_Manila-Digger-FC_vs_Svay-Rieng-FC_20260516-2126.md",
+      "matchId": "11588812",
+      "rows": 38,
+      "positives": 20,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11595768_Changchun-Xidu_vs_Qingdao-Red-Lions_20260607-2100.md",
+      "matchId": "11595768",
+      "rows": 42,
+      "positives": 11,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11595771_Qingdao-Red-Lions_vs_Shanghai-Port-Reserves_20260614-1818.md",
+      "matchId": "11595771",
+      "rows": 20,
+      "positives": 17,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11595792_Shanghai-Segenda_vs_Lanzhou-Longyuan-Athleti_20260516-2114.md",
+      "matchId": "11595792",
+      "rows": 82,
+      "positives": 39,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11603507_Cianorte_vs_EC-Juventude_20260516-2116.md",
+      "matchId": "11603507",
+      "rows": 49,
+      "positives": 9,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11606919_Albirex-Niigata-Singapor_vs_Tampines-Rovers-FC_20260516-2116.md",
+      "matchId": "11606919",
+      "rows": 82,
+      "positives": 33,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11612441_NuPS_vs_Gilla-FC_20260607-2055.md",
+      "matchId": "11612441",
+      "rows": 40,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11618897_Fluminense_vs_Deportivo-La-Guaira_20260528-0928.md",
+      "matchId": "11618897",
+      "rows": 87,
+      "positives": 38,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11618908_Racing-Club_vs_Caracas_20260522-0859.md",
+      "matchId": "11618908",
+      "rows": 43,
+      "positives": 15,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11618975_Bolivar_vs_Independiente-Rivadavia_20260528-0935.md",
+      "matchId": "11618975",
+      "rows": 63,
+      "positives": 43,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11619010_Independiente-del-Valle_vs_Libertad-Asuncion_20260520-1100.md",
+      "matchId": "11619010",
+      "rows": 68,
+      "positives": 33,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11619024_Deportivo-Cuenca_vs_Deportivo-Recoleta_20260520-1101.md",
+      "matchId": "11619024",
+      "rows": 39,
+      "positives": 34,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11619114_Cruzeiro_vs_Boca-Juniors_20260516-2117.md",
+      "matchId": "11619114",
+      "rows": 76,
+      "positives": 13,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11619121_River-Plate_vs_Blooming_20260528-0928.md",
+      "matchId": "11619121",
+      "rows": 59,
+      "positives": 45,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11619134_America-de-Cali_vs_CA-Tigre_20260520-1100.md",
+      "matchId": "11619134",
+      "rows": 64,
+      "positives": 7,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11619191_Corinthians_vs_Penarol_20260516-2115.md",
+      "matchId": "11619191",
+      "rows": 75,
+      "positives": 16,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11619373_Independiente-Medellin_vs_Cusco-FC_20260516-2116.md",
+      "matchId": "11619373",
+      "rows": 72,
+      "positives": 7,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11620607_Corinthians_vs_Platense_20260528-0928.md",
+      "matchId": "11620607",
+      "rows": 90,
+      "positives": 35,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11620921_Flamengo_vs_Independiente-Medellin_20260516-2126.md",
+      "matchId": "11620921",
+      "rows": 62,
+      "positives": 47,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11620923_Lanus_vs_Always-Ready_20260516-2126.md",
+      "matchId": "11620923",
+      "rows": 24,
+      "positives": 14,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11620926_Palmeiras_vs_Sporting-Cristal_20260516-2126.md",
+      "matchId": "11620926",
+      "rows": 23,
+      "positives": 20,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11620927_Penarol_vs_Platense_20260516-2126.md",
+      "matchId": "11620927",
+      "rows": 38,
+      "positives": 18,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11626982_Nottm-Forest_vs_Burnley_20260516-2120.md",
+      "matchId": "11626982",
+      "rows": 78,
+      "positives": 48,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11627042_Aston-Villa_vs_Sunderland_20260516-2120.md",
+      "matchId": "11627042",
+      "rows": 81,
+      "positives": 49,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11629752_LA-Galaxy_vs_Toluca_20260516-2126.md",
+      "matchId": "11629752",
+      "rows": 65,
+      "positives": 14,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11630304_Ninh-Binh_vs_Viettel-FC_20260612-1524.md",
+      "matchId": "11630304",
+      "rows": 77,
+      "positives": 35,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11650136_Mjallby-AIF_vs_Hammarby_20260516-2113.md",
+      "matchId": "11650136",
+      "rows": 11,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11651846_Fardu-Ferghana_vs_Olympic-Mobiuz_20260529-2050.md",
+      "matchId": "11651846",
+      "rows": 67,
+      "positives": 15,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11653070_Canberra-Juventus-U23_vs_Tuggeranong-United-U23_20260530-1116.md",
+      "matchId": "11653070",
+      "rows": 47,
+      "positives": 38,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11655329_Kolding-IF_vs_Hiller-d_20260528-0758.md",
+      "matchId": "11655329",
+      "rows": 77,
+      "positives": 47,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11655361_Hvidovre-IF_vs_Esbjerg_20260528-0758.md",
+      "matchId": "11655361",
+      "rows": 49,
+      "positives": 15,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11657478_Canada_vs_Rep-of-Ireland_20260606-0839.md",
+      "matchId": "11657478",
+      "rows": 38,
+      "positives": 12,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11665979_Universitario-De-Vinto_vs_Club-Aurora_20260602-1028.md",
+      "matchId": "11665979",
+      "rows": 55,
+      "positives": 13,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11679567_Sweden_vs_Tunisia_20260615-1607.md",
+      "matchId": "11679567",
+      "rows": 84,
+      "positives": 62,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11679833_South-Korea_vs_Czechia_20260612-1525.md",
+      "matchId": "11679833",
+      "rows": 88,
+      "positives": 41,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11679834_Canada_vs_Bosnia-Herzegovina_20260613-0359.md",
+      "matchId": "11679834",
+      "rows": 43,
+      "positives": 15,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11686047_Coastal-Union_vs_Namungo-FC_20260613-0359.md",
+      "matchId": "11686047",
+      "rows": 44,
+      "positives": 17,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11686049_Singida-Fountain-Gate-FC_vs_Azam-FC_20260613-0359.md",
+      "matchId": "11686049",
+      "rows": 46,
+      "positives": 18,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11690360_Cienciano_vs_Academia-Puerto-Cabello_20260516-2126.md",
+      "matchId": "11690360",
+      "rows": 38,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11694541_Millonarios_vs_Deportes-Tolima_20260516-2119.md",
+      "matchId": "11694541",
+      "rows": 72,
+      "positives": 38,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11703994_Chelsea_vs_Leeds_20260516-2117.md",
+      "matchId": "11703994",
+      "rows": 80,
+      "positives": 14,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11703995_Man-City_vs_Southampton_20260516-2118.md",
+      "matchId": "11703995",
+      "rows": 61,
+      "positives": 21,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11704105_CA-Independiente_vs_Defensa-y-Justicia_20260516-2121.md",
+      "matchId": "11704105",
+      "rows": 24,
+      "positives": 18,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11704107_Rosario-Central_vs_Sarmiento_20260516-2120.md",
+      "matchId": "11704107",
+      "rows": 69,
+      "positives": 27,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11735481_VfB-Stuttgart_vs_Werder-Bremen_20260516-2117.md",
+      "matchId": "11735481",
+      "rows": 61,
+      "positives": 19,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11744398_Southern-District_vs_Kowloon-City_20260516-2118.md",
+      "matchId": "11744398",
+      "rows": 3,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11744401_Lee-Man-FC_vs_Tai-Po_20260517-1553.md",
+      "matchId": "11744401",
+      "rows": 43,
+      "positives": 23,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11744404_Tai-Po_vs_Kitchee_20260516-2115.md",
+      "matchId": "11744404",
+      "rows": 71,
+      "positives": 33,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11744405_Eastern-SC_vs_North-District_20260516-2116.md",
+      "matchId": "11744405",
+      "rows": 78,
+      "positives": 42,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11745507_Japan_vs_Iceland_20260601-0842.md",
+      "matchId": "11745507",
+      "rows": 33,
+      "positives": 15,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11747974_Debre-Birhan-Ketema_vs_Soloda-Adwa_20260516-2126.md",
+      "matchId": "11747974",
+      "rows": 50,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11752309_Thunderbolt-North-United_vs_Yangthang-United-FC_20260516-2126.md",
+      "matchId": "11752309",
+      "rows": 35,
+      "positives": 14,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11752518_PSG_vs_Bayern-Munich_20260516-2117.md",
+      "matchId": "11752518",
+      "rows": 38,
+      "positives": 31,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11755223_Belconnen-United_vs_Tuggeranong-Utd_20260603-2054.md",
+      "matchId": "11755223",
+      "rows": 83,
+      "positives": 51,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11758647_Chicago-Fire_vs_St-Louis-City-SC_20260516-2116.md",
+      "matchId": "11758647",
+      "rows": 47,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11758649_New-York-Red-Bulls_vs_New-York-City-FC_20260516-2117.md",
+      "matchId": "11758649",
+      "rows": 36,
+      "positives": 29,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11759439_Hatta-Dubai_vs_Al-Urooba_20260516-2117.md",
+      "matchId": "11759439",
+      "rows": 75,
+      "positives": 22,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11763705_Nashville-SC_vs_Tigres-UANL_20260516-2117.md",
+      "matchId": "11763705",
+      "rows": 37,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11763706_Los-Angeles-FC_vs_Toluca_20260516-2116.md",
+      "matchId": "11763706",
+      "rows": 68,
+      "positives": 33,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11767412_Ethiopian-Insurance-FC_vs_Wolaita-Dicha_20260519-2117.md",
+      "matchId": "11767412",
+      "rows": 36,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11773640_Diamond-Harbour-FC_vs_Rajasthan-United_20260516-2043.md",
+      "matchId": "11773640",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11778096_Uthai-Thani-FC_vs_Bangkok-United_20260516-2117.md",
+      "matchId": "11778096",
+      "rows": 82,
+      "positives": 27,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11793610_Osasuna_vs_Barcelona_20260516-2114.md",
+      "matchId": "11793610",
+      "rows": 73,
+      "positives": 17,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11802701_Melbourne-Victory_vs_Sydney-FC_20260516-2114.md",
+      "matchId": "11802701",
+      "rows": 78,
+      "positives": 13,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11803774_Chelsea_vs_Man-City_20260516-2301.md",
+      "matchId": "11803774",
+      "rows": 27,
+      "positives": 6,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11806422_Crystal-Palace_vs_Everton_20260516-2042.md",
+      "matchId": "11806422",
+      "rows": 65,
+      "positives": 41,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11806479_Parma_vs_Roma_20260516-2040.md",
+      "matchId": "11806479",
+      "rows": 39,
+      "positives": 29,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11806501_Verona_vs_Como_20260516-2040.md",
+      "matchId": "11806501",
+      "rows": 26,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11806503_Athletic-Bilbao_vs_Valencia_20260516-2040.md",
+      "matchId": "11806503",
+      "rows": 34,
+      "positives": 9,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11806626_Mallorca_vs_Villarreal_20260516-2040.md",
+      "matchId": "11806626",
+      "rows": 84,
+      "positives": 32,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11808273_Caykur-Rizespor_vs_Konyaspor_20260516-2116.md",
+      "matchId": "11808273",
+      "rows": 29,
+      "positives": 13,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11809925_Cruz-Azul_vs_Atlas_20260516-2043.md",
+      "matchId": "11809925",
+      "rows": 86,
+      "positives": 15,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11809926_Chivas-Guadalajara_vs_Tigres-UANL_20260516-2043.md",
+      "matchId": "11809926",
+      "rows": 59,
+      "positives": 18,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11810361_Hellenic-AC_vs_University-Azzurri-FC_20260614-1817.md",
+      "matchId": "11810361",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11810368_Hellenic-AC_vs_Darwin-Olympic_20260603-1632.md",
+      "matchId": "11810368",
+      "rows": 82,
+      "positives": 41,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11811683_UWA-Nedlands-FC-Reserves_vs_Inglewood-United-Reserve_20260519-2117.md",
+      "matchId": "11811683",
+      "rows": 80,
+      "positives": 30,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11811746_Toluca_vs_Pachuca_20260516-2114.md",
+      "matchId": "11811746",
+      "rows": 77,
+      "positives": 19,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11813251_Toluca-W_vs_Tigres-UANL-W_20260516-2116.md",
+      "matchId": "11813251",
+      "rows": 27,
+      "positives": 18,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11814769_Boeung-Ket-FC_vs_Svay-Rieng-FC_20260516-2117.md",
+      "matchId": "11814769",
+      "rows": 52,
+      "positives": 4,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11815030_Pachuca-W_vs_Chivas-Guadalajara-W_20260516-2114.md",
+      "matchId": "11815030",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11818389_Banfield_vs_San-Martin-de-Tucuman_20260516-2043.md",
+      "matchId": "11818389",
+      "rows": 67,
+      "positives": 30,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11828968_Real-Espana_vs_CD-Marathon_20260519-1134.md",
+      "matchId": "11828968",
+      "rows": 91,
+      "positives": 30,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11828969_Motagua_vs_Genesis-de-Comayagua_20260519-0909.md",
+      "matchId": "11828969",
+      "rows": 46,
+      "positives": 3,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11828970_CD-Marathon_vs_CD-Olimpia_20260516-2040.md",
+      "matchId": "11828970",
+      "rows": 89,
+      "positives": 52,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11831068_Argentina_vs_Honduras_20260607-1407.md",
+      "matchId": "11831068",
+      "rows": 68,
+      "positives": 34,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11832338_Colombia_vs_Costa-Rica_20260602-1028.md",
+      "matchId": "11832338",
+      "rows": 18,
+      "positives": 13,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11833399_Sydney-FC_vs_Newcastle-Jets_20260516-2113.md",
+      "matchId": "11833399",
+      "rows": 76,
+      "positives": 25,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11833411_Auckland-FC_vs_Adelaide-United_20260516-2043.md",
+      "matchId": "11833411",
+      "rows": 81,
+      "positives": 30,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11840845_Plaza-Amador-Reserves_vs_Academia-Costa-Del-Este_20260516-2043.md",
+      "matchId": "11840845",
+      "rows": 6,
+      "positives": 4,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11840897_Peru_vs_Spain_20260609-2032.md",
+      "matchId": "11840897",
+      "rows": 84,
+      "positives": 15,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11851001_Cucuta-Deportivo_vs_Fortaleza-CEIF_20260530-0551.md",
+      "matchId": "11851001",
+      "rows": 7,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11852403_Itagui-Leones_vs_Independiente-Medellin_20260530-1000.md",
+      "matchId": "11852403",
+      "rows": 23,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11854003_CS-Constantine_vs_USM-Khenchela_20260520-0820.md",
+      "matchId": "11854003",
+      "rows": 30,
+      "positives": 20,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11856137_Shirak_vs_FC-Urartu_20260519-0909.md",
+      "matchId": "11856137",
+      "rows": 76,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11877569_Unam-Pumas_vs_Pachuca_20260518-1004.md",
+      "matchId": "11877569",
+      "rows": 87,
+      "positives": 19,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11877570_Chivas-Guadalajara_vs_Cruz-Azul_20260517-1017.md",
+      "matchId": "11877570",
+      "rows": 90,
+      "positives": 34,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11881014_Argentina_vs_Iceland_20260610-1008.md",
+      "matchId": "11881014",
+      "rows": 84,
+      "positives": 33,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11882888_Saudi-Arabia_vs_Senegal_20260610-1008.md",
+      "matchId": "11882888",
+      "rows": 25,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11884444_Torrejon_vs_Las-Rozas_20260524-1832.md",
+      "matchId": "11884444",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11886133_Selangor_vs_Buriram-United_20260522-0802.md",
+      "matchId": "11886133",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11886216_Rajasthan-United_vs_Chanmari-FC_20260519-2159.md",
+      "matchId": "11886216",
+      "rows": 30,
+      "positives": 12,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11888668_Defensor-Sporting-Reserv_vs_Albion-FC-Reserves_20260519-0910.md",
+      "matchId": "11888668",
+      "rows": 72,
+      "positives": 11,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11889336_Orsomarso_vs_Independiente-Medellin_20260516-2040.md",
+      "matchId": "11889336",
+      "rows": 88,
+      "positives": 27,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11891136_Herediano_vs_Deportivo-Saprissa_20260517-1103.md",
+      "matchId": "11891136",
+      "rows": 31,
+      "positives": 15,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11893442_Capalaba-W_vs_Brisbane-Olympic-FC-W_20260603-2054.md",
+      "matchId": "11893442",
+      "rows": 43,
+      "positives": 24,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11893714_Turkmenistan-U20_vs_Uzbekistan-U20_20260519-2117.md",
+      "matchId": "11893714",
+      "rows": 42,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11894809_FC-Zorya-Lugansk_vs_Polissya-Zhytomyr_20260518-1905.md",
+      "matchId": "11894809",
+      "rows": 74,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11894915_FC-Kudrivka_vs_LNZ-Lebedyn_20260518-2032.md",
+      "matchId": "11894915",
+      "rows": 74,
+      "positives": 15,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11898829_Thailand_vs_Kuwait_20260606-0839.md",
+      "matchId": "11898829",
+      "rows": 20,
+      "positives": 16,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11903491_NoPS-U21_vs_TPS-U21_20260518-1004.md",
+      "matchId": "11903491",
+      "rows": 39,
+      "positives": 0,
+      "ftStatus": "93'"
+    },
+    {
+      "file": "match_11906312_Inter-Panama-CF_vs_Cetes-FC_20260519-0910.md",
+      "matchId": "11906312",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11906597_Independiente-del-Valle_vs_Club-Atletico-Libertad_20260523-0855.md",
+      "matchId": "11906597",
+      "rows": 41,
+      "positives": 41,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11907015_Rangdajied-United-FC_vs_Mawlai-SC_20260518-1735.md",
+      "matchId": "11907015",
+      "rows": 84,
+      "positives": 38,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11907612_Sunshine-Coast-Wanderers_vs_St-George-Willawong-FC_20260603-2054.md",
+      "matchId": "11907612",
+      "rows": 80,
+      "positives": 65,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11907613_Rochedale-Rovers_vs_Magic-United_20260603-2054.md",
+      "matchId": "11907613",
+      "rows": 24,
+      "positives": 1,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11907702_Kairat-Almaty-W_vs_FK-Kaspyi-Aktau-W_20260518-2032.md",
+      "matchId": "11907702",
+      "rows": 79,
+      "positives": 45,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11907859_FC-Altai-Semey-W_vs_Irtysh-Pavlodar-W_20260519-2117.md",
+      "matchId": "11907859",
+      "rows": 69,
+      "positives": 15,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11907956_Pakhtakor-Tashkent_vs_Termez-Surkhon_20260519-0909.md",
+      "matchId": "11907956",
+      "rows": 35,
+      "positives": 15,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11907957_Shandong-Taishan-U20_vs_Shaanxi-Union-U20_20260519-2117.md",
+      "matchId": "11907957",
+      "rows": 40,
+      "positives": 23,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11907959_FC-Yaypan-Fergana_vs_Kattaqorgon_20260519-0909.md",
+      "matchId": "11907959",
+      "rows": 75,
+      "positives": 15,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11908020_Shanghai-Port-U20_vs_Beijing-Guoan-U20_20260519-2117.md",
+      "matchId": "11908020",
+      "rows": 39,
+      "positives": 28,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11908484_El-Masry_vs_ZED-FC_20260602-0741.md",
+      "matchId": "11908484",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11908647_Empoli-U19_vs_Como-U19_20260519-0910.md",
+      "matchId": "11908647",
+      "rows": 73,
+      "positives": 33,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11908985_FC-Kiisto_vs_VPV-Pallo-Veikot_20260520-0821.md",
+      "matchId": "11908985",
+      "rows": 25,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11909060_Fulham-United-FC_vs_West-Torrens-Birkalla_20260519-2117.md",
+      "matchId": "11909060",
+      "rows": 26,
+      "positives": 21,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11909478_Unam-Pumas_vs_Cruz-Azul_20260525-1824.md",
+      "matchId": "11909478",
+      "rows": 26,
+      "positives": 15,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11909482_South-Melbourne_vs_Vanuatu-United_20260520-1101.md",
+      "matchId": "11909482",
+      "rows": 62,
+      "positives": 60,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11909551_Adelaide-Cobras_vs_Modbury-Jets_20260519-2117.md",
+      "matchId": "11909551",
+      "rows": 77,
+      "positives": 15,
+      "ftStatus": "99'"
+    },
+    {
+      "file": "match_11910279_Nangkiew-Irat_vs_Langsning-SC_20260519-2117.md",
+      "matchId": "11910279",
+      "rows": 80,
+      "positives": 64,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11911844_Than-KSVN-W_vs_TP-HCM-W_20260519-2117.md",
+      "matchId": "11911844",
+      "rows": 83,
+      "positives": 20,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11913392_FK-Zeleznicar-Pancevo_vs_FK-Cukaricki_20260523-0855.md",
+      "matchId": "11913392",
+      "rows": 36,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11922712_Western-United-FC-NPL_vs_Port-Melbourne-SC_20260613-1311.md",
+      "matchId": "11922712",
+      "rows": 85,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11931303_South-Melbourne_vs_Auckland-FC-II_20260524-1202.md",
+      "matchId": "11931303",
+      "rows": 60,
+      "positives": 22,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11931752_Deportivo-Garcilaso_vs_Cusco-FC_20260615-0750.md",
+      "matchId": "11931752",
+      "rows": 68,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11936633_Philippines_vs_Myanmar_20260609-2032.md",
+      "matchId": "11936633",
+      "rows": 72,
+      "positives": 42,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11936636_Philippines_vs_Guam_20260603-2054.md",
+      "matchId": "11936636",
+      "rows": 60,
+      "positives": 43,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11938071_Junior_vs_Atletico-Nacional-Medell_20260603-1632.md",
+      "matchId": "11938071",
+      "rows": 50,
+      "positives": 15,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11940478_Cerro-Largo_vs_Cerro_20260530-0721.md",
+      "matchId": "11940478",
+      "rows": 79,
+      "positives": 33,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11940906_Vanraure-Hachinohe_vs_Fukushima-Utd_20260601-1936.md",
+      "matchId": "11940906",
+      "rows": 44,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11941967_Cerezo-Osaka_vs_FC-Tokyo_20260530-1456.md",
+      "matchId": "11941967",
+      "rows": 85,
+      "positives": 48,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11941968_Sanfrecce-Hiroshima_vs_Kawasaki-Frontale_20260530-1407.md",
+      "matchId": "11941968",
+      "rows": 56,
+      "positives": 3,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11941969_Nagoya-Grampus_vs_Machida-Zelvia_20260530-1407.md",
+      "matchId": "11941969",
+      "rows": 61,
+      "positives": 46,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11941970_Vissel-Kobe_vs_Kashima-Antlers_20260530-1407.md",
+      "matchId": "11941970",
+      "rows": 53,
+      "positives": 41,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11942197_Milford-FC_vs_Magesi-FC_20260605-1835.md",
+      "matchId": "11942197",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11943996_Reyady-Abaseya_vs_Sagesse-SC_20260613-0359.md",
+      "matchId": "11943996",
+      "rows": 22,
+      "positives": 0,
+      "ftStatus": "94'"
+    },
+    {
+      "file": "match_11946873_Northern-AFC_vs_Coastal-Spirit_20260601-1043.md",
+      "matchId": "11946873",
+      "rows": 84,
+      "positives": 26,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11954577_Barracas-Central_vs_Huracan_20260603-1632.md",
+      "matchId": "11954577",
+      "rows": 40,
+      "positives": 15,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11954611_Brunei_vs_Timor-Leste_20260603-1632.md",
+      "matchId": "11954611",
+      "rows": 62,
+      "positives": 28,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11955780_Beach-Futbol-Club-W_vs_FC-Premier-W_20260530-1117.md",
+      "matchId": "11955780",
+      "rows": 14,
+      "positives": 14,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11959423_North-Star-U23_vs_Brisbane-Strikers-U23_20260603-1631.md",
+      "matchId": "11959423",
+      "rows": 66,
+      "positives": 52,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11959428_Wynnum-Wolves_vs_Brisbane-Roar-NPL_20260603-1632.md",
+      "matchId": "11959428",
+      "rows": 84,
+      "positives": 42,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11963381_Indonesia-W_vs_Singapore-W_20260603-2054.md",
+      "matchId": "11963381",
+      "rows": 74,
+      "positives": 7,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11963789_Hawkesbury-City-SC_vs_Gladesville-Ryde-Magic_20260603-2054.md",
+      "matchId": "11963789",
+      "rows": 70,
+      "positives": 32,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11964780_Indonesia_vs_Mozambique_20260610-1008.md",
+      "matchId": "11964780",
+      "rows": 17,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11965632_Venezuela-Youth_vs_Japan-Youth_20260612-1525.md",
+      "matchId": "11965632",
+      "rows": 76,
+      "positives": 4,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11965762_California-Storm-W_vs_Napa-Valley-1839-W_20260601-1054.md",
+      "matchId": "11965762",
+      "rows": 37,
+      "positives": 25,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11966055_Myanmar-W_vs_Uzbekistan-W_20260603-2054.md",
+      "matchId": "11966055",
+      "rows": 62,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11966207_Australia-W_vs_Mexico-W_20260609-2032.md",
+      "matchId": "11966207",
+      "rows": 72,
+      "positives": 38,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11967071_Podbeskidzie-Bielsko-Bia_vs_Slask-Wroclaw-II_20260603-1632.md",
+      "matchId": "11967071",
+      "rows": 75,
+      "positives": 32,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11968735_Vietnam-U19_vs_Timor-Leste-U19_20260601-1832.md",
+      "matchId": "11968735",
+      "rows": 68,
+      "positives": 18,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11968736_Indonesia-U19_vs_Myanmar-U19_20260602-0741.md",
+      "matchId": "11968736",
+      "rows": 86,
+      "positives": 38,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11969302_Eastern-Suburbs-Auckland_vs_Melville-United_20260601-1055.md",
+      "matchId": "11969302",
+      "rows": 17,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11969358_Bay-Olympic_vs_Birkenhead-United_20260601-1054.md",
+      "matchId": "11969358",
+      "rows": 78,
+      "positives": 67,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11969846_Oita_vs_Montedio-Yamagata_20260607-2100.md",
+      "matchId": "11969846",
+      "rows": 82,
+      "positives": 20,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11972525_Pakistan-XI_vs_Bangladesh-Olympic_20260602-0741.md",
+      "matchId": "11972525",
+      "rows": 11,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11972983_Singapore_vs_China-PR_20260606-0839.md",
+      "matchId": "11972983",
+      "rows": 81,
+      "positives": 40,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11973002_Carabobo_vs_Academia-Puerto-Cabello_20260608-2150.md",
+      "matchId": "11973002",
+      "rows": 52,
+      "positives": 30,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11973164_Wikki-Tourists_vs_Bayelsa-United_20260602-0741.md",
+      "matchId": "11973164",
+      "rows": 72,
+      "positives": 42,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11973662_Ahudiyannem-Queens-W_vs_Heartland-Queens-W_20260603-1632.md",
+      "matchId": "11973662",
+      "rows": 45,
+      "positives": 35,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11973859_Malaysia-U19_vs_Singapore-U19_20260603-1632.md",
+      "matchId": "11973859",
+      "rows": 83,
+      "positives": 45,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11974570_Spring-Hills-FC-W_vs_Bulleen-Lions-W_20260603-1632.md",
+      "matchId": "11974570",
+      "rows": 83,
+      "positives": 15,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11974572_North-Sunshine-Eagles_vs_Avondale_20260603-1632.md",
+      "matchId": "11974572",
+      "rows": 72,
+      "positives": 56,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11974736_Silpakorn-University_vs_Mahidol-University_20260603-1632.md",
+      "matchId": "11974736",
+      "rows": 89,
+      "positives": 15,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11974807_Betlemi_vs_Kolkheti_20260603-1632.md",
+      "matchId": "11974807",
+      "rows": 84,
+      "positives": 60,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11974983_Cong-An-Ha-Noi-II_vs_CLB-Bong-da-Hue_20260603-1632.md",
+      "matchId": "11974983",
+      "rows": 85,
+      "positives": 47,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11975120_El-Porvenir-Reserves_vs_CA-Lugano-Reserves_20260603-1632.md",
+      "matchId": "11975120",
+      "rows": 75,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11975647_Fortaleza_vs_Vitoria_20260603-1632.md",
+      "matchId": "11975647",
+      "rows": 41,
+      "positives": 27,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11977541_Philippines-U19_vs_Australia-U19_20260605-1835.md",
+      "matchId": "11977541",
+      "rows": 37,
+      "positives": 35,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11977707_King-Mongkut-University_vs_Nakhon-Sawan-Rajabhat-Un_20260603-1631.md",
+      "matchId": "11977707",
+      "rows": 85,
+      "positives": 41,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11978186_Rajamangala-University-R_vs_Payap-University_20260603-1632.md",
+      "matchId": "11978186",
+      "rows": 86,
+      "positives": 41,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11978375_ZED-FC_vs_Wadi-Degla_20260609-0902.md",
+      "matchId": "11978375",
+      "rows": 44,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11979201_Nepal-W_vs_Bangladesh-W_20260603-2054.md",
+      "matchId": "11979201",
+      "rows": 38,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11983994_Singapore-U19_vs_Thailand-U19_20260606-0839.md",
+      "matchId": "11983994",
+      "rows": 18,
+      "positives": 18,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11997208_Indonesia-U19_vs_Vietnam-U19_20260608-2150.md",
+      "matchId": "11997208",
+      "rows": 84,
+      "positives": 37,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11997262_Tokyo-United-FC_vs_Ryutsu-Keizai-Dragons_20260607-2100.md",
+      "matchId": "11997262",
+      "rows": 42,
+      "positives": 21,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11998932_Jordan_vs_Colombia_20260608-2150.md",
+      "matchId": "11998932",
+      "rows": 79,
+      "positives": 29,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12001255_South-China-AA_vs_Tung-Sing_20260607-2100.md",
+      "matchId": "12001255",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12001461_Thailand-U19_vs_Malaysia-U19_20260608-2150.md",
+      "matchId": "12001461",
+      "rows": 72,
+      "positives": 45,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12001505_Singapore-U19_vs_Brunei-U19_20260608-2150.md",
+      "matchId": "12001505",
+      "rows": 39,
+      "positives": 20,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12004109_Abia-Angels-FC-W_vs_River-Angels-W_20260608-2150.md",
+      "matchId": "12004109",
+      "rows": 78,
+      "positives": 15,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12004508_Vancouver-FC_vs_Pacific-FC-CA_20260615-0750.md",
+      "matchId": "12004508",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12005977_Real-Murcia-B_vs_CD-Pamplona_20260614-1818.md",
+      "matchId": "12005977",
+      "rows": 29,
+      "positives": 9,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12006065_China-PR_vs_Thailand_20260609-2032.md",
+      "matchId": "12006065",
+      "rows": 81,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12006186_Bangkok-University_vs_Thaksin-University_20260608-2150.md",
+      "matchId": "12006186",
+      "rows": 83,
+      "positives": 28,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12006187_Chulalongkorn-University_vs_Rajamangala-University-R_20260608-2150.md",
+      "matchId": "12006187",
+      "rows": 40,
+      "positives": 25,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12006593_Guijuelo_vs_UD-Tamaraceite_20260614-2115.md",
+      "matchId": "12006593",
+      "rows": 37,
+      "positives": 15,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12006642_Arenas_vs_SCR-Pena-Deportiva_20260614-2115.md",
+      "matchId": "12006642",
+      "rows": 39,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12007068_Iraq_vs_Venezuela_20260610-1008.md",
+      "matchId": "12007068",
+      "rows": 37,
+      "positives": 1,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12009017_FUS-Rabat_vs_MAS-Fes_20260613-0359.md",
+      "matchId": "12009017",
+      "rows": 24,
+      "positives": 9,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12009035_OC-Safi_vs_KACM-Marrakesh_20260613-0359.md",
+      "matchId": "12009035",
+      "rows": 26,
+      "positives": 10,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12016595_Nam-Dinh_vs_Ho-Chi-Minh-City_20260612-1525.md",
+      "matchId": "12016595",
+      "rows": 87,
+      "positives": 63,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12017885_Thailand-U19_vs_Cambodia-U19_20260612-1524.md",
+      "matchId": "12017885",
+      "rows": 84,
+      "positives": 57,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12017886_Indonesia-U19_vs_Australia-U19_20260612-1525.md",
+      "matchId": "12017886",
+      "rows": 74,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12021098_Dalian-W_vs_Shanghai-Shenhua-W_20260612-1524.md",
+      "matchId": "12021098",
+      "rows": 2,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12021330_Ferrymead-Bays_vs_Cashmere-Technical_20260612-1525.md",
+      "matchId": "12021330",
+      "rows": 37,
+      "positives": 28,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12021455_Hebei-W_vs_Chongqing-Olympic-W_20260612-1524.md",
+      "matchId": "12021455",
+      "rows": 86,
+      "positives": 46,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12023282_KMG-Holdings_vs_Veroskronos-Tsuno_20260613-1311.md",
+      "matchId": "12023282",
+      "rows": 56,
+      "positives": 15,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12023284_MHI-Nagasaki_vs_Nobeoka-Agata_20260613-1311.md",
+      "matchId": "12023284",
+      "rows": 55,
+      "positives": 10,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12024088_PVF-CAND_vs_Bac-Ninh_20260612-1951.md",
+      "matchId": "12024088",
+      "rows": 60,
+      "positives": 42,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12025346_Ninh-Binh_vs_Cong-An-HCMC_20260614-2136.md",
+      "matchId": "12025346",
+      "rows": 85,
+      "positives": 43,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12025558_Al-Sufiya-SC_vs_Al-Hashd-Al-Shaabi-SC_20260613-0359.md",
+      "matchId": "12025558",
+      "rows": 49,
+      "positives": 25,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12029380_Auckland-City_vs_East-Coast-Bays_20260613-1311.md",
+      "matchId": "12029380",
+      "rows": 55,
+      "positives": 33,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12029382_Miramar-Rangers_vs_Western-Suburbs_20260613-1311.md",
+      "matchId": "12029382",
+      "rows": 57,
+      "positives": 19,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12031290_EPS-Reservi_vs_MPS_20260614-1817.md",
+      "matchId": "12031290",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12032083_Guangdong-GZ-Power-U20_vs_Shaanxi-Union-U20_20260614-1818.md",
+      "matchId": "12032083",
+      "rows": 19,
+      "positives": 9,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12032496_Mahaut-Soca-Strikers_vs_Promex-Harlem-United-SC_20260615-0750.md",
+      "matchId": "12032496",
+      "rows": 50,
+      "positives": 19,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12032731_Wyvern-FC_vs_Fujieda-City-Hall-FC_20260614-1817.md",
+      "matchId": "12032731",
+      "rows": 1,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12032864_Gorilla-Of-The-Universe-_vs_Macau-Chiba-FC_20260614-1817.md",
+      "matchId": "12032864",
+      "rows": 21,
+      "positives": 10,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12032963_Yeoju_vs_Busan-Trans-Corp_20260614-1818.md",
+      "matchId": "12032963",
+      "rows": 19,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12033059_Deren-FC_vs_Central-Stallions_20260614-1817.md",
+      "matchId": "12033059",
+      "rows": 18,
+      "positives": 13,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12035690_Transvaal_vs_SV-Voorwaarts_20260615-0750.md",
+      "matchId": "12035690",
+      "rows": 57,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12037923_Henan-W_vs_Tianjin-Shengde-W_20260614-1817.md",
+      "matchId": "12037923",
+      "rows": 5,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12042201_Bangkok-Thonburi-Univers_vs_Thailand-National-Sports_20260615-1607.md",
+      "matchId": "12042201",
+      "rows": 69,
+      "positives": 20,
+      "ftStatus": "FT"
+    }
+  ]
+}
