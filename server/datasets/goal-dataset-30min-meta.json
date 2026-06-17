@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-15T09:08:36.453Z",
+  "generatedAt": "2026-06-16T12:51:55.669Z",
   "featureNames": [
     "minute",
     "half",
@@ -43,11 +43,11 @@
   ],
   "goalWindowMin": 30,
   "labelColumn": "goal_within_window",
-  "totalFiles": 577,
-  "parsed": 535,
+  "totalFiles": 600,
+  "parsed": 558,
   "failed": 6,
-  "totalRows": 28944,
-  "positiveRows": 17190,
+  "totalRows": 29991,
+  "positiveRows": 17937,
   "perMatch": [
     {
       "file": "match_10210731_Kolos-Kovalivka_vs_FC-Kudrivka_20260516-2043.md",
@@ -811,6 +811,20 @@
       "rows": 62,
       "positives": 13,
       "ftStatus": "FT"
+    },
+    {
+      "file": "match_11089684_Saudi-Arabia_vs_Uruguay_20260616-1812.md",
+      "matchId": "11089684",
+      "rows": 4,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11089887_Belgium_vs_Egypt_20260616-0519.md",
+      "matchId": "11089887",
+      "rows": 46,
+      "positives": 28,
+      "ftStatus": "90'"
     },
     {
       "file": "match_11089992_Haiti_vs_Scotland_20260614-1817.md",
@@ -1772,6 +1786,13 @@
       "ftStatus": "FT"
     },
     {
+      "file": "match_11380413_Mitchelton-FC-W_vs_Peninsula-Power-W_20260616-0257.md",
+      "matchId": "11380413",
+      "rows": 75,
+      "positives": 67,
+      "ftStatus": "FT"
+    },
+    {
       "file": "match_11391227_Hai-Phong_vs_Nam-Dinh_20260607-2100.md",
       "matchId": "11391227",
       "rows": 2,
@@ -2647,6 +2668,20 @@
       "ftStatus": "90'"
     },
     {
+      "file": "match_11767381_Ethio-Electric-FC_vs_Mekelle-70-Enderta-FC_20260616-1950.md",
+      "matchId": "11767381",
+      "rows": 23,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11767385_Negelle-Arsi_vs_Hawassa-City-FC_20260616-0257.md",
+      "matchId": "11767385",
+      "rows": 72,
+      "positives": 59,
+      "ftStatus": "FT"
+    },
+    {
       "file": "match_11767412_Ethiopian-Insurance-FC_vs_Wolaita-Dicha_20260519-2117.md",
       "matchId": "11767412",
       "rows": 36,
@@ -3025,6 +3060,13 @@
       "ftStatus": "90'"
     },
     {
+      "file": "match_11907544_Brisbane-Olympic-FC-U23_vs_Magic-United-U23_20260616-1950.md",
+      "matchId": "11907544",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
       "file": "match_11907612_Sunshine-Coast-Wanderers_vs_St-George-Willawong-FC_20260603-2054.md",
       "matchId": "11907612",
       "rows": 80,
@@ -3165,6 +3207,13 @@
       "ftStatus": "FT"
     },
     {
+      "file": "match_11931741_CD-Estudiantil-CNI_vs_Union-Comercio_20260616-0519.md",
+      "matchId": "11931741",
+      "rows": 42,
+      "positives": 42,
+      "ftStatus": "90'"
+    },
+    {
       "file": "match_11931752_Deportivo-Garcilaso_vs_Cusco-FC_20260615-0750.md",
       "matchId": "11931752",
       "rows": 68,
@@ -3253,6 +3302,13 @@
       "matchId": "11946873",
       "rows": 84,
       "positives": 41,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11951179_Redlands-United_vs_Sunshine-Coast-Wanderers_20260616-1950.md",
+      "matchId": "11951179",
+      "rows": 21,
+      "positives": 5,
       "ftStatus": "90'"
     },
     {
@@ -3501,6 +3557,13 @@
       "ftStatus": "FT"
     },
     {
+      "file": "match_11978786_Rochedale-Rovers_vs_Moreton-City-Excelsior_20260616-1950.md",
+      "matchId": "11978786",
+      "rows": 23,
+      "positives": 20,
+      "ftStatus": "FT"
+    },
+    {
       "file": "match_11979201_Nepal-W_vs_Bangladesh-W_20260603-2054.md",
       "matchId": "11979201",
       "rows": 38,
@@ -3676,6 +3739,13 @@
       "ftStatus": "90'"
     },
     {
+      "file": "match_12022476_Wynnum-Wolves_vs_Eastern-Suburbs_20260616-1950.md",
+      "matchId": "12022476",
+      "rows": 21,
+      "positives": 19,
+      "ftStatus": "FT"
+    },
+    {
       "file": "match_12023282_KMG-Holdings_vs_Veroskronos-Tsuno_20260613-1311.md",
       "matchId": "12023282",
       "rows": 56,
@@ -3781,6 +3851,48 @@
       "ftStatus": "FT"
     },
     {
+      "file": "match_12036575_Hubei-Istar-U20_vs_Ningbo-Professional-U20_20260616-0257.md",
+      "matchId": "12036575",
+      "rows": 50,
+      "positives": 6,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12037283_FC-Orbi_vs_FC-Didube-2014_20260616-0257.md",
+      "matchId": "12037283",
+      "rows": 81,
+      "positives": 57,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12037284_Guria-Lanchkhuti_vs_Iveria-Khashuri_20260616-0257.md",
+      "matchId": "12037284",
+      "rows": 37,
+      "positives": 37,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12037289_FC-Gonio_vs_FC-Margveti-2006_20260616-0258.md",
+      "matchId": "12037289",
+      "rows": 73,
+      "positives": 57,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12037501_Shan-Utd-W_vs_Ispe-FC-W_20260616-0257.md",
+      "matchId": "12037501",
+      "rows": 80,
+      "positives": 59,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12037891_Shakhter-Karagandy-W_vs_FK-Zhenys-W_20260616-0257.md",
+      "matchId": "12037891",
+      "rows": 36,
+      "positives": 36,
+      "ftStatus": "90'"
+    },
+    {
       "file": "match_12037923_Henan-W_vs_Tianjin-Shengde-W_20260614-1817.md",
       "matchId": "12037923",
       "rows": 5,
@@ -3792,6 +3904,55 @@
       "matchId": "12042201",
       "rows": 69,
       "positives": 35,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12042557_Bayswater-City_vs_Perth-RedStar-FC_20260616-1950.md",
+      "matchId": "12042557",
+      "rows": 72,
+      "positives": 61,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12042558_Fremantle-City-FC_vs_Olympic-Kingsway_20260616-1950.md",
+      "matchId": "12042558",
+      "rows": 65,
+      "positives": 64,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12042559_Brunswick-Juventus_vs_Bulleen-Lions_20260616-1950.md",
+      "matchId": "12042559",
+      "rows": 20,
+      "positives": 15,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12043041_Lokomotiv-Tashkent-W_vs_PFK-Qizilqum-W_20260616-0257.md",
+      "matchId": "12043041",
+      "rows": 68,
+      "positives": 30,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12043812_Irtysh-Pavlodar-W_vs_FC-Astana-W_20260616-1950.md",
+      "matchId": "12043812",
+      "rows": 40,
+      "positives": 20,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12044923_FC-Altai-Semey-W_vs_FC-Elimai-Semey-W_20260616-1950.md",
+      "matchId": "12044923",
+      "rows": 71,
+      "positives": 65,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12046770_Truong-Giang-Gia-Dinh_vs_Lam-Dong_20260616-1812.md",
+      "matchId": "12046770",
+      "rows": 27,
+      "positives": 0,
       "ftStatus": "FT"
     }
   ]

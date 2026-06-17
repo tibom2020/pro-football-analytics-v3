@@ -1,6 +1,7 @@
-import React from 'react';
-import { MatchInfo } from '../types';
-import { Clock, Star, Activity } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { MatchInfo, ViewedMatchHistory } from '../types';
+import { Clock, Star, Activity, Eye } from 'lucide-react';
+import { VIEWED_MATCHES_HISTORY_UPDATED_EVENT } from '../services/match-markdown-export';
 
 interface MatchListProps {
   events: MatchInfo[];
@@ -20,6 +21,31 @@ export const MatchList: React.FC<MatchListProps> = ({
   onToggleFavorite,
   searchQuery,
 }) => {
+  const [viewedIds, setViewedIds] = useState<Set<string>>(new Set());
+
+  const refreshViewedIds = useCallback(() => {
+    try {
+      const raw = localStorage.getItem('viewedMatchesHistory');
+      const history = raw ? (JSON.parse(raw) as ViewedMatchHistory) : {};
+      setViewedIds(new Set(Object.keys(history)));
+    } catch {
+      setViewedIds(new Set());
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshViewedIds();
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'viewedMatchesHistory' || e.key === null) refreshViewedIds();
+    };
+    window.addEventListener('storage', onStorage);
+    window.addEventListener(VIEWED_MATCHES_HISTORY_UPDATED_EVENT, refreshViewedIds);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener(VIEWED_MATCHES_HISTORY_UPDATED_EVENT, refreshViewedIds);
+    };
+  }, [refreshViewedIds]);
+
   if (isLoading) {
     return <div className="p-8 text-center text-slate-500 dark:text-slate-400 animate-pulse font-medium">Đang tải dữ liệu trực tiếp...</div>;
   }
@@ -43,6 +69,7 @@ export const MatchList: React.FC<MatchListProps> = ({
 
   const renderCard = (event: MatchInfo) => {
     const isFavorite = favorites.includes(event.id);
+    const isViewed = viewedIds.has(event.id);
     return (
       <div
         key={event.id}
@@ -66,10 +93,18 @@ export const MatchList: React.FC<MatchListProps> = ({
             <span className="font-bold text-sm bg-slate-50 dark:bg-slate-900 px-1.5 py-0.5 rounded text-slate-900 dark:text-white shrink-0">{event.ss ? event.ss.split('-')[1] : '0'}</span>
           </div>
         </div>
-        <div className="mt-auto pt-2 border-t border-gray-100 dark:border-slate-700/50 flex justify-between items-center">
+        <div className="mt-auto pt-2 border-t border-gray-100 dark:border-slate-700/50 flex justify-between items-center gap-2">
           <div className="flex items-center text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-1.5 py-0.5 rounded">
             <Clock className="w-2.5 h-2.5 mr-1" />{event.timer?.tm || event.time || '0'}'
           </div>
+          {isViewed && (
+            <span
+              className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold normal-case bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 shrink-0"
+              title="Bạn đã mở trận này trong tab phân tích"
+            >
+              <Eye className="w-3 h-3" /> Đã mở
+            </span>
+          )}
         </div>
       </div>
     );
