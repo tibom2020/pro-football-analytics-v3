@@ -93,7 +93,7 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack }) => {
     const AUTO_REFRESH_INTERVAL_MS = 15_000;
-    const [liveMatch, setLiveMatch] = useState<MatchInfo>(match);
+    const [liveMatch, setLiveMatch] = useState<MatchInfo>(() => ({ ...match, id: String(match.id) }));
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [oddsHistory, setOddsHistory] = useState<OverUnderMinuteSnapshot[]>([]);
     const [homeOddsHistory, setHomeOddsHistory] = useState<AsianHandicapMinuteSnapshot[]>([]);
@@ -116,7 +116,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack }) =>
     const [pinnedCharts, setPinnedCharts] = useState<PinnedChart[]>(() => loadPinnedCharts());
     const [openPinIdx, setOpenPinIdx] = useState<number | null>(null);
     const matchPins = useMemo(
-        () => pinnedCharts.filter((p) => p.sourceMatchId === liveMatch.id),
+        () => pinnedCharts.filter((p) => p.sourceMatchId === String(liveMatch.id)),
         [pinnedCharts, liveMatch.id],
     );
 
@@ -452,7 +452,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack }) =>
         setIsRefreshing(true);
         try {
             const details = await getMatchDetails(token, liveMatch.id);
-            if (details) setLiveMatch(details);
+            if (details) setLiveMatch({ ...details, id: String(details.id) });
 
             const odds = await getMatchOdds(token, liveMatch.id);
             const timerForOdds = details?.timer;
@@ -618,7 +618,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack }) =>
                 <PinnedChartsBar
                     pins={matchPins}
                     onOpen={setOpenPinIdx}
-                    onRemove={removePinnedChart}
+                    onRemove={(pin) => {
+                        removePinnedChart(pin);
+                        setPinnedCharts(loadPinnedCharts());
+                    }}
                 />
             </div>
 

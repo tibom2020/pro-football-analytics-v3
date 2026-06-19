@@ -21,7 +21,7 @@ export const PinnedChartsBar: React.FC<{
         </span>
         {pins.map((p, i) => (
           <div
-            key={p.matchId}
+            key={`${p.sourceMatchId ?? ''}-${p.matchId}`}
             className="flex-shrink-0 flex items-center rounded-md border border-amber-300 dark:border-slate-600 bg-white dark:bg-slate-800 overflow-hidden"
           >
             <button

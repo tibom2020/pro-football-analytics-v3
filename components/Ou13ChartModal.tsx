@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef, useLayoutEffect, useCallback } from 'react';
 import { AlertCircle, ChevronLeft, ChevronRight, ExternalLink, Loader2, Pin, PinOff } from 'lucide-react';
 import {
     isChartPinned,
@@ -24,7 +24,14 @@ import {
     minuteTicks,
 } from '../services/odds-pressure-series';
 import { calculateAPIScore } from '../services/traditionalFactors';
-import { MomentumChart } from './MomentumChart';
+import {
+    MomentumChart,
+    nearestOddsPoint,
+    crosshairLeftPx,
+    getChartLeftGutter,
+    uniqueSortedMinutes,
+    type OddsSnap,
+} from './MomentumChart';
 
 type GameEventLite = { minute: number; half: 1 | 2; type: 'goal' | 'corner' };
 type ShotEventLite = { minute: number; half: 1 | 2; type: 'on' | 'off' };
@@ -157,16 +164,242 @@ export interface Ou13ChartContentProps {
     primaryLabel?: string;
     /** Nhãn panel trận đang xem khi so sánh (vd "Trận đang xem"). */
     compareLabel?: string;
+    /** Vạch dọc + HUD HDP/giá — bấm nến để chọn phút so sánh. */
+    minuteCrosshair?: boolean;
+    /** Khóa ←/→ chuyển trận khi đang so sánh phút (ref từ modal). */
+    compareNavLockRef?: React.MutableRefObject<boolean>;
 }
+
+type HalfChartProps = ReturnType<typeof buildHalfChartProps>;
+
+function oddsAtMinute(props: HalfChartProps, minute: number): { ou: OddsSnap | null; ah: OddsSnap | null } {
+    return {
+        ou: nearestOddsPoint(props.sortedMarketData, minute),
+        ah: props.secondarySortedData?.length
+            ? nearestOddsPoint(props.secondarySortedData, minute)
+            : null,
+    };
+}
+
+const fmtH = (v?: number) => (typeof v === 'number' && Number.isFinite(v) ? v.toFixed(2) : '—');
+const fmtO = (v?: number) => (typeof v === 'number' && Number.isFinite(v) ? v.toFixed(3) : '—');
+
+/** Bảng HDP/giá 2 trận tại cùng phút — đặt dưới trục X, căn theo vạch dọc. */
+const SyncedCompareInfoTable: React.FC<{
+    minute: number;
+    leftPx: number;
+    simLabel: string;
+    curLabel: string;
+    sim: { ou: OddsSnap | null; ah: OddsSnap | null };
+    cur: { ou: OddsSnap | null; ah: OddsSnap | null };
+}> = ({ minute, leftPx, simLabel, curLabel, sim, cur }) => (
+    <div className="relative w-full min-h-[6.5rem] mt-1 mb-2">
+        <div
+            className="absolute z-30 pointer-events-none -translate-x-1/2 w-[min(22rem,calc(100%-1rem))]"
+            style={{ left: leftPx, top: 0 }}
+        >
+            <div className="bg-slate-900/96 text-white text-[10px] rounded-lg shadow-xl border border-slate-500/70 overflow-hidden backdrop-blur-sm">
+                <div className="bg-indigo-900/50 px-2.5 py-1 font-bold text-indigo-200 text-center border-b border-slate-600">
+                    Phút {minute}&apos;
+                </div>
+                <table className="w-full border-collapse">
+                    <thead>
+                        <tr className="text-slate-400 border-b border-slate-700">
+                            <th className="text-left font-medium px-2 py-1 w-[38%]">Chỉ số</th>
+                            <th className="text-center font-semibold px-1 py-1 text-amber-300">{simLabel}</th>
+                            <th className="text-center font-semibold px-1 py-1 text-emerald-300">{curLabel}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {[
+                            { label: 'T/X HDP', sim: fmtH(sim.ou?.handicap), cur: fmtH(cur.ou?.handicap) },
+                            { label: 'Odds Tài', sim: fmtO(sim.ou?.over), cur: fmtO(cur.ou?.over) },
+                            { label: 'Odds Xỉu', sim: fmtO(sim.ou?.under), cur: fmtO(cur.ou?.under) },
+                            { label: 'Chấp HDP', sim: fmtH(sim.ah?.handicap), cur: fmtH(cur.ah?.handicap) },
+                            { label: 'Odds Nhà', sim: fmtO(sim.ah?.home), cur: fmtO(cur.ah?.home) },
+                        ].map((row) => (
+                            <tr key={row.label} className="border-b border-slate-800/80 last:border-0">
+                                <td className="px-2 py-0.5 text-slate-400">{row.label}</td>
+                                <td className="px-1 py-0.5 text-center font-mono text-slate-100">{row.sim}</td>
+                                <td className="px-1 py-0.5 text-center font-mono text-slate-100">{row.cur}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+);
+
+/** Cặp biểu đồ trận tương tự + trận đang xem (cùng hiệp) — chọn phút bằng click nến. */
+const SyncedHalfCompareGroup: React.FC<{
+    half: 1 | 2;
+    simProps: HalfChartProps | null;
+    curProps: HalfChartProps;
+    primaryLabel?: string;
+    compareLabel?: string;
+    marker?: { half: 1 | 2; minute: number };
+    compareMarker?: { half: 1 | 2; minute: number };
+    selectedMinute: number | null;
+    onSelectMinute: (minute: number) => void;
+}> = ({
+    half,
+    simProps,
+    curProps,
+    primaryLabel,
+    compareLabel,
+    marker,
+    compareMarker,
+    selectedMinute,
+    onSelectMinute,
+}) => {
+    const groupRef = useRef<HTMLDivElement>(null);
+    const topPlotRef = useRef<HTMLDivElement>(null);
+    const bottomPlotRef = useRef<HTMLDivElement>(null);
+    const [groupWidth, setGroupWidth] = useState(0);
+    const [bridgeLine, setBridgeLine] = useState<{ x: number; top: number; height: number } | null>(null);
+
+    const xDomain = simProps?.xDomain ?? curProps.xDomain;
+    const leftGutter = getChartLeftGutter(true);
+    const hasSimChart = !!simProps && !simProps.isEmpty;
+    const compareActive = selectedMinute != null;
+
+    useEffect(() => {
+        if (!groupRef.current) return;
+        const el = groupRef.current;
+        const ro = new ResizeObserver((entries) => {
+            if (entries[0]) setGroupWidth(entries[0].contentRect.width);
+        });
+        ro.observe(el);
+        setGroupWidth(el.getBoundingClientRect().width);
+        return () => ro.disconnect();
+    }, []);
+
+    const crosshairPx =
+        compareActive && groupWidth > 0
+            ? crosshairLeftPx(selectedMinute, groupWidth, xDomain, leftGutter)
+            : null;
+
+    const updateBridgeLine = useCallback(() => {
+        if (
+            !compareActive ||
+            !hasSimChart ||
+            !groupRef.current ||
+            !topPlotRef.current ||
+            !bottomPlotRef.current
+        ) {
+            setBridgeLine(null);
+            return;
+        }
+        const group = groupRef.current.getBoundingClientRect();
+        const top = topPlotRef.current.getBoundingClientRect();
+        const bottom = bottomPlotRef.current.getBoundingClientRect();
+        const x = crosshairLeftPx(selectedMinute, group.width, xDomain, leftGutter);
+        setBridgeLine({
+            x,
+            top: top.top - group.top,
+            height: bottom.bottom - group.top - (top.top - group.top),
+        });
+    }, [compareActive, selectedMinute, xDomain, leftGutter, hasSimChart]);
+
+    useLayoutEffect(() => {
+        updateBridgeLine();
+    }, [updateBridgeLine, groupWidth]);
+
+    const simLabel = primaryLabel || 'Trận tương tự';
+    const curLabel = compareLabel || 'Trận đang xem';
+    const simOdds =
+        compareActive && simProps ? oddsAtMinute(simProps, selectedMinute) : { ou: null, ah: null };
+    const curOdds = compareActive ? oddsAtMinute(curProps, selectedMinute) : { ou: null, ah: null };
+
+    return (
+        <div ref={groupRef} className="relative">
+            {bridgeLine && (
+                <div
+                    className="absolute pointer-events-none z-20 w-px bg-slate-400/55"
+                    style={{
+                        left: bridgeLine.x,
+                        top: bridgeLine.top,
+                        height: bridgeLine.height,
+                    }}
+                    aria-hidden
+                />
+            )}
+            {simProps && !simProps.isEmpty ? (
+                <OuHalfPanel
+                    props={simProps}
+                    half={half}
+                    idSuffix={`sim-ou-h${half}`}
+                    labelPrefix={primaryLabel}
+                    marker={marker}
+                    minuteCrosshair
+                    syncedCrosshairMinute={selectedMinute}
+                    onSyncedCrosshairChange={(m) => {
+                        if (m != null) onSelectMinute(m);
+                    }}
+                    plotAreaRef={topPlotRef}
+                    suppressCrosshairHud
+                />
+            ) : null}
+            {!curProps.isEmpty ? (
+                <OuHalfPanel
+                    props={curProps}
+                    half={half}
+                    idSuffix={`cur-ou-h${half}`}
+                    labelPrefix={compareLabel}
+                    marker={compareMarker}
+                    minuteCrosshair
+                    syncedCrosshairMinute={selectedMinute}
+                    onSyncedCrosshairChange={(m) => {
+                        if (m != null) onSelectMinute(m);
+                    }}
+                    plotAreaRef={hasSimChart ? bottomPlotRef : topPlotRef}
+                    suppressCrosshairHud
+                />
+            ) : null}
+            {compareActive && crosshairPx != null && (
+                <SyncedCompareInfoTable
+                    minute={selectedMinute}
+                    leftPx={crosshairPx}
+                    simLabel={simLabel}
+                    curLabel={curLabel}
+                    sim={simOdds}
+                    cur={curOdds}
+                />
+            )}
+            <p className="text-[10px] text-indigo-600/90 dark:text-indigo-400/90 mt-1 mb-2 px-1 text-center">
+                {compareActive
+                    ? `Hiệp ${half}: ← → đổi phút · Esc thoát so sánh`
+                    : `Hiệp ${half}: bấm nến T/X trên biểu đồ để so sánh HDP/giá 2 trận`}
+            </p>
+        </div>
+    );
+};
 
 /** 1 panel MomentumChart cho 1 hiệp — dùng chung cho cả trận chính lẫn trận đang xem khi so sánh. */
 const OuHalfPanel: React.FC<{
-    props: ReturnType<typeof buildHalfChartProps>;
+    props: HalfChartProps;
     half: 1 | 2;
     idSuffix: string;
     labelPrefix?: string;
     marker?: { half: 1 | 2; minute: number };
-}> = ({ props, half, idSuffix, labelPrefix, marker }) => {
+    minuteCrosshair?: boolean;
+    syncedCrosshairMinute?: number | null;
+    onSyncedCrosshairChange?: (minute: number | null) => void;
+    plotAreaRef?: React.Ref<HTMLDivElement>;
+    suppressCrosshairHud?: boolean;
+}> = ({
+    props,
+    half,
+    idSuffix,
+    labelPrefix,
+    marker,
+    minuteCrosshair,
+    syncedCrosshairMinute,
+    onSyncedCrosshairChange,
+    plotAreaRef,
+    suppressCrosshairHud,
+}) => {
     const prefix = labelPrefix ? `${labelPrefix} · ` : '';
     if (props.isEmpty) {
         return (
@@ -185,6 +418,11 @@ const OuHalfPanel: React.FC<{
             chartIdSuffix={idSuffix}
             secondaryLabel="Đội nhà (1_2)"
             {...chartProps}
+            minuteCrosshair={minuteCrosshair}
+            syncedCrosshairMinute={syncedCrosshairMinute}
+            onSyncedCrosshairChange={onSyncedCrosshairChange}
+            plotAreaRef={plotAreaRef}
+            suppressCrosshairHud={suppressCrosshairHud}
             extraMarkers={marker && marker.half === half ? [{ minute: marker.minute }] : []}
         />
     );
@@ -219,10 +457,14 @@ export const Ou13ChartContent: React.FC<Ou13ChartContentProps> = ({
     compareMarker,
     primaryLabel,
     compareLabel,
+    minuteCrosshair = false,
+    compareNavLockRef,
 }) => {
     const [loading, setLoading] = useState(!!matchId);
     const [error, setError] = useState<string | null>(null);
     const [bundle, setBundle] = useState<Ou13ChartBundle | null>(local ?? null);
+    /** Phút đang so sánh (theo hiệp) — bật bằng click nến. */
+    const [comparePick, setComparePick] = useState<{ half: 1 | 2; minute: number } | null>(null);
 
     useEffect(() => {
         if (!matchId) return;
@@ -261,6 +503,43 @@ export const Ou13ChartContent: React.FC<Ou13ChartContentProps> = ({
     const c1 = useMemo(() => (compareLocal ? buildHalfChartProps(compareLocal, 1) : null), [compareLocal]);
     const c2 = useMemo(() => (compareLocal ? buildHalfChartProps(compareLocal, 2) : null), [compareLocal]);
 
+    useEffect(() => {
+        if (compareNavLockRef) compareNavLockRef.current = comparePick != null;
+    }, [comparePick, compareNavLockRef]);
+
+    const compareMinuteSteps = useMemo(() => {
+        if (!comparePick) return [];
+        const sim = comparePick.half === 1 ? h1 : h2;
+        const cur = comparePick.half === 1 ? c1 : c2;
+        if (!cur) return [];
+        return uniqueSortedMinutes(sim?.sortedMarketData ?? [], cur.sortedMarketData);
+    }, [comparePick, h1, h2, c1, c2]);
+
+    useEffect(() => {
+        if (!comparePick || compareMinuteSteps.length === 0) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                setComparePick(null);
+                return;
+            }
+            const idx = compareMinuteSteps.indexOf(comparePick.minute);
+            if (idx < 0) return;
+            if (e.key === 'ArrowRight' && idx < compareMinuteSteps.length - 1) {
+                e.preventDefault();
+                e.stopPropagation();
+                setComparePick({ ...comparePick, minute: compareMinuteSteps[idx + 1]! });
+            } else if (e.key === 'ArrowLeft' && idx > 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                setComparePick({ ...comparePick, minute: compareMinuteSteps[idx - 1]! });
+            }
+        };
+        window.addEventListener('keydown', onKey, true);
+        return () => window.removeEventListener('keydown', onKey, true);
+    }, [comparePick, compareMinuteSteps]);
+
     return (
         <>
             {loading ? (
@@ -277,24 +556,57 @@ export const Ou13ChartContent: React.FC<Ou13ChartContentProps> = ({
                     Trận này chưa lưu dữ liệu odds 1_3 / stats theo phút.
                 </div>
             ) : compareLocal && c1 && c2 ? (
-                /* Chế độ so sánh: xen kẽ H1 trận chính → H1 trận đang xem → H2 trận chính → H2 trận đang xem. */
                 <>
-                    {h1 && <OuHalfPanel props={h1} half={1} idSuffix="sim-ou-h1" labelPrefix={primaryLabel} marker={marker} />}
-                    <OuHalfPanel props={c1} half={1} idSuffix="cur-ou-h1" labelPrefix={compareLabel} marker={compareMarker} />
-                    {h2 && <OuHalfPanel props={h2} half={2} idSuffix="sim-ou-h2" labelPrefix={primaryLabel} marker={marker} />}
-                    <OuHalfPanel props={c2} half={2} idSuffix="cur-ou-h2" labelPrefix={compareLabel} marker={compareMarker} />
+                    {!c1.isEmpty && (
+                        <SyncedHalfCompareGroup
+                            half={1}
+                            simProps={h1 && !h1.isEmpty ? h1 : null}
+                            curProps={c1}
+                            primaryLabel={primaryLabel}
+                            compareLabel={compareLabel}
+                            marker={marker}
+                            compareMarker={compareMarker}
+                            selectedMinute={comparePick?.half === 1 ? comparePick.minute : null}
+                            onSelectMinute={(minute) => setComparePick({ half: 1, minute })}
+                        />
+                    )}
+                    {!c2.isEmpty && (
+                        <SyncedHalfCompareGroup
+                            half={2}
+                            simProps={h2 && !h2.isEmpty ? h2 : null}
+                            curProps={c2}
+                            primaryLabel={primaryLabel}
+                            compareLabel={compareLabel}
+                            marker={marker}
+                            compareMarker={compareMarker}
+                            selectedMinute={comparePick?.half === 2 ? comparePick.minute : null}
+                            onSelectMinute={(minute) => setComparePick({ half: 2, minute })}
+                        />
+                    )}
                     <p className="text-[10px] italic text-slate-500 dark:text-slate-400 px-1">
-                        📍 vạch cam: phút của tình huống đang so sánh trên mỗi trận tương ứng
-                        {marker ? ` (trận tương tự H${marker.half} · ${marker.minute}')` : ''}.
+                        📍 vạch cam: phút tình huống · bấm nến T/X để so sánh · vạch xám nối 2 trận cùng phút
+                        {marker ? ` (tương tự H${marker.half} · ${marker.minute}')` : ''}.
                     </p>
                 </>
             ) : (
                 <>
                     {h1 ? (
-                        <OuHalfPanel props={h1} half={1} idSuffix="sim-ou-h1" marker={marker} />
+                        <OuHalfPanel
+                            props={h1}
+                            half={1}
+                            idSuffix="sim-ou-h1"
+                            marker={marker}
+                            minuteCrosshair={minuteCrosshair}
+                        />
                     ) : null}
                     {h2 ? (
-                        <OuHalfPanel props={h2} half={2} idSuffix="sim-ou-h2" marker={marker} />
+                        <OuHalfPanel
+                            props={h2}
+                            half={2}
+                            idSuffix="sim-ou-h2"
+                            marker={marker}
+                            minuteCrosshair={minuteCrosshair}
+                        />
                     ) : null}
                     {marker && (
                         <p className="text-[10px] italic text-slate-500 dark:text-slate-400 px-1">
@@ -355,10 +667,13 @@ export const Ou13ChartModal: React.FC<Ou13ChartModalProps> = ({
     navPosition,
     onClose,
 }) => {
-    // Điều hướng nhanh bằng phím ← / → khi có nút chuyển trận.
+    const compareNavLockRef = useRef(false);
+
+    // Điều hướng nhanh bằng phím ← / → khi có nút chuyển trận (trừ khi đang so sánh phút).
     useEffect(() => {
         if (!onPrev && !onNext) return;
         const onKey = (e: KeyboardEvent) => {
+            if (compareNavLockRef.current) return;
             if (e.key === 'ArrowLeft' && onPrev) {
                 e.preventDefault();
                 onPrev();
@@ -451,6 +766,8 @@ export const Ou13ChartModal: React.FC<Ou13ChartModalProps> = ({
                         compareMarker={compareMarker}
                         primaryLabel={primaryLabel}
                         compareLabel={compareLabel}
+                        minuteCrosshair
+                        compareNavLockRef={compareNavLockRef}
                     />
                 </div>
             </div>

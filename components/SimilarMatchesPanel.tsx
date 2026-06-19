@@ -33,7 +33,7 @@ export const SimilarMatchesPanel: React.FC<SimilarMatchesPanelProps> = ({
 
   const input: PredictGoalInput = useMemo(
     () => ({
-      matchId: liveMatch.id,
+      matchId: String(liveMatch.id),
       liveMatch,
       statsHistory,
       oddsHistory,

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import { ResponsiveContainer, ComposedChart, Scatter, XAxis, YAxis, Tooltip, Cell, Line, Legend, CartesianGrid, ReferenceLine } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 import type { ChartAlertMarker } from '../types';
@@ -190,6 +190,142 @@ const CustomCandle = (props: any) => {
     );
 };
 
+// --- Crosshair (modal so sánh trận tương tự) ---
+
+type OddsSnap = {
+    minute: number;
+    handicap?: number;
+    over?: number;
+    under?: number;
+    home?: number;
+    away?: number;
+    colorName?: string;
+};
+
+const CHART_RIGHT_GUTTER = 35;
+const CHART_TOP_GUTTER = 10;
+const CHART_BOTTOM_GUTTER = 68;
+
+function nearestOddsPoint(data: OddsSnap[], minute: number): OddsSnap | null {
+    if (!data.length) return null;
+    return data.reduce((best, p) =>
+        Math.abs(p.minute - minute) < Math.abs(best.minute - minute) ? p : best,
+    );
+}
+
+function minuteFromPointer(
+    clientX: number,
+    rect: DOMRect,
+    xDomain: [number, number],
+    leftGutter: number,
+): number {
+    const plotW = Math.max(rect.width - leftGutter - CHART_RIGHT_GUTTER, 1);
+    const x = clientX - rect.left - leftGutter;
+    const ratio = Math.max(0, Math.min(1, x / plotW));
+    const [xMin, xMax] = xDomain;
+    return xMin + ratio * (xMax - xMin);
+}
+
+function crosshairLeftPx(
+    minute: number,
+    containerWidth: number,
+    xDomain: [number, number],
+    leftGutter: number,
+): number {
+    const plotW = Math.max(containerWidth - leftGutter - CHART_RIGHT_GUTTER, 1);
+    const [xMin, xMax] = xDomain;
+    const ratio = (minute - xMin) / Math.max(xMax - xMin, 1e-6);
+    return leftGutter + ratio * plotW;
+}
+
+const MinuteCrosshairHud: React.FC<{
+    minute: number;
+    ou: OddsSnap | null;
+    ah: OddsSnap | null;
+    underXiuMode?: boolean;
+    secondaryLabel?: string;
+    leftPx: number;
+}> = ({ minute, ou, ah, underXiuMode, secondaryLabel, leftPx }) => {
+    const overColor =
+        ou?.colorName === 'red'
+            ? 'text-red-400'
+            : ou?.colorName === 'green'
+              ? 'text-green-400'
+              : 'text-slate-100';
+    const fmtH = (v?: number) => (typeof v === 'number' && Number.isFinite(v) ? v.toFixed(2) : '—');
+    const fmtO = (v?: number) => (typeof v === 'number' && Number.isFinite(v) ? v.toFixed(3) : '—');
+
+    return (
+        <div
+            className="absolute z-30 pointer-events-none -translate-x-1/2 min-w-[11rem] max-w-[16rem]"
+            style={{ left: leftPx, top: 0 }}
+        >
+            <div className="bg-slate-900/95 text-white text-[11px] px-2.5 py-1.5 rounded-md shadow-lg border border-indigo-400/60 backdrop-blur-sm">
+                <p className="font-bold text-indigo-300 border-b border-slate-600 mb-1 pb-0.5">
+                    Phút {minute}&apos;
+                </p>
+                {ou ? (
+                    <div className="space-y-0.5">
+                        <p>
+                            <span className="text-yellow-400 font-semibold">T/X HDP:</span>{' '}
+                            {fmtH(ou.handicap)}
+                        </p>
+                        {underXiuMode ? (
+                            <p className="text-gray-300">
+                                Odds Xỉu:{' '}
+                                <span className={overColor}>{fmtO(ou.under)}</span>
+                            </p>
+                        ) : (
+                            <>
+                                <p className="text-gray-300">
+                                    Odds Tài: <span className={overColor}>{fmtO(ou.over)}</span>
+                                </p>
+                                {typeof ou.under === 'number' && Number.isFinite(ou.under) && (
+                                    <p className="text-gray-400">
+                                        Odds Xỉu: {fmtO(ou.under)}
+                                    </p>
+                                )}
+                            </>
+                        )}
+                    </div>
+                ) : (
+                    <p className="text-slate-400 italic">Chưa có kèo T/X tại phút này</p>
+                )}
+                {ah && (
+                    <div className="mt-1 pt-1 border-t border-slate-700 space-y-0.5">
+                        <p className="text-sky-400 font-semibold">
+                            {secondaryLabel || 'Đội nhà'} HDP: {fmtH(ah.handicap)}
+                        </p>
+                        {typeof ah.home === 'number' && Number.isFinite(ah.home) && (
+                            <p className="text-gray-300">
+                                Odds Nhà: <span className="text-sky-300">{fmtO(ah.home)}</span>
+                            </p>
+                        )}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export type { OddsSnap };
+export { nearestOddsPoint, crosshairLeftPx, CHART_RIGHT_GUTTER };
+
+export function getChartLeftGutter(hasSecondary: boolean): number {
+    return hasSecondary ? 45 + 40 + 15 : 45;
+}
+
+/** Danh sách phút có nến — dùng cho ← / →. */
+export function uniqueSortedMinutes(...lists: Array<Array<{ minute: number }>>): number[] {
+    const mins = new Set<number>();
+    for (const list of lists) {
+        for (const p of list) {
+            if (typeof p.minute === 'number' && Number.isFinite(p.minute)) mins.add(p.minute);
+        }
+    }
+    return [...mins].sort((a, b) => a - b);
+}
+
 // --- Overlay Components ---
 
 interface OverlayProps {
@@ -312,6 +448,15 @@ interface MomentumChartProps {
     secondaryOddsField?: 'home' | 'away';
     /** Vạch dọc tùy ý (vd: 📍 mốc phút tình huống tương tự trong modal so sánh). */
     extraMarkers?: Array<{ minute: number; label?: string; color?: string }>;
+    /** Bật so sánh theo phút — bấm nến để chọn, ←/→ đổi phút, Esc thoát. */
+    minuteCrosshair?: boolean;
+    /** Phút đang chọn (đồng bộ parent — so sánh 2 biểu đồ). */
+    syncedCrosshairMinute?: number | null;
+    onSyncedCrosshairChange?: (minute: number | null) => void;
+    /** Ref vùng vẽ biểu đồ (để parent nối vạch giữa 2 chart). */
+    plotAreaRef?: React.Ref<HTMLDivElement>;
+    /** Ẩn HUD dưới trục X (parent tự render bảng so sánh). */
+    suppressCrosshairHud?: boolean;
 }
 
 export const MomentumChart: React.FC<MomentumChartProps> = ({
@@ -335,14 +480,93 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
     secondaryLabel,
     secondaryOddsField = 'home',
     extraMarkers = [],
+    minuteCrosshair = false,
+    syncedCrosshairMinute,
+    onSyncedCrosshairChange,
+    plotAreaRef,
+    suppressCrosshairHud = false,
 }) => {
+    const chartAreaRef = useRef<HTMLDivElement>(null);
+    const [localSelectedMinute, setLocalSelectedMinute] = useState<number | null>(null);
+    const [containerWidth, setContainerWidth] = useState(0);
+
+    const isSyncedCrosshair = onSyncedCrosshairChange !== undefined;
+    const selectedMinute = isSyncedCrosshair ? (syncedCrosshairMinute ?? null) : localSelectedMinute;
+    const setSelectedMinute = isSyncedCrosshair ? onSyncedCrosshairChange! : setLocalSelectedMinute;
+    const showCrosshairHud = minuteCrosshair && !suppressCrosshairHud && !isSyncedCrosshair;
+    const compareActive = minuteCrosshair && selectedMinute != null;
+
+    const setPlotRef = useCallback(
+        (el: HTMLDivElement | null) => {
+            (chartAreaRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+            if (plotAreaRef) {
+                if (typeof plotAreaRef === 'function') plotAreaRef(el);
+                else (plotAreaRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+            }
+        },
+        [plotAreaRef],
+    );
+
+    useEffect(() => {
+        if (!minuteCrosshair || !chartAreaRef.current) return;
+        const el = chartAreaRef.current;
+        const ro = new ResizeObserver((entries) => {
+            if (entries[0]) setContainerWidth(entries[0].contentRect.width);
+        });
+        ro.observe(el);
+        setContainerWidth(el.getBoundingClientRect().width);
+        return () => ro.disconnect();
+    }, [minuteCrosshair]);
+
     const gid = (base: string) => `${base}-${chartIdSuffix.replace(/[^a-zA-Z0-9_-]/g, '') || 'main'}`;
-    const marketDataForChart = underXiuMode
-        ? marketData.map((e: any) => ({
-              ...e,
-              __candleOddsValue: typeof e.under === 'number' ? e.under : undefined,
-          }))
-        : marketData;
+
+    const handleCandleClick = useCallback(
+        (payload: { minute?: number } | undefined) => {
+            if (!minuteCrosshair || !payload || typeof payload.minute !== 'number') return;
+            setSelectedMinute(payload.minute);
+        },
+        [minuteCrosshair, setSelectedMinute],
+    );
+
+    const minuteSteps = useMemo(
+        () => uniqueSortedMinutes(sortedMarketData),
+        [sortedMarketData],
+    );
+
+    useEffect(() => {
+        if (isSyncedCrosshair || !minuteCrosshair || selectedMinute == null) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                setSelectedMinute(null);
+                return;
+            }
+            const idx = minuteSteps.indexOf(selectedMinute);
+            if (idx < 0) return;
+            if (e.key === 'ArrowRight' && idx < minuteSteps.length - 1) {
+                e.preventDefault();
+                setSelectedMinute(minuteSteps[idx + 1]!);
+            } else if (e.key === 'ArrowLeft' && idx > 0) {
+                e.preventDefault();
+                setSelectedMinute(minuteSteps[idx - 1]!);
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [isSyncedCrosshair, minuteCrosshair, selectedMinute, minuteSteps, setSelectedMinute]);
+
+    const marketDataForChart = useMemo(() => {
+        const base = underXiuMode
+            ? marketData.map((e: any) => ({
+                  ...e,
+                  __candleOddsValue: typeof e.under === 'number' ? e.under : undefined,
+              }))
+            : marketData;
+        return base.map((e: any) => ({
+            ...e,
+            highlight: compareActive && selectedMinute === e.minute,
+        }));
+    }, [underXiuMode, marketData, compareActive, selectedMinute]);
 
     const hasSecondary =
         Array.isArray(secondaryMarketData) && secondaryMarketData.length > 0 && !!secondaryYAxisConfig;
@@ -356,6 +580,23 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
     const leftGutterPx = hasSecondary ? 45 + 40 + 15 : 45;
     const SECONDARY_TINT = '#3b82f6';
     const SECONDARY_CANDLE_FILL = '#60a5fa';
+
+    const selectedOu = useMemo(
+        () => (selectedMinute != null ? nearestOddsPoint(sortedMarketData, selectedMinute) : null),
+        [selectedMinute, sortedMarketData],
+    );
+    const selectedAh = useMemo(
+        () =>
+            selectedMinute != null && secondarySortedData?.length
+                ? nearestOddsPoint(secondarySortedData, selectedMinute)
+                : null,
+        [selectedMinute, secondarySortedData],
+    );
+    const crosshairPx =
+        selectedMinute != null && containerWidth > 0
+            ? crosshairLeftPx(selectedMinute, containerWidth, xDomain, leftGutterPx)
+            : null;
+
     return (
         <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
             <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
@@ -365,7 +606,7 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
             {halfSubtitle ? (
                 <p className="text-[10px] font-semibold text-amber-600/90 dark:text-amber-400/90 mb-2 uppercase tracking-wide">{halfSubtitle}</p>
             ) : null}
-            <div className="relative h-80 w-full">
+            <div ref={setPlotRef} className="relative h-80 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart margin={{ top: 10, right: 10, bottom: 28, left: hasSecondary ? 0 : -15 }}>
                         <defs>
@@ -448,9 +689,22 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                             width={35}
                             domain={['dataMin - 5', 'dataMax + 10']}
                         />
-                        <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<CustomTooltip underXiuMode={underXiuMode} secondaryLabel={secondaryLabel} />} />
+                        {!minuteCrosshair && (
+                            <Tooltip
+                                cursor={{ strokeDasharray: '3 3' }}
+                                content={<CustomTooltip underXiuMode={underXiuMode} secondaryLabel={secondaryLabel} />}
+                            />
+                        )}
                         <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                        <Scatter xAxisId={0} yAxisId="left" name="Thị trường" data={marketDataForChart} shape={<CustomCandle />}>
+                        <Scatter
+                            xAxisId={0}
+                            yAxisId="left"
+                            name="Thị trường"
+                            data={marketDataForChart}
+                            shape={<CustomCandle />}
+                            cursor={minuteCrosshair ? 'pointer' : undefined}
+                            onClick={(pt: { payload?: { minute?: number } }) => handleCandleClick(pt?.payload)}
+                        >
                             {marketDataForChart.map((e: any, i: number) => (<Cell key={`c-${i}`} fill={e.color} />))}
                         </Scatter>
                         <Line xAxisId={0} yAxisId="left" type="monotone" data={sortedMarketData} dataKey="handicap" stroke="#ef4444" strokeWidth={2} dot={false} activeDot={{ r: 4 }} opacity={0.8} />
@@ -462,6 +716,8 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                                 data={secondaryDataForChart}
                                 shape={<CustomCandle secondary />}
                                 legendType="none"
+                                cursor={minuteCrosshair ? 'pointer' : undefined}
+                                onClick={(pt: { payload?: { minute?: number } }) => handleCandleClick(pt?.payload)}
                             >
                                 {secondaryDataForChart.map((e: any, i: number) => (
                                     <Cell key={`sc-${i}`} fill={e.color || SECONDARY_CANDLE_FILL} />
@@ -574,6 +830,18 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                                     }}
                                 />
                             ))}
+                        {compareActive && !(isSyncedCrosshair && suppressCrosshairHud) && (
+                            <ReferenceLine
+                                xAxisId={0}
+                                yAxisId="left"
+                                x={selectedMinute!}
+                                stroke={isSyncedCrosshair ? '#94a3b8' : '#6366f1'}
+                                strokeWidth={isSyncedCrosshair ? 1 : 1.5}
+                                strokeDasharray={isSyncedCrosshair ? undefined : '5 4'}
+                                strokeOpacity={isSyncedCrosshair ? 0.55 : 0.85}
+                                ifOverflow="extendDomain"
+                            />
+                        )}
                     </ComposedChart>
                 </ResponsiveContainer>
                 <OverlayContainer>
@@ -581,6 +849,18 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                     <GameEventMarkers events={gameEvents} xDomain={xDomain} leftGutterPx={leftGutterPx} />
                 </OverlayContainer>
                 <OddsColorLegent underXiuMode={underXiuMode} hasSecondary={hasSecondary} secondaryLabel={secondaryLabel} />
+                {showCrosshairHud && crosshairPx != null && (
+                    <div className="relative w-full min-h-[5rem] mt-0.5 mb-1">
+                        <MinuteCrosshairHud
+                            minute={selectedMinute!}
+                            ou={selectedOu}
+                            ah={selectedAh}
+                            underXiuMode={underXiuMode}
+                            secondaryLabel={secondaryLabel}
+                            leftPx={crosshairPx}
+                        />
+                    </div>
+                )}
                 {gameEvents.some((e) => e.type === 'goal') && (
                     <p className="text-[10px] text-red-600/90 dark:text-red-400/85 mt-2 px-1 text-center">
                         ⚽ Viền đỏ trên biểu đồ: bàn thắng · 🚩 dưới trục: phạt góc
@@ -597,6 +877,13 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                             </>
                         ) : null}{' '}
                         ({alertMarkers.length} điểm)
+                    </p>
+                )}
+                {minuteCrosshair && !suppressCrosshairHud && (
+                    <p className="text-[10px] text-indigo-600/90 dark:text-indigo-400/90 mt-2 px-1 text-center">
+                        {compareActive
+                            ? '← → đổi phút · Esc thoát so sánh'
+                            : 'Bấm vào nến T/X để bật so sánh theo phút'}
                     </p>
                 )}
             </div>

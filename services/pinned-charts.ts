@@ -34,6 +34,22 @@ export interface PinnedChart {
   pinnedAt: number;
 }
 
+function normMatchId(id: unknown): string | undefined {
+  if (id == null || id === '') return undefined;
+  return String(id);
+}
+
+/** Chuẩn hoá id — API B365 đôi khi trả number, URL/query thì string. */
+function normalizePin(pin: PinnedChart): PinnedChart {
+  const matchId = normMatchId(pin.matchId);
+  if (!matchId) return pin;
+  return {
+    ...pin,
+    matchId,
+    sourceMatchId: normMatchId(pin.sourceMatchId),
+  };
+}
+
 /** Đọc danh sách ghim từ localStorage (validate tối thiểu, bọc try/catch). */
 export function loadPinnedCharts(): PinnedChart[] {
   try {
@@ -41,19 +57,28 @@ export function loadPinnedCharts(): PinnedChart[] {
     if (!raw) return [];
     const arr = JSON.parse(raw) as unknown;
     if (!Array.isArray(arr)) return [];
-    return arr.filter(
-      (e): e is PinnedChart =>
-        !!e && typeof e === 'object' && typeof (e as PinnedChart).matchId === 'string',
-    );
+    return arr
+      .filter(
+        (e): e is PinnedChart =>
+          !!e &&
+          typeof e === 'object' &&
+          (typeof (e as PinnedChart).matchId === 'string' ||
+            typeof (e as PinnedChart).matchId === 'number'),
+      )
+      .map((e) => normalizePin(e));
   } catch {
     return [];
   }
 }
 
 function samePinnedEntry(a: Pick<PinnedChart, 'matchId' | 'sourceMatchId'>, b: Pick<PinnedChart, 'matchId' | 'sourceMatchId'>): boolean {
-  if (a.matchId !== b.matchId) return false;
-  if (a.sourceMatchId && b.sourceMatchId) return a.sourceMatchId === b.sourceMatchId;
-  if (!a.sourceMatchId && !b.sourceMatchId) return true;
+  const aMatchId = normMatchId(a.matchId);
+  const bMatchId = normMatchId(b.matchId);
+  if (!aMatchId || !bMatchId || aMatchId !== bMatchId) return false;
+  const aSrc = normMatchId(a.sourceMatchId);
+  const bSrc = normMatchId(b.sourceMatchId);
+  if (aSrc && bSrc) return aSrc === bSrc;
+  if (!aSrc && !bSrc) return true;
   return false;
 }
 
@@ -64,14 +89,19 @@ export function isChartPinned(similarMatchId: string, sourceMatchId?: string): b
 
 /** Ghim của một trận đang xem (Dashboard). */
 export function loadPinnedChartsForMatch(sourceMatchId: string): PinnedChart[] {
-  return loadPinnedCharts().filter((p) => p.sourceMatchId === sourceMatchId);
+  const src = normMatchId(sourceMatchId);
+  if (!src) return [];
+  return loadPinnedCharts().filter((p) => p.sourceMatchId === src);
 }
 
-function save(list: PinnedChart[]): void {
-  const saved = safeSetItem(PINNED_CHARTS_KEY, JSON.stringify(list));
+function save(list: PinnedChart[]): boolean {
+  const normalized = list.map((p) => normalizePin(p));
+  const keepMatchId = normalized.find((p) => p.sourceMatchId)?.sourceMatchId;
+  const saved = safeSetItem(PINNED_CHARTS_KEY, JSON.stringify(normalized), { keepMatchId });
   if (saved) {
     window.dispatchEvent(new CustomEvent(PINNED_CHARTS_UPDATED_EVENT));
   }
+  return saved;
 }
 
 /**
@@ -79,16 +109,20 @@ function save(list: PinnedChart[]): void {
  * Khi ghim mới đẩy lên đầu danh sách, cắt bớt nếu vượt giới hạn.
  */
 export function togglePinnedChart(pin: PinnedChart): boolean {
+  const normalized = normalizePin(pin);
   const list = loadPinnedCharts();
-  const idx = list.findIndex((p) => samePinnedEntry(p, pin));
+  const idx = list.findIndex((p) => samePinnedEntry(p, normalized));
   if (idx >= 0) {
     list.splice(idx, 1);
-    save(list);
-    return false;
+    if (save(list)) return false;
+    return isChartPinned(normalized.matchId, normalized.sourceMatchId);
   }
-  const next = [{ ...pin, pinnedAt: pin.pinnedAt || Date.now() }, ...list].slice(0, PINNED_CHARTS_MAX);
-  save(next);
-  return true;
+  const next = [{ ...normalized, pinnedAt: normalized.pinnedAt || Date.now() }, ...list].slice(
+    0,
+    PINNED_CHARTS_MAX,
+  );
+  if (save(next)) return true;
+  return isChartPinned(normalized.matchId, normalized.sourceMatchId);
 }
 
 /** Bỏ ghim 1 trận tương tự (theo cặp sourceMatchId + matchId nếu có). */
