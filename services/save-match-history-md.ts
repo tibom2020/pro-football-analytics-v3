@@ -13,6 +13,13 @@ function triggerBrowserDownload(content: string, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
+/** Frontend deploy (Vercel/Railway static…) — không ghi server, chỉ tải xuống máy user. */
+function isDeployedFrontend(): boolean {
+  if (typeof window === 'undefined') return false;
+  const h = window.location.hostname;
+  return h !== 'localhost' && h !== '127.0.0.1';
+}
+
 export type MatchMarkdownSaveTarget = 'history' | 'live';
 
 export interface SaveMatchMarkdownResult {
@@ -24,8 +31,8 @@ export interface SaveMatchMarkdownResult {
 }
 
 /**
- * Gửi .md lên server AI. Mặc định ghi `History/`; `live` → `History_live/`.
- * Nếu thất bại → tải file xuống trình duyệt.
+ * Lưu .md: localhost → gửi server AI (`History/`); deploy → tải xuống thư mục Download.
+ * Nếu server lỗi trên localhost → fallback tải xuống trình duyệt.
  */
 export async function saveMatchMarkdown(
   matchId: string,
@@ -44,6 +51,11 @@ export async function saveMatchMarkdown(
       '_File được xuất tự động từ Pro Football Analytics (localStorage)._',
       '_File xuất từ Dashboard (live) — Pro Football Analytics._',
     );
+  }
+
+  if (isDeployedFrontend()) {
+    triggerBrowserDownload(markdown, filename);
+    return { ok: true, downloaded: true };
   }
 
   try {
