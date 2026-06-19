@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-16T12:51:54.783Z",
+  "generatedAt": "2026-06-19T14:38:31.852Z",
   "featureNames": [
     "minute",
     "half",
@@ -43,11 +43,11 @@
   ],
   "goalWindowMin": 5,
   "labelColumn": "goal_within_window",
-  "totalFiles": 600,
-  "parsed": 558,
+  "totalFiles": 639,
+  "parsed": 594,
   "failed": 6,
-  "totalRows": 29991,
-  "positiveRows": 4804,
+  "totalRows": 31414,
+  "positiveRows": 5022,
   "perMatch": [
     {
       "file": "match_10210731_Kolos-Kovalivka_vs_FC-Kudrivka_20260516-2043.md",
@@ -820,6 +820,13 @@
       "ftStatus": "FT"
     },
     {
+      "file": "match_11089884_Argentina_vs_Algeria_20260617-1555.md",
+      "matchId": "11089884",
+      "rows": 21,
+      "positives": 3,
+      "ftStatus": "FT"
+    },
+    {
       "file": "match_11089887_Belgium_vs_Egypt_20260616-0519.md",
       "matchId": "11089887",
       "rows": 46,
@@ -852,6 +859,27 @@
       "matchId": "11090015",
       "rows": 91,
       "positives": 4,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11090016_Uzbekistan_vs_Colombia_20260618-1454.md",
+      "matchId": "11090016",
+      "rows": 81,
+      "positives": 13,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11090018_Ghana_vs_Panama_20260618-0833.md",
+      "matchId": "11090018",
+      "rows": 47,
+      "positives": 2,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11090780_Mexico_vs_South-Korea_20260619-1048.md",
+      "matchId": "11090780",
+      "rows": 79,
+      "positives": 10,
       "ftStatus": "90'"
     },
     {
@@ -1049,6 +1077,13 @@
       "rows": 69,
       "positives": 5,
       "ftStatus": "FT"
+    },
+    {
+      "file": "match_11172077_AC-Oulu_vs_IFK-Mariehamn_20260618-1951.md",
+      "matchId": "11172077",
+      "rows": 81,
+      "positives": 10,
+      "ftStatus": "90'"
     },
     {
       "file": "match_11172098_FC-Lahti_vs_IFK-Mariehamn_20260516-2040.md",
@@ -1625,6 +1660,13 @@
       "ftStatus": "90'"
     },
     {
+      "file": "match_11288965_FC-Gareji_vs_SFC-Shturmi_20260618-0708.md",
+      "matchId": "11288965",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
       "file": "match_11298314_Grange-Thistle_vs_Souths-United_20260603-1632.md",
       "matchId": "11298314",
       "rows": 70,
@@ -1730,6 +1772,13 @@
       "ftStatus": "FT"
     },
     {
+      "file": "match_11322046_Tacoma-Defiance_vs_Houston-Dynamo-II_20260618-1454.md",
+      "matchId": "11322046",
+      "rows": 24,
+      "positives": 4,
+      "ftStatus": "90'"
+    },
+    {
       "file": "match_11322053_Austin-FC-II_vs_Los-Angeles-FC-II_20260608-2150.md",
       "matchId": "11322053",
       "rows": 20,
@@ -1755,6 +1804,13 @@
       "matchId": "11323265",
       "rows": 78,
       "positives": 5,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11323315_Brunswick-Juventus_vs_Bulleen-Lions_20260619-1926.md",
+      "matchId": "11323315",
+      "rows": 13,
+      "positives": 7,
       "ftStatus": "FT"
     },
     {
@@ -1891,6 +1947,13 @@
       "ftStatus": "FT"
     },
     {
+      "file": "match_11416736_Fortaleza_vs_America-MG_20260617-0755.md",
+      "matchId": "11416736",
+      "rows": 81,
+      "positives": 9,
+      "ftStatus": "FT"
+    },
+    {
       "file": "match_11417200_Gremio-Novorizontino_vs_Nautico_20260615-0750.md",
       "matchId": "11417200",
       "rows": 38,
@@ -1964,6 +2027,13 @@
       "file": "match_11431121_Bulleen-Lions-U23_vs_Port-Melbourne-U23_20260601-1832.md",
       "matchId": "11431121",
       "rows": 71,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11446517_West-Torrens-Birkalla-W_vs_Flinders-United-W_20260618-0708.md",
+      "matchId": "11446517",
+      "rows": 35,
       "positives": 0,
       "ftStatus": "90'"
     },
@@ -2178,6 +2248,13 @@
       "ftStatus": "90'"
     },
     {
+      "file": "match_11516093_Kairat-Almaty_vs_FK-Kyzylzhar_20260618-0708.md",
+      "matchId": "11516093",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
       "file": "match_11520068_FK-Ulytau_vs_FK-Zhenys_20260614-2115.md",
       "matchId": "11520068",
       "rows": 38,
@@ -2262,6 +2339,13 @@
       "ftStatus": "90'"
     },
     {
+      "file": "match_11595670_Guangzhou-Dandelion_vs_Hubei-Istar_20260619-2040.md",
+      "matchId": "11595670",
+      "rows": 41,
+      "positives": 12,
+      "ftStatus": "90'"
+    },
+    {
       "file": "match_11595768_Changchun-Xidu_vs_Qingdao-Red-Lions_20260607-2100.md",
       "matchId": "11595768",
       "rows": 42,
@@ -2281,6 +2365,20 @@
       "rows": 82,
       "positives": 10,
       "ftStatus": "FT"
+    },
+    {
+      "file": "match_11600996_Seoul-Amazones-W_vs_Mungyeong-Sangmu-Women_20260618-0708.md",
+      "matchId": "11600996",
+      "rows": 31,
+      "positives": 5,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11601050_Gyeongju-W_vs_Hwacheon-KSPO-W_20260618-0708.md",
+      "matchId": "11601050",
+      "rows": 34,
+      "positives": 5,
+      "ftStatus": "90'"
     },
     {
       "file": "match_11603507_Cianorte_vs_EC-Juventude_20260516-2116.md",
@@ -2504,6 +2602,13 @@
       "matchId": "11679834",
       "rows": 43,
       "positives": 5,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11682368_Iraq_vs_Norway_20260617-0755.md",
+      "matchId": "11682368",
+      "rows": 88,
+      "positives": 17,
       "ftStatus": "90'"
     },
     {
@@ -3221,6 +3326,62 @@
       "ftStatus": "FT"
     },
     {
+      "file": "match_11932215_Shanxi-Chongde-Ronghai_vs_Qingdao-West-Coast_20260619-1625.md",
+      "matchId": "11932215",
+      "rows": 0,
+      "positives": 0,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11932249_Lanzhou-Longyuan-Athleti_vs_Tianjin-Jinmen-Tigers_20260619-2040.md",
+      "matchId": "11932249",
+      "rows": 33,
+      "positives": 6,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11932250_Hangzhou-Linping-Wuyue_vs_Dalian-Young-Boy_20260619-2040.md",
+      "matchId": "11932250",
+      "rows": 47,
+      "positives": 5,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11932251_Dalian-Kewei_vs_Liaoning-Ironman_20260619-1624.md",
+      "matchId": "11932251",
+      "rows": 79,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11932252_Shanghai-Segenda_vs_Shanghai-Port_20260619-1624.md",
+      "matchId": "11932252",
+      "rows": 15,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_11932464_Guangdong-GZ-Power_vs_Beijing-Guoan_20260619-2040.md",
+      "matchId": "11932464",
+      "rows": 44,
+      "positives": 9,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11932466_Shenzhen-Juniors_vs_Shenzhen-Xinpengcheng_20260619-2040.md",
+      "matchId": "11932466",
+      "rows": 31,
+      "positives": 2,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_11932467_Shaanxi-Union_vs_Zhejiang_20260619-2040.md",
+      "matchId": "11932467",
+      "rows": 40,
+      "positives": 5,
+      "ftStatus": "90'"
+    },
+    {
       "file": "match_11936633_Philippines_vs_Myanmar_20260609-2032.md",
       "matchId": "11936633",
       "rows": 72,
@@ -3310,6 +3471,13 @@
       "rows": 21,
       "positives": 0,
       "ftStatus": "90'"
+    },
+    {
+      "file": "match_11951521_Redlands-United-U23_vs_Sunshine-Coast-Wanderers_20260618-0708.md",
+      "matchId": "11951521",
+      "rows": 3,
+      "positives": 0,
+      "ftStatus": "FT"
     },
     {
       "file": "match_11954577_Barracas-Central_vs_Huracan_20260603-1632.md",
@@ -3954,6 +4122,90 @@
       "rows": 27,
       "positives": 0,
       "ftStatus": "FT"
+    },
+    {
+      "file": "match_12046771_White-City-FK-Beograd_vs_West-Torrens-Birkalla_20260618-0708.md",
+      "matchId": "12046771",
+      "rows": 15,
+      "positives": 2,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12048518_Canberra-White-Eagles_vs_Canberra-Croatia-FC_20260618-0708.md",
+      "matchId": "12048518",
+      "rows": 20,
+      "positives": 5,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12048658_Nihon-University_vs_Ryutsu-Keizai-Dragons_20260617-1555.md",
+      "matchId": "12048658",
+      "rows": 18,
+      "positives": 4,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12050215_Central-Stallions_vs_FC-Ulaanbaatar_20260617-1601.md",
+      "matchId": "12050215",
+      "rows": 13,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12052336_Lyn-1896-U19_vs_Molde-U19_20260618-0708.md",
+      "matchId": "12052336",
+      "rows": 58,
+      "positives": 27,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12052338_Sandefjord-U19_vs_Stromsgodset-U19_20260618-0708.md",
+      "matchId": "12052338",
+      "rows": 28,
+      "positives": 10,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12052339_FK-Bodo-Glimt-U19_vs_Tromso-U19_20260618-0708.md",
+      "matchId": "12052339",
+      "rows": 54,
+      "positives": 5,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12052368_Shabab-Baalbak_vs_Risaleh-Toura_20260618-0708.md",
+      "matchId": "12052368",
+      "rows": 76,
+      "positives": 12,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12054197_Khovd-Western_vs_Khangarid-Klub_20260618-1621.md",
+      "matchId": "12054197",
+      "rows": 41,
+      "positives": 5,
+      "ftStatus": "90'"
+    },
+    {
+      "file": "match_12057766_Thailand-National-Sports_vs_Chulalongkorn-University_20260618-1655.md",
+      "matchId": "12057766",
+      "rows": 78,
+      "positives": 0,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12061423_BA-FC_vs_Nadroga-FC_20260619-1201.md",
+      "matchId": "12061423",
+      "rows": 44,
+      "positives": 20,
+      "ftStatus": "FT"
+    },
+    {
+      "file": "match_12069407_FC-Athlete_vs_FC-Kainda_20260619-2137.md",
+      "matchId": "12069407",
+      "rows": 30,
+      "positives": 4,
+      "ftStatus": "90'"
     }
   ]
 }
