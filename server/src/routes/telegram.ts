@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { generateBindCode } from '../telegram/bot.js';
+import { generateBindCode } from '../telegram/bind-codes.js';
 import { TelegramSender } from '../notification-service/telegram-sender.js';
 
 export function createTelegramRouter(sender: TelegramSender): Router {

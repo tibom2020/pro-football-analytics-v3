@@ -44,6 +44,8 @@ export interface SimilarMatchTabParams {
   label?: 0 | 1;
   /** Kết cục 30' sau tình huống. */
   label30?: 0 | 1;
+  /** Kết cục từ phút gọi đến hết hiệp hiện tại. */
+  labelHalf?: 0 | 1;
   similarity?: number;
   /** Snapshot features của tình huống tương tự tại phút đó — vẽ bảng so sánh. */
   feats?: Record<string, number>;
@@ -62,6 +64,7 @@ export function buildSimilarMatchTabUrl(p: SimilarMatchTabParams): string {
   if (p.ft) q.set('ft', p.ft);
   if (p.label != null) q.set('label', String(p.label));
   if (p.label30 != null) q.set('label30', String(p.label30));
+  if (p.labelHalf != null) q.set('labelHalf', String(p.labelHalf));
   if (p.similarity != null) q.set('sim', p.similarity.toFixed(3));
   if (p.feats) q.set('feats', JSON.stringify(p.feats));
   if (p.queryFeats) q.set('qfeats', JSON.stringify(p.queryFeats));
@@ -112,6 +115,7 @@ export function parseSimilarMatchTabParams(): SimilarMatchTabParams | null {
     ft: q.get('ft') ?? undefined,
     label: bin('label'),
     label30: bin('label30'),
+    labelHalf: bin('labelHalf'),
     similarity: num('sim'),
     feats: json('feats'),
     queryFeats: json('qfeats'),
@@ -167,7 +171,7 @@ export const SimilarMatchTabPage: React.FC<{ params: SimilarMatchTabParams }> = 
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-slate-950 text-gray-900 dark:text-gray-100">
-      <div className="max-w-6xl mx-auto p-3 sm:p-4 space-y-3">
+      <div className="max-w-6xl mx-auto p-3 sm:p-4 space-y-5">
         {/* Header thông tin trận */}
         <div className="bg-white dark:bg-slate-900 rounded-xl shadow px-4 py-3">
           <div className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">{teamLine}</div>
@@ -206,6 +210,17 @@ export const SimilarMatchTabPage: React.FC<{ params: SimilarMatchTabParams }> = 
               }`}
             >
               {params.label30 == null ? '30p sau: chưa rõ' : params.label30 === 1 ? '30p sau: CÓ BÀN' : '30p sau: không có bàn'}
+            </span>
+            <span
+              className={`text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${
+                params.labelHalf == null
+                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
+                  : params.labelHalf === 1
+                    ? 'bg-amber-500 text-white'
+                    : 'bg-slate-300 dark:bg-slate-600 text-slate-700 dark:text-slate-100'
+              }`}
+            >
+              {params.labelHalf == null ? 'đến hết hiệp: chưa rõ' : params.labelHalf === 1 ? 'đến hết hiệp: CÓ BÀN' : 'đến hết hiệp: không có bàn'}
             </span>
             {params.similarity != null && (
               <span className="text-[10px] text-gray-500 dark:text-gray-400">độ giống {params.similarity.toFixed(2)}</span>
@@ -260,7 +275,7 @@ export const SimilarMatchTabPage: React.FC<{ params: SimilarMatchTabParams }> = 
         )}
 
         {/* Biểu đồ kèo cả trận H1 / H2 */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl shadow p-3 space-y-3">
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow p-3 sm:p-4 space-y-5">
           <div className="text-sm font-bold text-gray-900 dark:text-white px-1">
             Kèo Tài/Xỉu (1_3) + Đội nhà (1_2) &amp; Dòng thời gian API
           </div>

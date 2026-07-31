@@ -40,6 +40,8 @@ describe('getOddsHistory13 dataset fallback', () => {
         expect(data!.matchId).toBe('11175647');
         expect(data!.odds.length).toBe(3);
         expect(data!.odds12.length).toBe(3);
+        expect(data!.odds16).toEqual([]);
+        expect(data!.odds15).toEqual([]);
         expect(data!.events.filter((e) => e.type === 'goal')).toHaveLength(2);
         expect(data!.stats).toEqual([]);
     });

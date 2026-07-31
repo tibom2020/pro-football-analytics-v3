@@ -1,5 +1,5 @@
 import { AI_SERVER_URL } from './ai-service';
-import { buildMatchMarkdownFromStorage } from './match-markdown-export';
+import { buildMatchMarkdownFromStorage, markMatchMdExported } from './match-markdown-export';
 
 function triggerBrowserDownload(content: string, filename: string): void {
   const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
@@ -55,6 +55,7 @@ export async function saveMatchMarkdown(
 
   if (isDeployedFrontend()) {
     triggerBrowserDownload(markdown, filename);
+    markMatchMdExported(matchId);
     return { ok: true, downloaded: true };
   }
 
@@ -66,6 +67,7 @@ export async function saveMatchMarkdown(
     });
     if (res.ok) {
       const data = (await res.json()) as { path?: string };
+      markMatchMdExported(matchId);
       return { ok: true, serverPath: data.path };
     }
     console.warn('[saveMatchMarkdown] Server trả', res.status, '— tải xuống thay thế');
@@ -77,5 +79,6 @@ export async function saveMatchMarkdown(
   }
 
   triggerBrowserDownload(markdown, filename);
+  markMatchMdExported(matchId);
   return { ok: true, downloaded: true };
 }

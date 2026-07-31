@@ -3,19 +3,12 @@ import { config } from '../config.js';
 import { TelegramSender } from '../notification-service/telegram-sender.js';
 import { ChatOrchestrator } from '../chat-orchestrator/orchestrator.js';
 import { OddsMonitor } from '../odds-monitor/monitor.js';
-import { logger } from '../index.js';
-import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../logger.js';
 import { saveTelegramBindings } from '../data/telegram-persistence.js';
 import { BetDraftStore, BetFlowController, type BetFlowReply } from './bet-flow.js';
+import { consumeBindCode, generateBindCode } from './bind-codes.js';
 
-// Bind codes: temporary tokens for linking Telegram chat to app user
-const bindCodes = new Map<string, { userId: string; expiresAt: number }>();
-
-export function generateBindCode(userId: string): string {
-  const code = uuidv4().slice(0, 8).toUpperCase();
-  bindCodes.set(code, { userId, expiresAt: Date.now() + 10 * 60 * 1000 }); // 10 min TTL
-  return code;
-}
+export { generateBindCode } from './bind-codes.js';
 
 /** Result của initTelegramBot — caller có thể tắt cleanup khi shutdown. */
 export interface TelegramBotHandle {
@@ -109,23 +102,16 @@ export function initTelegramBot(
       return;
     }
 
-    const bindInfo = bindCodes.get(code);
-    if (!bindInfo) {
+    const consumed = consumeBindCode(code);
+    if (!consumed) {
       bot.sendMessage(chatId, '❌ Mã không hợp lệ hoặc đã hết hạn. Vui lòng tạo mã mới từ web app.');
       return;
     }
 
-    if (bindInfo.expiresAt < Date.now()) {
-      bindCodes.delete(code);
-      bot.sendMessage(chatId, '❌ Mã đã hết hạn. Vui lòng tạo mã mới.');
-      return;
-    }
-
-    sender.bindUser(bindInfo.userId, chatId);
+    sender.bindUser(consumed.userId, chatId);
     saveTelegramBindings(sender);
-    bindCodes.delete(code);
     bot.sendMessage(chatId, '✅ Liên kết thành công! Bạn sẽ nhận được cảnh báo kèo tại đây.');
-    logger.info(`Telegram bound: user=${bindInfo.userId} chat=${chatId}`);
+    logger.info(`Telegram bound: user=${consumed.userId} chat=${chatId}`);
   });
 
   bot.onText(/\/unbind/, (msg) => {

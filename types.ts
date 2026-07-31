@@ -9,6 +9,12 @@ export interface MatchInfo {
   time: string; // "45"
   timer?: { tm: number; ts: number; tt: string; ta: number; md: number };
   stats?: Record<string, string[]>; // "attacks": ["10", "5"]
+  /**
+   * Tỷ số theo hiệp từ feed B365 (key = số hiệp: "1" = H1, "2" = H2 …).
+   * `scores["1"]` = tỷ số cuối H1 (halftime) — nguồn đáng tin nhất để biết số bàn H1
+   * (chính xác hơn suy từ gameEvents khi mở trận muộn / bàn sát giờ nghỉ).
+   */
+  scores?: Record<string, { home: string; away: string }>;
 }
 
 export interface ProcessedStats {

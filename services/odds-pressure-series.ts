@@ -10,6 +10,36 @@ import type {
 import type { MatchHalf } from './matchTimeline';
 import { resolveMatchHalfForUI } from './matchTimeline';
 
+/** Góc nhìn đội chấp từ snapshot API (handicap theo đội nhà). */
+export interface AsianHandicapChapView {
+  /** HDP âm của đội chấp (luôn ≤ 0). */
+  handicap: number;
+  odds: number;
+  side: 'home' | 'away';
+}
+
+/** HDP âm trên trục Y — từ line API theo đội nhà. */
+export function chapTeamHandicapFromHomeLine(homeLine: number): number {
+  return homeLine > 0.001 ? -homeLine : homeLine;
+}
+
+export function resolveAsianHandicapChapTeamView(
+  snap: Pick<AsianHandicapMinuteSnapshot, 'handicap' | 'home' | 'away'>,
+): AsianHandicapChapView {
+  const homeLine =
+    typeof snap.handicap === 'number' ? snap.handicap : parseFloat(String(snap.handicap));
+  if (homeLine > 0.001) {
+    return { handicap: -homeLine, odds: snap.away, side: 'away' };
+  }
+  return { handicap: homeLine, odds: snap.home, side: 'home' };
+}
+
+export type AsianHandicapChapChartPoint = ColoredHandicapPoint & {
+  homeLine: number;
+  chapOdds: number;
+  chapSide: 'home' | 'away';
+};
+
 export function colorOddsSeriesForPressure(
   rawOdds: readonly (OverUnderMinuteSnapshot | AsianHandicapMinuteSnapshot)[],
 ): ColoredHandicapPoint[] {
@@ -50,6 +80,84 @@ export function colorOddsSeriesForPressure(
       colorName,
       highlight: false,
     } as ColoredHandicapPoint;
+  });
+
+  for (let i = 0; i <= coloredPoints.length - 3; i++) {
+    const [b1, b2, b3] = [coloredPoints[i], coloredPoints[i + 1], coloredPoints[i + 2]];
+    const isAllRed = b1.colorName === 'red' && b2.colorName === 'red' && b3.colorName === 'red';
+    const isWithinTime = b3.minute - b1.minute < 8;
+
+    if (isAllRed && isWithinTime) {
+      b1.highlight = b2.highlight = b3.highlight = true;
+    }
+  }
+
+  return coloredPoints;
+}
+
+/**
+ * Màu bong bóng + tọa độ chart kèo chấp (1_2 / 1_5) theo **đội chấp**:
+ * trục Y = HDP âm của đội chấp; giá bong bóng = odds đội chấp.
+ * Đội chấp: tăng → xanh, giảm → đỏ. Đồng banh (HDP=0): giảm → xanh, tăng → đỏ.
+ */
+export function colorOddsSeriesForAsianHandicapHome(
+  rawOdds: readonly AsianHandicapMinuteSnapshot[],
+): AsianHandicapChapChartPoint[] {
+  if (!rawOdds || rawOdds.length === 0) return [];
+
+  const sortedPoints = [...rawOdds].sort((a, b) => a.minute - b.minute);
+
+  const coloredPoints: AsianHandicapChapChartPoint[] = sortedPoints.map((point, index) => {
+    let color = '#94a3b8';
+    let colorName = 'gray';
+    const homeLine =
+      typeof point.handicap === 'number' ? point.handicap : parseFloat(String(point.handicap));
+    const chap = resolveAsianHandicapChapTeamView(point);
+    const prevPoint = index > 0 ? sortedPoints[index - 1] : null;
+
+    if (prevPoint) {
+      const prevHomeLine =
+        typeof prevPoint.handicap === 'number'
+          ? prevPoint.handicap
+          : parseFloat(String(prevPoint.handicap));
+      const prevChap = resolveAsianHandicapChapTeamView(prevPoint);
+      const isLineChanged = Math.abs(homeLine - prevHomeLine) > 0.001;
+
+      if (
+        !isLineChanged &&
+        Number.isFinite(chap.odds) &&
+        Number.isFinite(prevChap.odds)
+      ) {
+        const diff = chap.odds - prevChap.odds;
+        const isLevelBall = Math.abs(homeLine) <= 0.001;
+        if (isLevelBall) {
+          if (diff < -0.001) {
+            color = '#10b981';
+            colorName = 'green';
+          } else if (diff > 0.001) {
+            color = '#ef4444';
+            colorName = 'red';
+          }
+        } else if (diff > 0.001) {
+          color = '#10b981';
+          colorName = 'green';
+        } else if (diff < -0.001) {
+          color = '#ef4444';
+          colorName = 'red';
+        }
+      }
+    }
+
+    return {
+      ...point,
+      homeLine,
+      handicap: chap.handicap,
+      chapOdds: chap.odds,
+      chapSide: chap.side,
+      color,
+      colorName,
+      highlight: false,
+    };
   });
 
   for (let i = 0; i <= coloredPoints.length - 3; i++) {
@@ -259,16 +367,59 @@ export function calculateOddsYAxisConfig(
   return { domain: [minDomain, maxDomain], ticks };
 }
 
-/** UI đã vào hiệp 2: kèo full trận (1_3/1_2) gắn half theo phút 45. */
+/** Trục Y kèo chấp 1_2/1_5 — HDP âm đội chấp; mặc định [-1, 0] khi chưa có dữ liệu. */
+export function calculateAhChapYAxisConfig(
+  chartData: { handicap?: number }[],
+  domainFallback?: { handicap?: number }[],
+): { domain: number[]; ticks: number[] } {
+  const buildTicks = (lo: number, hi: number) => {
+    const t: number[] = [];
+    for (let i = lo; i <= hi; i = parseFloat((i + 0.25).toFixed(2))) {
+      if (t.length > 100) break;
+      t.push(i);
+    }
+    return t;
+  };
+
+  const hasData =
+    chartData.some((d) => typeof d.handicap === 'number' && isFinite(d.handicap)) ||
+    (domainFallback?.some((d) => typeof d.handicap === 'number' && isFinite(d.handicap)) ?? false);
+
+  if (!hasData) {
+    return { domain: [-1, 0], ticks: buildTicks(-1, 0) };
+  }
+
+  const cfg = calculateOddsYAxisConfig(chartData, null, domainFallback);
+  const maxDomain = Math.min(0, cfg.domain[1] ?? 0);
+  const minDomain = cfg.domain[0] ?? -1;
+  const ticks = buildTicks(minDomain, maxDomain);
+  if (ticks.length <= 1) {
+    return { domain: [-1, 0], ticks: buildTicks(-1, 0) };
+  }
+  return { domain: [minDomain, maxDomain], ticks };
+}
+
+/** UI đã vào hiệp 2: gắn half cho kèo full trận — giữ bù H1 (half=1, phút≥45) trên biểu đồ H1. */
 export function applyHalfFromMinuteForFullMatchOdds<T extends { minute: number; half?: MatchHalf }>(
   rows: T[],
   inSecondHalf: boolean,
 ): T[] {
-  if (!inSecondHalf || rows.length === 0) return rows;
-  return rows.map((p) => ({
-    ...p,
-    half: (p.minute < 45 ? 1 : 2) as MatchHalf,
-  }));
+  if (rows.length === 0) return rows;
+
+  if (!inSecondHalf) {
+    return rows.map((p) => ({ ...p, half: 1 as MatchHalf }));
+  }
+
+  return rows.map((p) => {
+    const tagged = p.half;
+    if (tagged === 1 && p.minute >= 45 && p.minute < 50) {
+      return { ...p, half: 1 as MatchHalf };
+    }
+    return {
+      ...p,
+      half: (p.minute < 45 ? 1 : 2) as MatchHalf,
+    };
+  });
 }
 
 export function buildDropSeries(
@@ -299,6 +450,19 @@ function minuteTicks(lo: number, hi: number, step: number): number[] {
   return out;
 }
 
+/** Trục X tối đa hiệp 1 (0…X) — 45' + bù giờ WC 2026 thường 6–12'. */
+export const CHART_H1_MINUTE_MAX = 63;
+/** Trục X tối đa hiệp 2 (45…X) — 90' + bù giờ tương tự. */
+export const CHART_H2_MINUTE_MAX = 112;
+
+/** Cuối trục X mỗi hiệp — thêm vài phút đệm phía phải so với dữ liệu/đồng hồ. */
+export function halfChartDomainMax(half: 1 | 2, fromDataMinute: number): number {
+  const base = half === 1 ? 45 : 90;
+  const cap = half === 1 ? CHART_H1_MINUTE_MAX : CHART_H2_MINUTE_MAX;
+  const pad = half === 1 ? 2 : 3;
+  return Math.min(cap, Math.max(base, fromDataMinute + pad));
+}
+
 function h1DomainMax(
   marketChartDataH1: ColoredHandicapPoint[],
   homeMarketChartDataH1: ColoredHandicapPoint[],
@@ -313,7 +477,7 @@ function h1DomainMax(
     apiMax,
     !inSecondHalf ? clockTm : 0,
   );
-  return Math.min(58, Math.max(45, fromData + 1));
+  return halfChartDomainMax(1, fromData);
 }
 
 function h2DomainMax(
@@ -330,7 +494,7 @@ function h2DomainMax(
     apiMax,
     inSecondHalf ? clockTm : 45,
   );
-  return Math.min(105, Math.max(90, fromData + 2));
+  return halfChartDomainMax(2, fromData);
 }
 
 /** apiChartData H1/H2 optional — khi export không có API timeline, truyền 0. */
@@ -367,7 +531,7 @@ export function computeOuDropIntensityPack(ctx: DropSeriesContext): OuDropIntens
 
   const marketChartData = applyHalfFromMinuteForFullMatchOdds(colorOddsSeriesForPressure(ou1_3), inSecondHalf);
   const homeMarketChartData = applyHalfFromMinuteForFullMatchOdds(
-    colorOddsSeriesForPressure(ah1_2),
+    colorOddsSeriesForAsianHandicapHome(ah1_2),
     inSecondHalf,
   );
 
@@ -387,12 +551,12 @@ export function computeOuDropIntensityPack(ctx: DropSeriesContext): OuDropIntens
   const drops1_3H2 = buildDropSeries(marketChartDataH2, 45, h2Dom, capH2);
 
   const halfMarketOu = colorOddsSeriesForPressure(ou1_6);
-  const halfMarketAh = colorOddsSeriesForPressure(ah1_5);
+  const halfMarketAh = colorOddsSeriesForAsianHandicapHome(ah1_5);
   const ouMaxH = halfMarketOu.length > 0 ? Math.max(...halfMarketOu.map((p) => p.minute)) : 0;
   const ahMaxH = halfMarketAh.length > 0 ? Math.max(...halfMarketAh.map((p) => p.minute)) : 0;
-  const h1HalfDom = Math.min(
-    58,
-    Math.max(45, Math.max(ouMaxH, ahMaxH, apiH1, !inSecondHalf ? clockTm : 0) + 1),
+  const h1HalfDom = halfChartDomainMax(
+    1,
+    Math.max(ouMaxH, ahMaxH, apiH1, !inSecondHalf ? clockTm : 0),
   );
   const capHalf = isFt ? h1HalfDom : !inSecondHalf ? clockTm : h1HalfDom;
 

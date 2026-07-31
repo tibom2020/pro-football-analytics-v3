@@ -19,6 +19,7 @@ interface GameEvent {
   minute: number;
   half: MatchHalf;
   type: 'goal' | 'corner';
+  team?: 'home' | 'away';
 }
 
 /** Vạch mở 1_3 đầu H1/H2 — mirror server OpeningLinesRef. */
@@ -44,6 +45,8 @@ export interface PredictGoalResult {
     label: 0 | 1;
     /** Nhãn "có bàn trong 30' sau" (từ dataset 30') — undefined nếu server không tra được. */
     label30?: 0 | 1;
+    /** Nhãn "có bàn từ phút gọi đến hết hiệp" (từ dataset chính) — undefined nếu thiếu. */
+    labelHalf?: 0 | 1;
     similarity: number;
     /** Tên 2 đội + trạng thái (từ meta dataset) — có thể thiếu nếu server chưa nạp meta. */
     home?: string;
@@ -53,11 +56,19 @@ export interface PredictGoalResult {
     features?: Record<string, number>;
     /** Xác suất có bàn 30' theo model chính tại phút tương tự (null nếu model chưa load). */
     prob30?: number | null;
+    /** Vạch mở 1_3 cùng hiệp (openLine mode). */
+    matchedOpenHalves?: 'H1' | 'H2';
+    h1OpenOu13?: number;
+    h2OpenOu13?: number;
+    h1OpenAh12?: number;
+    h2OpenAh12?: number;
   }>;
   /** Feature THẬT của trận đang xem — popup "Chi tiết" so sánh tình huống tương tự với trận này. */
   queryFeatures?: Record<string, number>;
   /** Vạch mở hiệp 1_3 H1/H2 của trận đang xem. */
   openingLines?: OpeningLinesRef;
+  /** Khi thiếu vạch mở 1_3 hiệp đang xem — similarMatches có thể rỗng. */
+  openingLineNotice?: string;
   /** Heuristic reason — sinh ngay sau ONNX (không cần LLM). */
   reasonVi: string;
   modelMeta: {
@@ -226,6 +237,7 @@ interface ServerEventEntry {
   clockMinute: number;
   half: 1 | 2;
   type: 'goal' | 'corner';
+  team?: 'home' | 'away';
 }
 
 function processedStatsToServerRow(
@@ -277,10 +289,31 @@ function convertAhOdds(arr: AsianHandicapMinuteSnapshot[]): ServerOddsSnap[] {
   }));
 }
 
+/**
+ * Số bàn H1 của trận đang xem — ưu tiên tỷ số hiệp 1 từ feed (`scores["1"]`, đáng tin nhất kể cả
+ * khi mở trận muộn), fallback đếm bàn theo PHÚT ≤ 45 (bền hơn cờ `half` bị gán nhầm sát giờ nghỉ).
+ * `known=true` chỉ khi lấy được từ feed → route áp điều kiện chắc chắn; ngược lại route tự xét mở-trận-muộn.
+ */
+function liveH1Goals(m: MatchInfo, events: GameEvent[]): { goals: number; known: boolean } {
+  const s1 = m.scores?.['1'];
+  if (s1) {
+    const h = parseInt(String(s1.home ?? ''), 10);
+    const a = parseInt(String(s1.away ?? ''), 10);
+    if (Number.isFinite(h) && Number.isFinite(a)) return { goals: h + a, known: true };
+  }
+  const goals = events.filter((e) => e.type === 'goal' && e.minute <= 45).length;
+  return { goals, known: false };
+}
+
 function convertEvents(events: GameEvent[]): ServerEventEntry[] {
   return events
     .filter((e) => e.type === 'goal' || e.type === 'corner')
-    .map((e) => ({ clockMinute: e.minute, half: e.half as 1 | 2, type: e.type }));
+    .map((e) => ({
+      clockMinute: e.minute,
+      half: e.half as 1 | 2,
+      type: e.type,
+      ...(e.team ? { team: e.team } : {}),
+    }));
 }
 
 function convertAlerts(alerts: StoredAlert[]): ServerAlertEntry[] {
@@ -459,6 +492,14 @@ export interface MinuteStatRow {
   corners: [number, number];
 }
 
+/** Nhận định người dùng (mirror server UserNote). */
+export interface UserNoteLite {
+  minute: number;
+  half: 1 | 2;
+  verdict: 'yes' | 'no' | null;
+  text: string;
+}
+
 export interface OddsHistory13Data {
   matchId: string;
   homeName: string;
@@ -467,9 +508,14 @@ export interface OddsHistory13Data {
   finalScore: string;
   odds: OddsHistoryPoint[];
   odds12: AhHistoryPoint[];
-  events: Array<{ minute: number; half: 1 | 2; type: 'goal' | 'corner' }>;
+  /** OU hiệp 1 (1_6) — optional để tương thích response cũ. */
+  odds16?: OddsHistoryPoint[];
+  /** AH hiệp 1 (1_5). */
+  odds15?: AhHistoryPoint[];
+  events: Array<{ minute: number; half: 1 | 2; type: 'goal' | 'corner'; team?: 'home' | 'away' }>;
   alerts: Array<{ minute: number; half: 1 | 2; type: string; pressure: number }>;
   stats: MinuteStatRow[];
+  userNotes?: UserNoteLite[];
 }
 
 export type FetchOddsHistoryResult =
@@ -583,40 +629,198 @@ export type SimilarMatchFull = PredictGoalResult['similarMatches'][number] & {
   finalScore?: string;
   league?: string;
   totals?: CumulativeTotals | null;
+  /** Catalog vạch mở: cùng hiệp H1↔H1 hoặc H2↔H2. */
+  matchedOpenHalves?: 'H1' | 'H2';
+  h1OpenOu13?: number;
+  h2OpenOu13?: number;
+  h1OpenAh12?: number;
+  h2OpenAh12?: number;
+  openAh12MismatchNote?: string;
+  ou13LineRuns?: string;
+  lineRunsScore?: number;
 };
 
-export type FetchSimilarResult =
-  | {
-      ok: true;
-      data: {
-        queryFeatures?: Record<string, number>;
-        openingLines?: OpeningLinesRef;
-        /** Cách cũ: vạch snapshot T/X + chấp + sim. */
-        similarMatches: SimilarMatchFull[];
-        /** Cách mới: vạch mở hiệp H1/H2 + bonus 2 hiệp. */
-        similarMatchesOpenLine?: SimilarMatchFull[];
-        currentTotals?: CumulativeTotals | null;
-      };
-    }
-  | { ok: false; error: string };
+const OPEN_LINE_EPS = 1e-6;
+
+/** Khớp vạch kèo mở (mirror server openLineHandicapMatch). */
+export function openLineHandicapMatch(a: number, b: number): boolean {
+  return Math.abs(a - b) < OPEN_LINE_EPS;
+}
+
+/** Kèo chấp: khớp |HDP| — bỏ dấu +/− (mirror server openLineAhMagnitudeMatch). */
+export function openLineAhMagnitudeMatch(a: number, b: number): boolean {
+  return Math.abs(Math.abs(a) - Math.abs(b)) < OPEN_LINE_EPS;
+}
+
+export function catalogQueryHalf(
+  currentHalf: number | undefined,
+  queryFeatures?: Record<string, number>,
+): 1 | 2 {
+  const h = currentHalf ?? queryFeatures?.half;
+  return Number(h) === 2 ? 2 : 1;
+}
+
+export function catalogQueryOpenOu13(
+  openingLines: OpeningLinesRef | undefined,
+  queryHalf: 1 | 2,
+): number | undefined {
+  const line = queryHalf === 1 ? openingLines?.h1OpenOu13 : openingLines?.h2OpenOu13;
+  return Number.isFinite(line) ? line : undefined;
+}
 
 /**
- * Lấy top-N tình huống tương tự (cùng/gần vạch kèo) kèm tỷ số FT để hiển thị bảng
- * so sánh trong modal. Gọi khi user mở modal "Xem tất cả".
+ * Catalog "vạch mở 1_3 cùng hiệp" — chỉ giữ trận có vạch mở 1_3 **cùng hiệp**
+ * trùng tuyệt đối với trận đang xem (H1↔H1 hoặc H2↔H2).
  */
-export async function fetchSimilarMatches(
+export function filterSimilarCatalogByOpenLine(
+  matches: SimilarMatchFull[],
+  openingLines: OpeningLinesRef | undefined,
+  queryHalf: 1 | 2,
+): SimilarMatchFull[] {
+  const qLine = catalogQueryOpenOu13(openingLines, queryHalf);
+  if (qLine == null) return [];
+  return matches.filter((m) => {
+    const candLine = queryHalf === 1 ? m.h1OpenOu13 : m.h2OpenOu13;
+    return Number.isFinite(candLine) && openLineHandicapMatch(candLine!, qLine);
+  });
+}
+
+/** Tổng hợp định lượng nhãn "có bàn trong 30'" của 1 nhóm trận (mirror server). */
+export interface Label30Stats {
+  total: number;
+  hits: number;
+  rate: number;
+  unknown: number;
+}
+
+/** Đánh giá AI (DeepSeek) cho nhóm trận tương tự (mirror server). */
+export interface AiSimilarEvaluation {
+  topMatches: Array<{
+    matchId: string;
+    team: string;
+    ft?: string;
+    ou13LineRuns?: string;
+    label30?: 0 | 1;
+    labelHalf?: 0 | 1;
+    reasonVi: string;
+  }>;
+  lean: 'over' | 'under' | 'neutral';
+  confidence: 'low' | 'medium' | 'high';
+  summaryVi: string;
+  caveats?: string[];
+  topMatchesLabel30?: Label30Stats;
+  /** Tỷ lệ "có bàn đến hết hiệp" của nhóm trận AI chọn. */
+  topMatchesLabelHalf?: Label30Stats;
+  council?: {
+    devilsAdvocate: string;
+    firstPrinciples: string;
+    opportunityExpander: string;
+    outsider: string;
+    executor: string;
+    finalConclusion: string;
+  };
+  model?: string;
+  durationMs?: number;
+}
+
+/** RAG "% có bàn theo hiệp" (mirror server HalfGoalStats). */
+export interface HalfGoalMatchRef {
+  matchId: string;
+  home?: string;
+  away?: string;
+  ftStatus?: string;
+  finalScore?: string;
+  goals: number;
+  hasGoal: 0 | 1;
+  openAh12?: number;
+}
+
+export interface HalfGoalStats {
+  half: 1 | 2;
+  openOu13: number;
+  conditionedOnPriorHalf: boolean;
+  /** Số bàn H1 thực tế của trận đang xem — điều kiện lọc (chỉ có khi conditionedOnPriorHalf). */
+  priorHalfGoals?: number;
+  /** true = mở trận muộn, không xác định được số bàn H1 (số liệu là KHÔNG điều kiện). */
+  priorHalfUnknown?: boolean;
+  /** true = không có trận cùng số bàn H1 → đã hạ điều kiện, số liệu là chung cho vạch này. */
+  priorHalfNoMatch?: boolean;
+  total: number;
+  hits: number;
+  rate: number;
+  goalsAvg: number;
+  dist: { zero: number; one: number; twoPlus: number };
+  ahSoft?: { openAh12: number; total: number; hits: number; rate: number };
+  matches: HalfGoalMatchRef[];
+}
+
+/** Dữ liệu RAG 3 tầng trả về từ /similar (và /similar/evaluate). */
+export interface SimilarMatchesData {
+  queryFeatures?: Record<string, number>;
+  openingLines?: OpeningLinesRef;
+  /** Khi thiếu vạch mở 1_3 hiệp đang xem. */
+  openingLineNotice?: string;
+  /** Top theo vạch mở hiệp H1/H2. */
+  similarMatchesOpenLine?: SimilarMatchFull[];
+  /** Tất cả trận có vạch mở 1_3 đầu H1/H2 trùng với trận đang xem. */
+  similarMatchesOpenLineCatalog?: SimilarMatchFull[];
+  /** Catalog + pattern thời gian giữ từng vạch 1_3 gần giống nhau. */
+  similarMatchesOpenLineCatalogRuns?: SimilarMatchFull[];
+  /** RAG "% có bàn theo hiệp" theo vạch mở T/X (+ điều kiện hiệp trước, kèo chấp mềm). */
+  halfGoalStats?: HalfGoalStats;
+  /** Pattern vạch trận đang xem (vd. 2.5×5p · 2.25×6p). */
+  queryOu13LineRuns?: string;
+  currentTotals?: CumulativeTotals | null;
+  /** Chỉ có ở /similar/evaluate: đánh giá AI + tỷ lệ label30 theo tầng. */
+  aiEvaluation?: AiSimilarEvaluation | null;
+  aiDisabledReason?: string;
+  label30ByTier?: Record<'openLine' | 'catalog' | 'catalogRuns', Label30Stats>;
+  /** Tỷ lệ "có bàn đến hết hiệp" theo tầng (chỉ có ở /similar/evaluate). */
+  labelHalfByTier?: Record<'openLine' | 'catalog' | 'catalogRuns', Label30Stats>;
+}
+
+export type FetchSimilarResult =
+  | { ok: true; data: SimilarMatchesData }
+  | { ok: false; error: string };
+
+/** Context khi auto-chụp similar (đổi line 1_3 hoặc override half/minute). */
+export interface SimilarCaptureContext {
+  trigger?: 'ou_line_change';
+  half: 1 | 2;
+  minute: number;
+  lineChange?: { prevHandicap: number; newHandicap: number };
+}
+
+/** Lõi gọi /similar hoặc /similar/evaluate — khác nhau ở endpoint + timeout. */
+async function fetchSimilarBase(
+  endpoint: 'similar' | 'similar/evaluate',
   input: PredictGoalInput,
-  limit = 20,
+  limit: number,
+  timeoutMs: number,
   signal?: AbortSignal,
   queryFeatures?: Record<string, number>,
+  captureCtx?: SimilarCaptureContext,
 ): Promise<FetchSimilarResult> {
-  // Gửi kèm queryFeatures (đã build lúc predict) để server khỏi dựng lại feature vector
-  // — tránh lỗi "không đủ stats" khi mở modal lúc state live thiếu dữ liệu.
-  const body = { ...buildServerBody(input), ...(queryFeatures ? { queryFeatures } : {}) };
-  const url = `${AI_SERVER_URL}/api/ai/predict-goal/similar?limit=${limit}`;
+  const base = buildServerBody(input);
+  const h1 = liveH1Goals(input.liveMatch, input.gameEvents);
+  const body: Record<string, unknown> = {
+    ...base,
+    half: captureCtx?.half ?? base.half,
+    minute: captureCtx?.minute ?? base.minute,
+    priorHalfGoals: h1.goals,
+    priorHalfGoalsKnown: h1.known,
+    ...(queryFeatures ? { queryFeatures } : {}),
+  };
+  if (captureCtx?.trigger === 'ou_line_change' && captureCtx.lineChange) {
+    body.evaluateContext = {
+      trigger: 'ou_line_change',
+      lineChange: captureCtx.lineChange,
+    };
+  }
+  const url = `${AI_SERVER_URL}/api/ai/predict-goal/${endpoint}?limit=${limit}`;
   try {
     const ctrl = new AbortController();
-    const timeoutId = setTimeout(() => ctrl.abort(), 15_000);
+    const timeoutId = setTimeout(() => ctrl.abort(), timeoutMs);
     const onAbort = (): void => ctrl.abort();
     signal?.addEventListener('abort', onAbort);
     try {
@@ -630,13 +834,7 @@ export async function fetchSimilarMatches(
         const txt = await res.text().catch(() => '');
         return { ok: false, error: `Server ${res.status} ${res.statusText}${txt ? ` — ${txt.slice(0, 240)}` : ''}` };
       }
-      const data = (await res.json()) as {
-        queryFeatures?: Record<string, number>;
-        openingLines?: OpeningLinesRef;
-        similarMatches: SimilarMatchFull[];
-        similarMatchesOpenLine?: SimilarMatchFull[];
-        currentTotals?: CumulativeTotals | null;
-      };
+      const data = (await res.json()) as SimilarMatchesData;
       return { ok: true, data };
     } finally {
       clearTimeout(timeoutId);
@@ -645,8 +843,37 @@ export async function fetchSimilarMatches(
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     const isAbort = msg.includes('abort') || (e as Error)?.name === 'AbortError';
-    return { ok: false, error: isAbort ? 'Yêu cầu bị huỷ' : `Lỗi gọi /similar: ${msg}` };
+    return { ok: false, error: isAbort ? 'Yêu cầu bị huỷ' : `Lỗi gọi /${endpoint}: ${msg}` };
   }
+}
+
+/**
+ * Lấy top-N tình huống tương tự (cùng/gần vạch kèo) kèm tỷ số FT — chỉ RAG, không gọi AI.
+ * Dùng khi cần phản hồi nhanh; modal "Tương tự" dùng fetchSimilarMatchesWithAi.
+ */
+export function fetchSimilarMatches(
+  input: PredictGoalInput,
+  limit = 20,
+  signal?: AbortSignal,
+  queryFeatures?: Record<string, number>,
+  captureCtx?: SimilarCaptureContext,
+): Promise<FetchSimilarResult> {
+  return fetchSimilarBase('similar', input, limit, 15_000, signal, queryFeatures, captureCtx);
+}
+
+/**
+ * Như fetchSimilarMatches nhưng kèm lớp AI (DeepSeek) đánh giá: chọn top trận đối
+ * chiếu đáng tin, nghiêng Tài/Xỉu, tỷ lệ label30. Dùng cho snapshot tự động và nút "Tương tự".
+ * Timeout dài hơn vì có 1 lượt gọi LLM.
+ */
+export function fetchSimilarMatchesWithAi(
+  input: PredictGoalInput,
+  limit = 20,
+  signal?: AbortSignal,
+  queryFeatures?: Record<string, number>,
+  captureCtx?: SimilarCaptureContext,
+): Promise<FetchSimilarResult> {
+  return fetchSimilarBase('similar/evaluate', input, limit, 30_000, signal, queryFeatures, captureCtx);
 }
 
 // ---- Cloud AI toggle (bật GPT + DeepSeek theo từng trận để tiết kiệm token) ----

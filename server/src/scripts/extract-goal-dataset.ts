@@ -9,11 +9,13 @@ import { fileURLToPath } from 'node:url';
 import { parseMatchFile, type ParsedMatch } from '../goal-predict/md-parser.js';
 import {
     buildFeatureRows,
+    buildHalfSummary,
     FEATURE_NAMES,
     GOAL_WINDOW_MIN,
     GOAL_WINDOW_MIN_SHORT,
     GOAL_WINDOW_MIN_LONG,
     type FeatureRow,
+    type HalfSummary,
 } from '../goal-predict/feature-builder.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -96,6 +98,41 @@ async function emitDataset(opts: {
     console.log(`  Files failed:    ${summary.failed}`);
     console.log(`  Total rows:      ${summary.totalRows}`);
     console.log(`  Positive rows:   ${summary.positiveRows} (${posPct}%)`);
+    console.log(`  Dataset:         ${outJsonl}`);
+    console.log(`  Meta:            ${outMeta}`);
+}
+
+/**
+ * Dataset "số bàn theo hiệp" — 1 dòng / trận (vạch mở T/X + kèo chấp từng hiệp + số bàn H1/H2).
+ * Độc lập với 3 dataset per-phút; phục vụ RAG trả % có bàn theo hiệp.
+ */
+async function emitHalfSummaryDataset(
+    parsedMatches: Array<{ file: string; parsed: ParsedMatch }>,
+): Promise<void> {
+    const rows: HalfSummary[] = parsedMatches.map(({ parsed }) => buildHalfSummary(parsed));
+
+    const outJsonl = path.join(DATA_DIR, 'goal-halves-dataset.jsonl');
+    await fs.writeFile(outJsonl, rows.map((r) => JSON.stringify(r)).join('\n') + '\n', 'utf8');
+
+    const withH1Ou = rows.filter((r) => r.h1_open_ou13 != null);
+    const withH2Ou = rows.filter((r) => r.h2_open_ou13 != null);
+    const rate = (xs: HalfSummary[], key: 'h1_has_goal' | 'h2_has_goal'): number =>
+        xs.length ? xs.filter((r) => r[key] === 1).length / xs.length : 0;
+    const meta = {
+        generatedAt: new Date().toISOString(),
+        total: rows.length,
+        h1WithOpenOu13: withH1Ou.length,
+        h2WithOpenOu13: withH2Ou.length,
+        h1GoalRate: rate(rows, 'h1_has_goal'),
+        h2GoalRate: rate(rows, 'h2_has_goal'),
+    };
+    const outMeta = path.join(DATA_DIR, 'goal-halves-meta.json');
+    await fs.writeFile(outMeta, JSON.stringify(meta, null, 2), 'utf8');
+
+    console.log(`\n[extract:halves] ===== TÓM TẮT THEO HIỆP =====`);
+    console.log(`  Trận:            ${rows.length}`);
+    console.log(`  % có bàn H1:     ${(meta.h1GoalRate * 100).toFixed(1)}%`);
+    console.log(`  % có bàn H2:     ${(meta.h2GoalRate * 100).toFixed(1)}%`);
     console.log(`  Dataset:         ${outJsonl}`);
     console.log(`  Meta:            ${outMeta}`);
 }
@@ -184,6 +221,8 @@ async function main() {
         jsonlName: 'goal-dataset-30min.jsonl',
         metaName: 'goal-dataset-30min-meta.json',
     });
+
+    await emitHalfSummaryDataset(parsedMatches);
 }
 
 main().catch((e) => {

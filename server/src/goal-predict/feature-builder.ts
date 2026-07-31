@@ -82,6 +82,11 @@ export interface FeatureRow extends FeatureVector {
   match_id: string;
   /** Có bàn thắng trong `GOAL_WINDOW_MIN` phút tới (label kế thừa tên `goal_within_5min` để giữ tương thích dataset cũ). */
   goal_within_window: 0 | 1;
+  /**
+   * Có bàn thắng từ phút gọi đến HẾT HIỆP hiện tại (cùng hiệp, clockMinute > phút gọi).
+   * Độc lập với `windowMin` → giống nhau ở cả 3 dataset. Dùng cho metric "tỷ lệ có bàn đến hết hiệp".
+   */
+  goal_before_half_end: 0 | 1;
 }
 
 function statAt(stats: StatRow[], half: Half, minute: number): StatRow | null {
@@ -149,6 +154,88 @@ export function buildOpeningLinesRef(parsed: ParsedMatch): OpeningLinesRef {
   };
 }
 
+/**
+ * Tóm tắt 1 trận theo HIỆP cho RAG "số bàn theo hiệp": vạch mở T/X (1_3) + kèo chấp (1_2)
+ * đầu mỗi hiệp và số bàn thắng thực tế trong từng hiệp. Số dùng `null` khi thiếu vạch
+ * (JSON.stringify chuyển undefined → mất field, nên chuẩn hóa về null để dataset đồng nhất).
+ */
+export interface HalfSummary {
+  match_id: string;
+  home: string;
+  away: string;
+  ft_status: string;
+  final_score: string;
+  h1_open_ou13: number | null;
+  h2_open_ou13: number | null;
+  h1_open_ah12: number | null;
+  h2_open_ah12: number | null;
+  h1_goals: number;
+  h2_goals: number;
+  h1_has_goal: 0 | 1;
+  h2_has_goal: 0 | 1;
+}
+
+/**
+ * Đếm số bàn "cụm" trong 1 hiệp: gộp các sự kiện goal ở phút liền kề (≤ gapMin) thành 1 —
+ * file History log lại cùng 1 bàn qua nhiều tick API (vd 55,56,57 = 1 bàn). Không đáng tin tuyệt đối
+ * nhưng loại được phần lớn trùng lặp; tỷ số chung cuộc mới là chuẩn cho TỔNG số bàn.
+ */
+function goalClustersInHalf(events: EventEntry[], half: Half, gapMin = 1): number {
+  const mins = events
+    .filter((e) => e.type === 'goal' && e.half === half)
+    .map((e) => e.clockMinute)
+    .sort((a, b) => a - b);
+  let clusters = 0;
+  let prev = -Infinity;
+  for (const m of mins) {
+    if (m - prev > gapMin) clusters += 1;
+    prev = m;
+  }
+  return clusters;
+}
+
+/** Tổng số bàn từ tỷ số chung cuộc "H-A" (vd "3-2" → 5). null nếu không parse được. */
+function totalGoalsFromScore(finalScore: string): number | null {
+  const m = finalScore.match(/(\d+)\s*[-:]\s*(\d+)/);
+  if (!m) return null;
+  const t = parseInt(m[1], 10) + parseInt(m[2], 10);
+  return Number.isFinite(t) ? t : null;
+}
+
+export function buildHalfSummary(parsed: ParsedMatch): HalfSummary {
+  const open = buildOpeningLinesRef(parsed);
+  // Số bàn mỗi hiệp: dùng tỷ số chung cuộc làm chuẩn cho TỔNG, H1 = số cụm bàn (đã khử trùng),
+  // H2 = tổng − H1. Fallback về số cụm 2 hiệp khi thiếu tỷ số (hiếm, trận lỗi parse).
+  const h1Clusters = goalClustersInHalf(parsed.events, 1);
+  const h2Clusters = goalClustersInHalf(parsed.events, 2);
+  const total = totalGoalsFromScore(parsed.meta.finalScore);
+  let h1Goals: number;
+  let h2Goals: number;
+  if (total != null) {
+    h1Goals = Math.min(h1Clusters, total);
+    h2Goals = Math.max(0, total - h1Goals);
+  } else {
+    h1Goals = h1Clusters;
+    h2Goals = h2Clusters;
+  }
+  const num = (x: number | undefined): number | null => (Number.isFinite(x) ? (x as number) : null);
+  return {
+    match_id: parsed.meta.matchId,
+    home: parsed.meta.homeName,
+    away: parsed.meta.awayName,
+    ft_status: parsed.meta.ftStatus,
+    final_score: parsed.meta.finalScore,
+    h1_open_ou13: num(open.h1OpenOu13),
+    h2_open_ou13: num(open.h2OpenOu13),
+    h1_open_ah12: num(open.h1OpenAh12),
+    h2_open_ah12: num(open.h2OpenAh12),
+    h1_goals: h1Goals,
+    h2_goals: h2Goals,
+    h1_has_goal: h1Goals > 0 ? 1 : 0,
+    h2_has_goal: h2Goals > 0 ? 1 : 0,
+  };
+}
+
 interface DropStats {
   count: number;
   sumAmt: number;
@@ -210,6 +297,16 @@ function alertsInWindow(alerts: AlertEntry[], half: Half, minuteFrom: number, mi
 function goalInWindow(events: EventEntry[], minuteFrom: number, minuteTo: number): boolean {
   return events.some(
     (e) => e.type === 'goal' && e.clockMinute > minuteFrom && e.clockMinute <= minuteTo,
+  );
+}
+
+/**
+ * Có bàn thắng từ `minuteFrom` đến HẾT HIỆP `half` — chỉ tính bàn CÙNG HIỆP với clockMinute > minuteFrom.
+ * Không cần mốc "phút cuối hiệp": mọi bàn cùng hiệp sau phút gọi đều nằm trong khoảng "đến hết hiệp".
+ */
+function goalBeforeHalfEnd(events: EventEntry[], half: Half, minuteFrom: number): boolean {
+  return events.some(
+    (e) => e.type === 'goal' && e.half === half && e.clockMinute > minuteFrom,
   );
 }
 
@@ -349,7 +446,8 @@ export function buildFeatureRows(match: ParsedMatch, windowMin: number = GOAL_WI
     const fv = buildFeatureVector(match, half, m);
     if (!fv) continue;
     const label = goalInWindow(match.events, m, Math.min(m + windowMin, dataEnd)) ? 1 : 0;
-    out.push({ match_id: match.meta.matchId, goal_within_window: label, ...fv });
+    const labelHalf = goalBeforeHalfEnd(match.events, half, m) ? 1 : 0;
+    out.push({ match_id: match.meta.matchId, goal_within_window: label, goal_before_half_end: labelHalf, ...fv });
   }
   return out;
 }

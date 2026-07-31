@@ -11,15 +11,49 @@ import { parseStats } from './api';
 import { decodeStatTimelineKey } from './matchTimeline';
 import { computeOuDropIntensityPack } from './odds-pressure-series';
 import type { PredictionSnapshot, PredictionVerdict } from './goal-prediction';
+import {
+  loadSimilarMatchLinks,
+  TIER_LABEL,
+  formatSimilarLinkTime,
+  type SimilarMatchLinkRecord,
+} from './similar-match-links';
+import { loadMatchNotes } from './match-notes';
 
 /** Đồng bộ tab/UI khi viewedMatchesHistory thay đổi (cùng origin). */
 export const VIEWED_MATCHES_HISTORY_UPDATED_EVENT = 'proFootball:viewedMatchesHistoryUpdated';
 
-/** Cờ localStorage: đã auto-lưu .md khi trận về FT (một lần mỗi trận). */
+/** Cờ localStorage: đã xuất/lưu .md cho trận (thủ công hoặc auto FT). */
 export const MATCH_MD_AUTOSAVED_KEY_PREFIX = 'matchMdAutoSaved_';
 
-export function matchMdAutosavedKey(matchId: string): string {
-  return `${MATCH_MD_AUTOSAVED_KEY_PREFIX}${matchId}`;
+/** UI tab "Đã xem" — cập nhật badge "Đã xuất" (cùng tab + tab khác). */
+export const MATCH_MD_EXPORTED_EVENT = 'proFootball:matchMdExported';
+
+export function normalizeMatchIdForStorage(matchId: string | number): string {
+  return String(matchId).trim();
+}
+
+export function matchMdAutosavedKey(matchId: string | number): string {
+  return `${MATCH_MD_AUTOSAVED_KEY_PREFIX}${normalizeMatchIdForStorage(matchId)}`;
+}
+
+export function isMatchMdExported(matchId: string | number): boolean {
+  if (typeof localStorage === 'undefined') return false;
+  return !!localStorage.getItem(matchMdAutosavedKey(matchId));
+}
+
+/** Ghi cờ đã xuất .md + phát event cho UI. */
+export function markMatchMdExported(matchId: string | number): boolean {
+  if (typeof localStorage === 'undefined') return false;
+  const id = normalizeMatchIdForStorage(matchId);
+  try {
+    localStorage.setItem(matchMdAutosavedKey(id), '1');
+    window.dispatchEvent(new CustomEvent(MATCH_MD_EXPORTED_EVENT, { detail: { matchId: id } }));
+    return true;
+  } catch {
+    // File đã lưu — vẫn báo UI qua event dù cờ localStorage fail.
+    window.dispatchEvent(new CustomEvent(MATCH_MD_EXPORTED_EVENT, { detail: { matchId: id } }));
+    return false;
+  }
 }
 
 /** Goal-prediction snapshots (mỗi lần bấm "Dự đoán") — đồng bộ với services/goal-prediction.ts. */
@@ -313,6 +347,14 @@ interface GameEv {
   minute: number;
   type: 'goal' | 'corner';
   half?: 1 | 2;
+  team?: 'home' | 'away';
+}
+
+function formatGoalTeamCell(e: GameEv): string {
+  if (e.type !== 'goal') return '—';
+  if (e.team === 'home') return 'home';
+  if (e.team === 'away') return 'away';
+  return '—';
 }
 
 interface StoredAlertRow {
@@ -470,6 +512,41 @@ function jsonBlock(label: string, data: unknown, maxChars = 120_000): string {
   return `### ${label}\n\n\`\`\`json\n${raw}\n\`\`\`\n`;
 }
 
+function formatLabel30Cell(label30?: 0 | 1): string {
+  if (label30 == null) return '—';
+  return label30 === 1 ? 'CÓ BÀN' : 'không';
+}
+
+function appendSimilarMatchLinksSection(lines: string[], matchId: string): void {
+  lines.push('## Liên kết trận tương tự (similar-match-links)');
+  lines.push('');
+  const links = loadSimilarMatchLinks(matchId);
+  if (links.length === 0) {
+    lines.push('_Chưa ghi chú trận tương tự nào._');
+    lines.push('');
+    return;
+  }
+  lines.push(
+    '| Thời điểm ghi | Trận này (H/phút/tỷ số) | Trận liên quan | Match ID | H/phút | FT | Nhóm | label30 | similarity |',
+  );
+  lines.push('|----------------|-------------------------|----------------|----------|--------|----|------|---------|------------|');
+  for (const r of [...links].sort((a, b) => a.ts - b.ts)) {
+    const selfCtx = `H${r.sourceHalf} ${r.sourceMinute}'${r.sourceScore ? ` · ${r.sourceScore}` : ''}`;
+    const relHp = `H${r.relatedHalf} ${r.relatedMinute}'`;
+    const sim =
+      typeof r.similarity === 'number' && Number.isFinite(r.similarity)
+        ? r.similarity.toFixed(3)
+        : '—';
+    lines.push(
+      `| ${formatSimilarLinkTime(r.ts)} | ${selfCtx} | ${mdCell(r.relatedTeam)} | \`${r.relatedMatchId}\` | ${relHp} | ${mdCell(r.relatedFt)} | ${TIER_LABEL[r.tier]} | ${formatLabel30Cell(r.label30)} | ${sim} |`,
+    );
+  }
+  lines.push('');
+}
+
+export { appendSimilarMatchLinksSection, formatLabel30Cell };
+export type { SimilarMatchLinkRecord };
+
 /**
  * Đọc localStorage (browser) và dựng markdown đầy đủ cho một trận đã có trong viewedMatchesHistory.
  */
@@ -583,10 +660,10 @@ export function buildMatchMarkdownFromStorage(matchId: string): { markdown: stri
     lines.push('_Không có sự kiện lưu._');
     lines.push('');
   } else {
-    lines.push('| Phút | Hiệp | Loại |');
-    lines.push('|------|------|------|');
+    lines.push('| Phút | Hiệp | Loại | Đội ghi bàn |');
+    lines.push('|------|------|------|-------------|');
     for (const e of [...gameEvents].sort((a, b) => a.minute - b.minute)) {
-      lines.push(`| ${e.minute} | ${e.half ?? 1} | ${e.type} |`);
+      lines.push(`| ${e.minute} | ${e.half ?? 1} | ${e.type} | ${formatGoalTeamCell(e)} |`);
     }
     lines.push('');
   }
@@ -610,6 +687,24 @@ export function buildMatchMarkdownFromStorage(matchId: string): { markdown: stri
   }
 
   appendPredictionSnapshotsSection(lines, predictionSnapshots);
+
+  // Nhận định người dùng (userNotes) — server parse lại để hiện ở bảng so sánh (RAG).
+  const userNotes = loadMatchNotes(matchId);
+  lines.push('## Nhận định người dùng (userNotes)');
+  lines.push('');
+  if (userNotes.length === 0) {
+    lines.push('_Chưa có nhận định._');
+    lines.push('');
+  } else {
+    lines.push('| Phút | Hiệp | Đánh giá | Nội dung |');
+    lines.push('|------|------|----------|----------|');
+    for (const n of [...userNotes].sort((a, b) => (a.half - b.half) || (a.minute - b.minute) || (a.ts - b.ts))) {
+      const verdict = n.verdict === 'yes' ? 'YES' : n.verdict === 'no' ? 'NO' : '—';
+      const text = (n.text ?? '').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ').trim();
+      lines.push(`| ${n.minute} | ${n.half} | ${verdict} | ${text} |`);
+    }
+    lines.push('');
+  }
 
   lines.push('## Chuỗi kèo theo phút & cường độ giảm giá');
   lines.push('');
@@ -673,6 +768,8 @@ export function buildMatchMarkdownFromStorage(matchId: string): { markdown: stri
   lines.push(jsonBlock('Phụ lục JSON: 1_2 (AH cả trận)', ah));
   lines.push(jsonBlock('Phụ lục JSON: 1_6 (OU hiệp 1)', ouH1));
   lines.push(jsonBlock('Phụ lục JSON: 1_5 (AH hiệp 1)', ahH1));
+
+  appendSimilarMatchLinksSection(lines, matchId);
 
   lines.push('---');
   lines.push('');

@@ -34,13 +34,30 @@
         z-index: 7;
     }
     /* Bàn thắng: quả bóng trên vùng biểu đồ, viền đỏ nổi bật */
+    .game-event-goal-stack {
+        @apply absolute flex flex-col items-center pointer-events-none;
+        z-index: 7;
+    }
+    .chart-goal-team-label {
+        @apply text-[9px] font-bold leading-none mb-0.5 px-1 py-px rounded whitespace-nowrap max-w-[4.5rem] truncate;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    }
+    .chart-goal-team-label--home {
+        @apply bg-blue-100 text-blue-800 dark:bg-blue-900/70 dark:text-blue-100;
+    }
+    .chart-goal-team-label--away {
+        @apply bg-orange-100 text-orange-800 dark:bg-orange-900/70 dark:text-orange-100;
+    }
+    .chart-goal-team-label--unknown {
+        @apply bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300;
+    }
     .chart-goal-ball {
         @apply w-7 h-7 rounded-full text-base leading-none;
         @apply bg-white dark:bg-slate-900 border-[3px] border-red-600;
         box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.35), 0 2px 6px rgba(0, 0, 0, 0.2);
     }
     .game-event-corner {
-        @apply w-5 h-5 bottom-[-20px]; /* dưới trục X */
+        @apply w-5 h-5 bottom-1; /* dưới trục X, trong vùng margin */
         z-index: 6;
     }
 }

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { loadRagStore, topK, type LineMatchContext } from '../goal-predict/rag-store.js';
+import { loadRagStore, topK, listMatchesByOpeningOu13, listMatchesByOpeningOu13WithLineRuns, type LineMatchContext } from '../goal-predict/rag-store.js';
 import { FEATURE_NAMES, type FeatureVector } from '../goal-predict/feature-builder.js';
 
 /** Base feature vector — query trận đang xem H2 m60: vạch T/X 2.25, vạch chấp -0.5. */
@@ -33,6 +33,8 @@ async function loadDataset(lines: string[]): Promise<void> {
 const lineCtxH2: LineMatchContext = {
     h1OpenOu13: 2.0,
     h2OpenOu13: 2.25,
+    h1OpenAh12: -0.5,
+    h2OpenAh12: -0.5,
 };
 
 describe('topK line-matching (matchLines=true)', () => {
@@ -73,10 +75,34 @@ describe('topK line-matching (matchLines=true)', () => {
             row('exactLine', { da_total_3m: 80, shots_total_delta_3m: 60 }),
         ]);
         const q = { ...baseFeatures(), ou13_handicap: NaN, ah12_handicap: NaN };
-        const withLineMatch = topK(q, 5, false, true).map((r) => r.matchId);
+        const withLineMatch = topK(q, 5, false, true, undefined, 'legacy').map((r) => r.matchId);
         const cosineOnly = topK(q, 5, false, false).map((r) => r.matchId);
         expect(withLineMatch).toEqual(cosineOnly);
         expect(withLineMatch).toContain('offLine');
+    });
+
+    it('(c2) openLine thiếu vạch mở hiệp → trả rỗng (bắt buộc HDP 1_3 mở cùng hiệp)', async () => {
+        await loadDataset([
+            row('offLine', { ou13_handicap: 3.0, ah12_handicap: -1.5 }),
+            row('exactLine', { da_total_3m: 80, shots_total_delta_3m: 60 }),
+        ]);
+        const q = { ...baseFeatures(), ou13_handicap: NaN, ah12_handicap: NaN };
+        expect(topK(q, 5, false, true, undefined, 'openLine')).toHaveLength(0);
+    });
+
+    it('(c3) gắn nhãn labelHalf (goal_before_half_end) vào kết quả topK', async () => {
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rag-half-'));
+        const file = path.join(dir, 'ds.jsonl');
+        const withHalf = (matchId: string, halfLbl: 0 | 1, ov: Partial<FeatureVector>) =>
+            JSON.stringify({ match_id: matchId, goal_within_window: 1, goal_before_half_end: halfLbl, ...baseFeatures(), ...ov });
+        fs.writeFileSync(file, [
+            withHalf('hasGoal', 1, { da_total_3m: 5 }),
+            withHalf('noGoal', 0, { da_total_3m: 6 }),
+        ].join('\n'), 'utf8');
+        await loadRagStore(file);
+        const res = topK(baseFeatures(), 5, false, true, undefined, 'legacy');
+        expect(res.find((r) => r.matchId === 'hasGoal')?.labelHalf).toBe(1);
+        expect(res.find((r) => r.matchId === 'noGoal')?.labelHalf).toBe(0);
     });
 
     it('(d) cùng vạch snapshot nhưng khác hiệp → cùng hiệp (H2) lên trước', async () => {
@@ -84,7 +110,7 @@ describe('topK line-matching (matchLines=true)', () => {
             row('h1match', { half: 1, minute: 30, ou13_handicap: 2.25, ah12_handicap: -0.5, da_total_3m: 99 }),
             row('h2match', { half: 2, minute: 60, ou13_handicap: 2.25, ah12_handicap: -0.5, da_total_3m: 1 }),
         ]);
-        const res = topK(baseFeatures(), 5, false, true, undefined, 'openLine');
+        const res = topK(baseFeatures(), 5, false, true, lineCtxH2, 'openLine');
         expect(res[0]?.matchId).toBe('h2match');
     });
 
@@ -189,10 +215,104 @@ describe('topK line-matching (matchLines=true)', () => {
             }),
         ]);
         const res = topK(baseFeatures(), 5, false, true, lineCtxH2, 'openLine');
-        const iExact = res.findIndex((r) => r.matchId === 'openExact');
-        const iOff = res.findIndex((r) => r.matchId === 'openOff');
-        expect(iExact).toBeGreaterThanOrEqual(0);
-        expect(iOff).toBeGreaterThanOrEqual(0);
-        expect(iExact).toBeLessThan(iOff);
+        expect(res.find((r) => r.matchId === 'openOff')).toBeUndefined();
+        expect(res[0]?.matchId).toBe('openExact');
+    });
+
+    it('(g) cùng matchId nhiều phút — chỉ trả 1 dòng', async () => {
+        await loadDataset([
+            row('dup', { half: 2, minute: 46, ou13_handicap: 2.25, da_total_3m: 1 }),
+            row('dup', { half: 2, minute: 50, ou13_handicap: 2.25, da_total_3m: 2 }),
+            row('dup', { half: 2, minute: 55, ou13_handicap: 2.25, da_total_3m: 3 }),
+            row('dup', { half: 2, minute: 60, ou13_handicap: 2.25, da_total_3m: 99 }),
+            row('other', { half: 2, minute: 60, ou13_handicap: 2.25, da_total_3m: 5 }),
+        ]);
+        const res = topK(baseFeatures(), 20, false, true, lineCtxH2, 'openLine');
+        expect(res.filter((r) => r.matchId === 'dup')).toHaveLength(1);
+        expect(res.filter((r) => r.matchId === 'other')).toHaveLength(1);
+    });
+});
+
+describe('listMatchesByOpeningOu13', () => {
+    it('H2: chỉ liệt kê trận có vạch mở H2 trùng — không lấy trận chỉ khớp H1', async () => {
+        await loadDataset([
+            row('matchA', { half: 1, minute: 1, ou13_handicap: 2.0 }),
+            row('matchA', { half: 2, minute: 46, ou13_handicap: 2.25 }),
+            row('matchB', { half: 1, minute: 1, ou13_handicap: 2.0 }),
+            row('matchB', { half: 2, minute: 46, ou13_handicap: 2.5 }),
+            row('matchC', { half: 1, minute: 1, ou13_handicap: 1.75 }),
+            row('matchC', { half: 2, minute: 46, ou13_handicap: 2.25 }),
+            row('current', { half: 1, minute: 20, ou13_handicap: 2.25 }),
+        ]);
+        const res = listMatchesByOpeningOu13(lineCtxH2, baseFeatures(), { excludeMatchId: 'current' });
+        const ids = res.map((r) => r.matchId).sort();
+        expect(ids).toEqual(['matchA', 'matchC']);
+        expect(res.every((r) => r.matchedOpenHalves === 'H2')).toBe(true);
+        expect(res.find((r) => r.matchId === 'matchB')).toBeUndefined();
+    });
+
+    it('H1: chỉ liệt kê trận có vạch mở H1 trùng — không lấy trận chỉ khớp H2', async () => {
+        await loadDataset([
+            row('matchA', { half: 1, minute: 1, ou13_handicap: 2.0 }),
+            row('matchA', { half: 2, minute: 46, ou13_handicap: 2.25 }),
+            row('matchB', { half: 1, minute: 1, ou13_handicap: 2.0 }),
+            row('matchB', { half: 2, minute: 46, ou13_handicap: 2.5 }),
+            row('matchC', { half: 1, minute: 1, ou13_handicap: 1.75 }),
+            row('matchC', { half: 2, minute: 46, ou13_handicap: 2.25 }),
+            row('current', { half: 2, minute: 60, ou13_handicap: 2.25 }),
+        ]);
+        const qH1 = { ...baseFeatures(), half: 1, minute: 20, ou13_handicap: 2.0 };
+        const res = listMatchesByOpeningOu13(lineCtxH2, qH1, { excludeMatchId: 'current' });
+        const ids = res.map((r) => r.matchId).sort();
+        expect(ids).toEqual(['matchA', 'matchB']);
+        expect(res.every((r) => r.matchedOpenHalves === 'H1')).toBe(true);
+        expect(res.find((r) => r.matchId === 'matchC')).toBeUndefined();
+    });
+
+    it('H2: giữ trận cùng 1_3 dù 1_2 khác — kèm note', async () => {
+        await loadDataset([
+            row('matchA', { half: 2, minute: 46, ou13_handicap: 2.25, ah12_handicap: -0.5 }),
+            row('matchB', { half: 2, minute: 46, ou13_handicap: 2.25, ah12_handicap: -1 }),
+            row('current', { half: 2, minute: 60, ou13_handicap: 2.25, ah12_handicap: -0.5 }),
+        ]);
+        const res = listMatchesByOpeningOu13(lineCtxH2, baseFeatures(), { excludeMatchId: 'current' });
+        expect(res.map((r) => r.matchId)).toEqual(['matchA', 'matchB']);
+        expect(res[0]?.openAh12MismatchNote).toBeUndefined();
+        expect(res[1]?.openAh12MismatchNote).toContain('1_2 mở khác');
+    });
+
+    it('H2: ± cùng |HDP| 1_2 không gắn note mismatch', async () => {
+        await loadDataset([
+            row('matchPos', { half: 2, minute: 46, ou13_handicap: 2.25, ah12_handicap: 0.5 }),
+            row('matchNeg', { half: 2, minute: 46, ou13_handicap: 2.25, ah12_handicap: -0.5 }),
+            row('current', { half: 2, minute: 60, ou13_handicap: 2.25, ah12_handicap: -0.5 }),
+        ]);
+        const res = listMatchesByOpeningOu13(lineCtxH2, baseFeatures(), { excludeMatchId: 'current' });
+        expect(res.map((r) => r.matchId).sort()).toEqual(['matchNeg', 'matchPos']);
+        expect(res.every((r) => r.openAh12MismatchNote == null)).toBe(true);
+    });
+});
+
+describe('listMatchesByOpeningOu13WithLineRuns', () => {
+    it('lọc catalog theo pattern thời gian vạch gần giống nhau', async () => {
+        await loadDataset([
+            row('matchGood', { half: 2, minute: 46, ou13_handicap: 2.25, ah12_handicap: -0.5 }),
+            row('matchGood', { half: 2, minute: 52, ou13_handicap: 2, ah12_handicap: -0.5 }),
+            row('matchGood', { half: 2, minute: 58, ou13_handicap: 1.75, ah12_handicap: -0.5 }),
+            row('matchBad', { half: 2, minute: 46, ou13_handicap: 2.25, ah12_handicap: -0.5 }),
+            row('matchBad', { half: 2, minute: 60, ou13_handicap: 2, ah12_handicap: -0.5 }),
+            row('current', { half: 2, minute: 58, ou13_handicap: 1.75 }),
+        ]);
+        const q = baseFeatures();
+        const queryOdds = [
+            { minute: 46, half: 2 as const, handicap: 2.25 },
+            { minute: 52, half: 2 as const, handicap: 2 },
+            { minute: 58, half: 2 as const, handicap: 1.75 },
+        ];
+        const res = await listMatchesByOpeningOu13WithLineRuns(lineCtxH2, q, queryOdds, {
+            excludeMatchId: 'current',
+        });
+        expect(res.map((r) => r.matchId)).toEqual(['matchGood']);
+        expect(res[0]?.ou13LineRuns).toContain('2.25');
     });
 });

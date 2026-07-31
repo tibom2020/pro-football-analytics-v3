@@ -12,6 +12,8 @@ export interface DeepSeekReasonRequest {
     user: string;
     json?: boolean;
     model?: string;
+    /** Mặc định 768 — similar/evaluate cần JSON dài hơn. */
+    maxTokens?: number;
 }
 
 export interface DeepSeekReasonResponse {
@@ -68,7 +70,7 @@ export async function callDeepSeekReason(req: DeepSeekReasonRequest): Promise<De
                     { role: 'user', content: req.user },
                 ],
                 temperature: 0.2,
-                max_tokens: 768,
+                max_tokens: req.maxTokens ?? 768,
                 ...(req.json ? { response_format: { type: 'json_object' as const } } : {}),
                 ...(isV4Model(model) ? { thinking: { type: 'disabled' as const } } : {}),
             });

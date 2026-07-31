@@ -23,10 +23,11 @@ import {
     GOAL_WINDOW_MIN_SHORT,
     GOAL_WINDOW_MIN_LONG,
 } from '../goal-predict/onnx-service.js';
-import { topK, ragStats, getMatchDetail, getCumulativeStatsAt, getOddsHistory13, totalsFromStats, type SimilarMatch, type CumulativeTotals, type LineMatchContext } from '../goal-predict/rag-store.js';
+import { topK, listMatchesByOpeningOu13, listMatchesByOpeningOu13WithLineRuns, ou13OddsPointsFromParsedOdds, queryOu13LineRunsLabel, ragStats, getMatchDetail, getCumulativeStatsAt, getOddsHistory13, totalsFromStats, type SimilarMatch, type CumulativeTotals, type LineMatchContext } from '../goal-predict/rag-store.js';
 import { callOllama, pingOllama } from '../goal-predict/ollama-client.js';
 import { callOpenAiReason } from '../goal-predict/openai-reason.js';
 import { callDeepSeekReason, isDeepSeekEnabled } from '../goal-predict/deepseek-reason.js';
+import { buildDeepSeekCouncilPreamble, COUNCIL_JSON_FIELDS } from '../goal-predict/deepseek-council-prompt.js';
 import { TtlCache, hashFeatures } from '../goal-predict/predict-cache.js';
 import { buildHeuristicReason, normalizeReason } from '../goal-predict/reason-normalize.js';
 import { config } from '../config.js';
@@ -100,6 +101,7 @@ interface PredictGoalResponse {
     queryFeatures?: Record<string, number>;
     /** Vạch mở hiệp 1_3 H1/H2 của trận đang xem — dùng hiển thị so khớp line đầu hiệp. */
     openingLines?: OpeningLinesRef;
+    openingLineNotice?: string;
     reasonVi: string;
     modelMeta: ReturnType<typeof getModelMeta>;
     modelMeta5: ReturnType<typeof getModelMeta>;
@@ -391,7 +393,12 @@ predictGoalRouter.post('/', async (req: Request, res: Response): Promise<void> =
     const mainWindow = goalProb30 != null ? GOAL_WINDOW_MIN_LONG : GOAL_WINDOW_MIN;
     const topFeatures = getTopContributingFeatures(features, 5, mainWindow);
     const openingLines = buildOpeningLinesRef(parsed);
-    const similar = topK(features, UI_SIMILAR_TOP_K, false, true, undefined, 'legacy');
+    const qHalf = half;
+    const qOpenOu13 = qHalf === 1 ? openingLines.h1OpenOu13 : openingLines.h2OpenOu13;
+    const openingLineNotice = Number.isFinite(qOpenOu13)
+        ? undefined
+        : `Chưa có vạch mở 1_3 H${qHalf} — chỉ trả trận khi HDP mở hiệp trùng tuyệt đối (H1↔H1 / H2↔H2).`;
+    const similar = topK(features, UI_SIMILAR_TOP_K, false, true, openingLines, 'openLine');
 
     const fallback = mainProb == null
         ? `Model chưa load: ${getLoadError(30) || getLoadError(15) || 'unknown'}. Chạy training notebook để sinh ONNX.`
@@ -410,6 +417,7 @@ predictGoalRouter.post('/', async (req: Request, res: Response): Promise<void> =
         similarMatches: similar,
         queryFeatures: { ...features },
         openingLines,
+        openingLineNotice,
         reasonVi,
         modelMeta: getModelMeta(15),
         modelMeta5: getModelMeta(GOAL_WINDOW_MIN_SHORT),
@@ -504,7 +512,24 @@ predictGoalRouter.post('/reason', async (req: Request, res: Response): Promise<v
         : Promise.resolve({ reasonVi: '', latencyMs: 0, error: cloudAi ? 'OpenAI disabled (OPENAI_API_KEY chưa cấu hình)' : 'Cloud AI tắt — bật ⚡ ở trận này để chạy GPT' });
 
     const deepseekP: Promise<ReasonOutput> = deepseekEnabled
-        ? callDeepSeekReason({ ...llmPrompt, json: true }).then((r) =>
+        ? callDeepSeekReason({
+              system: buildDeepSeekCouncilPreamble(
+                  [
+                      llmPrompt.system,
+                      '',
+                      'Bổ sung bắt buộc vào JSON output (giữ các field schema gốc):',
+                      '{',
+                      COUNCIL_JSON_FIELDS,
+                      expectGoalProb30Pct
+                          ? '  "goalProb30Pct": number, "reasonVi": string'
+                          : '  "reasonVi": string',
+                      '}',
+                      'reasonVi PHẢI trùng council.finalConclusion. Không ghi % trong reasonVi nếu có goalProb30Pct.',
+                  ].join('\n'),
+              ),
+              user: llmPrompt.user,
+              json: true,
+          }).then((r) =>
               normalizeReason(
                   r.text,
                   r.error,
@@ -587,12 +612,28 @@ predictGoalRouter.post('/similar', async (req: Request, res: Response): Promise<
 
     const bodyMatch = (rawBody as PredictGoalRequest).match;
     const lineCtx = lineCtxFromMatch(bodyMatch);
+    const queryOu13 = ou13OddsPointsFromParsedOdds(bodyMatch?.odds ?? []);
+    const qHalf = Number(features.half) === 2 ? 2 : 1;
+    const qOpenOu13 = qHalf === 1 ? lineCtx?.h1OpenOu13 : lineCtx?.h2OpenOu13;
+    const openingLineNotice = Number.isFinite(qOpenOu13)
+        ? undefined
+        : `Chưa có vạch mở 1_3 H${qHalf} — chỉ trả trận khi HDP mở hiệp trùng tuyệt đối (H1↔H1 / H2↔H2).`;
 
-    const similarLegacy = topK(features, limit, false, true, undefined, 'legacy');
     const similarOpenLine = topK(features, limit, false, true, lineCtx, 'openLine');
-    const [enrichedLegacy, enrichedOpenLine] = await Promise.all([
-        enrichSimilarList(similarLegacy),
+    const catalogRaw = lineCtx
+        ? listMatchesByOpeningOu13(lineCtx, features, { excludeMatchId: matchId, limit: 100 })
+        : [];
+    const catalogRunsRaw =
+        lineCtx && queryOu13.length > 0
+            ? await listMatchesByOpeningOu13WithLineRuns(lineCtx, features, queryOu13, {
+                excludeMatchId: matchId,
+                limit: 100,
+            })
+            : [];
+    const [enrichedOpenLine, enrichedCatalog, enrichedCatalogRuns] = await Promise.all([
         enrichSimilarList(similarOpenLine),
+        enrichSimilarList(catalogRaw),
+        enrichSimilarList(catalogRunsRaw),
     ]);
 
     // Tổng lũy kế của TRẬN ĐANG XEM — tính từ stats client gửi kèm (nếu có).
@@ -602,13 +643,16 @@ predictGoalRouter.post('/similar', async (req: Request, res: Response): Promise<
         : null;
 
     logger.info(
-        `predict-goal/similar match=${matchId} h=${half} m=${minute} limit=${limit} → legacy=${enrichedLegacy.length} openLine=${enrichedOpenLine.length} (${Date.now() - t0}ms)`,
+        `predict-goal/similar match=${matchId} h=${half} m=${minute} limit=${limit} → openLine=${enrichedOpenLine.length} catalog=${enrichedCatalog.length} catalogRuns=${enrichedCatalogRuns.length} (${Date.now() - t0}ms)`,
     );
     res.json({
         queryFeatures: { ...features },
         openingLines: lineCtx,
-        similarMatches: enrichedLegacy,
+        openingLineNotice,
+        queryOu13LineRuns: queryOu13.length > 0 ? queryOu13LineRunsLabel(features, queryOu13) : undefined,
         similarMatchesOpenLine: enrichedOpenLine,
+        similarMatchesOpenLineCatalog: enrichedCatalog,
+        similarMatchesOpenLineCatalogRuns: enrichedCatalogRuns,
         currentTotals,
     });
 });

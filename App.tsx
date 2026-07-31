@@ -441,7 +441,7 @@ const App = () => {
             </div>
           )}
           {mainView === 'matches' && (
-            <MatchList events={filteredEvents} onOpenAnalysisInNewTab={handleOpenAnalysisInNewTab} isLoading={loading && events.length === 0 && !error} searchQuery={searchQuery} onSearchChange={setSearchQuery} favorites={favorites} onToggleFavorite={handleToggleFavorite} />
+            <MatchList events={filteredEvents} token={token} onOpenAnalysisInNewTab={handleOpenAnalysisInNewTab} isLoading={loading && events.length === 0 && !error} searchQuery={searchQuery} onSearchChange={setSearchQuery} favorites={favorites} onToggleFavorite={handleToggleFavorite} />
           )}
           {mainView === 'matchHistory' && <MatchHistory onSelectMatch={handleSelectMatch} />}
         </div>

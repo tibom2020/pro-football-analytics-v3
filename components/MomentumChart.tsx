@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
-import { ResponsiveContainer, ComposedChart, Scatter, XAxis, YAxis, Tooltip, Cell, Line, Legend, CartesianGrid, ReferenceLine } from 'recharts';
+import { ResponsiveContainer, ComposedChart, Scatter, XAxis, YAxis, Tooltip, Cell, Line, CartesianGrid, ReferenceLine } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 import type { ChartAlertMarker } from '../types';
 export type { ChartAlertMarker } from '../types';
@@ -54,11 +54,26 @@ const CustomTooltip = ({ active, payload, label, underXiuMode, secondaryLabel }:
                 {secondaryData && (
                     <>
                         <p className="font-semibold mt-1 pt-1 border-t border-slate-700" style={{ color: '#60a5fa' }}>
-                            {secondaryLabel || 'Đội nhà'} HDP: {typeof secondaryData.handicap === 'number' ? secondaryData.handicap.toFixed(2) : '-'}
+                            {secondaryLabel || 'Đội chấp'} HDP: {typeof secondaryData.handicap === 'number' ? secondaryData.handicap.toFixed(2) : '-'}
                         </p>
-                        {typeof secondaryData.home === 'number' && (
+                        {typeof secondaryData.chapOdds === 'number' ? (
+                            <p className="text-gray-300">
+                                Odds chấp:{' '}
+                                <span
+                                    className={
+                                        secondaryData.colorName === 'red'
+                                            ? 'text-red-400'
+                                            : secondaryData.colorName === 'green'
+                                              ? 'text-green-400'
+                                              : 'text-sky-300'
+                                    }
+                                >
+                                    {secondaryData.chapOdds.toFixed(3)}
+                                </span>
+                            </p>
+                        ) : typeof secondaryData.home === 'number' ? (
                             <p className="text-gray-300">Odds Nhà: <span style={{ color: '#93c5fd' }}>{secondaryData.home.toFixed(3)}</span></p>
-                        )}
+                        ) : null}
                     </>
                 )}
                 {homeApiData && homeApiData.value !== undefined && (
@@ -72,74 +87,6 @@ const CustomTooltip = ({ active, payload, label, underXiuMode, secondaryLabel }:
     }
     return null;
 };
-
-const OddsColorLegent = ({
-    underXiuMode,
-    hasSecondary,
-    secondaryLabel,
-}: {
-    underXiuMode?: boolean;
-    hasSecondary?: boolean;
-    secondaryLabel?: string;
-}) => (
-    <div className="flex flex-col gap-2 mt-3 px-4 py-2 bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-100 dark:border-slate-800">
-        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-            <span className="font-semibold text-gray-700 dark:text-gray-300">Thị trường (nến):</span>
-            <div className="flex items-center gap-3 flex-wrap justify-end">
-                {underXiuMode ? (
-                    <>
-                        <div className="flex items-center gap-1">
-                            <div className="w-1.5 h-3 bg-emerald-500 rounded-sm"></div>
-                            <span>Giảm Xỉu</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <div className="w-1.5 h-3 bg-slate-400 rounded-sm"></div>
-                            <span>Ổn định</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <div className="w-1.5 h-3 bg-red-500 rounded-sm"></div>
-                            <span>Tăng Xỉu</span>
-                        </div>
-                    </>
-                ) : (
-                    <>
-                        <div className="flex items-center gap-1">
-                            <div className="w-1.5 h-3 bg-emerald-500 rounded-sm"></div>
-                            <span>Tăng</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <div className="w-1.5 h-3 bg-slate-400 rounded-sm"></div>
-                            <span>Ổn định</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <div className="w-1.5 h-3 bg-red-500 rounded-sm"></div>
-                            <span>Giảm (Hot)</span>
-                        </div>
-                    </>
-                )}
-                {hasSecondary ? (
-                    <div className="flex items-center gap-1 pl-3 ml-1 border-l border-gray-200 dark:border-slate-700">
-                        <div
-                            className="w-3 h-3 rounded-full border"
-                            style={{ borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.35)' }}
-                        ></div>
-                        <span style={{ color: '#3b82f6' }}>{secondaryLabel || 'Đội nhà'} (bong bóng)</span>
-                    </div>
-                ) : null}
-            </div>
-        </div>
-        {underXiuMode ? (
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 italic px-0">
-                Xanh: giá Xỉu giảm (bình thường) · Đỏ: giá Xỉu tăng (bất thường)
-            </p>
-        ) : null}
-        {hasSecondary ? (
-            <p className="text-[10px] italic px-0" style={{ color: '#3b82f6' }}>
-                {secondaryLabel || 'Đội nhà'}: bong bóng + đường đứt xanh, trục trái màu xanh — màu bong bóng vẫn theo quy tắc áp lực (xanh giảm · đỏ tăng · xám ổn định)
-            </p>
-        ) : null}
-    </div>
-);
 
 const CustomApiDot = (props: any) => {
     const { cx, cy, stroke, index, data } = props;
@@ -244,8 +191,7 @@ const MinuteCrosshairHud: React.FC<{
     ah: OddsSnap | null;
     underXiuMode?: boolean;
     secondaryLabel?: string;
-    leftPx: number;
-}> = ({ minute, ou, ah, underXiuMode, secondaryLabel, leftPx }) => {
+}> = ({ minute, ou, ah, underXiuMode, secondaryLabel }) => {
     const overColor =
         ou?.colorName === 'red'
             ? 'text-red-400'
@@ -256,10 +202,7 @@ const MinuteCrosshairHud: React.FC<{
     const fmtO = (v?: number) => (typeof v === 'number' && Number.isFinite(v) ? v.toFixed(3) : '—');
 
     return (
-        <div
-            className="absolute z-30 pointer-events-none -translate-x-1/2 min-w-[11rem] max-w-[16rem]"
-            style={{ left: leftPx, top: 0 }}
-        >
+        <div className="w-full">
             <div className="bg-slate-900/95 text-white text-[11px] px-2.5 py-1.5 rounded-md shadow-lg border border-indigo-400/60 backdrop-blur-sm">
                 <p className="font-bold text-indigo-300 border-b border-slate-600 mb-1 pb-0.5">
                     Phút {minute}&apos;
@@ -294,13 +237,29 @@ const MinuteCrosshairHud: React.FC<{
                 {ah && (
                     <div className="mt-1 pt-1 border-t border-slate-700 space-y-0.5">
                         <p className="text-sky-400 font-semibold">
-                            {secondaryLabel || 'Đội nhà'} HDP: {fmtH(ah.handicap)}
+                            {secondaryLabel || 'Đội chấp'} HDP: {fmtH(ah.handicap)}
                         </p>
-                        {typeof ah.home === 'number' && Number.isFinite(ah.home) && (
+                        {typeof (ah as { chapOdds?: number }).chapOdds === 'number' &&
+                        Number.isFinite((ah as { chapOdds?: number }).chapOdds) ? (
+                            <p className="text-gray-300">
+                                Odds chấp:{' '}
+                                <span
+                                    className={
+                                        ah.colorName === 'red'
+                                            ? 'text-red-400'
+                                            : ah.colorName === 'green'
+                                              ? 'text-green-400'
+                                              : 'text-sky-300'
+                                    }
+                                >
+                                    {fmtO((ah as { chapOdds?: number }).chapOdds)}
+                                </span>
+                            </p>
+                        ) : typeof ah.home === 'number' && Number.isFinite(ah.home) ? (
                             <p className="text-gray-300">
                                 Odds Nhà: <span className="text-sky-300">{fmtO(ah.home)}</span>
                             </p>
-                        )}
+                        ) : null}
                     </div>
                 )}
             </div>
@@ -367,10 +326,26 @@ const ShotBalls = ({ shots, containerWidth, xDomain, leftGutterPx = 45, rightGut
         acc[shot.minute].push(shot.type);
         return acc;
     }, {} as Record<number, ('on' | 'off')[]>);
-    return <>{Object.entries(shotsByMinute).map(([minute, types]) => (types as ('on' | 'off')[]).map((type, index) => (<div key={`${minute}-${index}`} className={`ball-icon ${type === 'on' ? 'ball-on' : 'ball-off'}`} style={{ left: `${calculateLeft(Number(minute))}px`, top: `${-10 + index * 24}px` }} title={`Shot ${type}-target at ${minute}'`}>⚽</div>)))}</>;
+    return <>{Object.entries(shotsByMinute).map(([minute, types]) => (types as ('on' | 'off')[]).map((type, index) => (<div key={`${minute}-${index}`} className={`ball-icon ${type === 'on' ? 'ball-on' : 'ball-off'}`} style={{ left: `${calculateLeft(Number(minute))}px`, top: `${4 + index * 22}px` }} title={`Shot ${type}-target at ${minute}'`}>⚽</div>)))}</>;
 };
 
-const GameEventMarkers = ({ events, containerWidth, xDomain, leftGutterPx = 45, rightGutterPx = 35 }: { events: any[]; containerWidth?: number; xDomain: [number, number]; leftGutterPx?: number; rightGutterPx?: number }) => {
+const GameEventMarkers = ({
+    events,
+    containerWidth,
+    xDomain,
+    leftGutterPx = 45,
+    rightGutterPx = 35,
+    homeTeamName,
+    awayTeamName,
+}: {
+    events: any[];
+    containerWidth?: number;
+    xDomain: [number, number];
+    leftGutterPx?: number;
+    rightGutterPx?: number;
+    homeTeamName?: string;
+    awayTeamName?: string;
+}) => {
     if (!containerWidth || events.length === 0) return null;
     const [xMin, xMax] = xDomain;
     const span = Math.max(xMax - xMin, 1e-6);
@@ -379,21 +354,40 @@ const GameEventMarkers = ({ events, containerWidth, xDomain, leftGutterPx = 45, 
         const leftOffset = leftGutterPx;
         return leftOffset + ((minute - xMin) / span) * chartAreaWidth;
     };
+    const shortTeamName = (name?: string, max = 10) => {
+        const t = (name ?? '').trim();
+        if (!t) return '';
+        return t.length <= max ? t : `${t.slice(0, max - 1)}…`;
+    };
+    const goalTeamLabel = (team?: 'home' | 'away') => {
+        if (team === 'home') return shortTeamName(homeTeamName) || 'Nhà';
+        if (team === 'away') return shortTeamName(awayTeamName) || 'Khách';
+        return '?';
+    };
     const goalsAtMinute: Record<string, number> = {};
     return <>{events.map((event, i) => {
         if (event.type === 'goal') {
-            const key = String(event.minute);
+            const teamKey = event.team ?? '?';
+            const key = `${event.minute}-${teamKey}`;
             const stack = goalsAtMinute[key] ?? 0;
             goalsAtMinute[key] = stack + 1;
             const offsetPx = stack * 14;
+            const label = goalTeamLabel(event.team);
+            const teamCls =
+                event.team === 'home'
+                    ? 'chart-goal-team-label--home'
+                    : event.team === 'away'
+                      ? 'chart-goal-team-label--away'
+                      : 'chart-goal-team-label--unknown';
             return (
                 <div
-                    key={`goal-${event.minute}-${i}`}
-                    className="game-event-icon game-event-goal chart-goal-ball"
-                    style={{ left: `${calculateLeft(event.minute) + offsetPx}px`, top: '6px', bottom: 'auto', transform: 'translateX(-50%)' }}
-                    title={`Bàn thắng ${event.minute}'`}
+                    key={`goal-${event.minute}-${teamKey}-${i}`}
+                    className="game-event-goal-stack"
+                    style={{ left: `${calculateLeft(event.minute) + offsetPx}px`, top: '2px', transform: 'translateX(-50%)' }}
+                    title={`Bàn thắng ${event.minute}' · ${label}`}
                 >
-                    ⚽
+                    <span className={`chart-goal-team-label ${teamCls}`}>{label}</span>
+                    <div className="chart-goal-ball flex items-center justify-center">⚽</div>
                 </div>
             );
         }
@@ -445,7 +439,7 @@ interface MomentumChartProps {
     /** Nhãn legend/tooltip cho kèo phụ, vd "Đội nhà (1_2)". */
     secondaryLabel?: string;
     /** Trường odds dùng cho chiều cao nến phụ — mặc định 'home'. */
-    secondaryOddsField?: 'home' | 'away';
+    secondaryOddsField?: 'home' | 'away' | 'chapOdds';
     /** Vạch dọc tùy ý (vd: 📍 mốc phút tình huống tương tự trong modal so sánh). */
     extraMarkers?: Array<{ minute: number; label?: string; color?: string }>;
     /** Bật so sánh theo phút — bấm nến để chọn, ←/→ đổi phút, Esc thoát. */
@@ -457,6 +451,9 @@ interface MomentumChartProps {
     plotAreaRef?: React.Ref<HTMLDivElement>;
     /** Ẩn HUD dưới trục X (parent tự render bảng so sánh). */
     suppressCrosshairHud?: boolean;
+    /** Tên đội — hiển thị phía trên bóng đỏ khi ghi bàn. */
+    homeTeamName?: string;
+    awayTeamName?: string;
 }
 
 export const MomentumChart: React.FC<MomentumChartProps> = ({
@@ -485,15 +482,16 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
     onSyncedCrosshairChange,
     plotAreaRef,
     suppressCrosshairHud = false,
+    homeTeamName,
+    awayTeamName,
 }) => {
     const chartAreaRef = useRef<HTMLDivElement>(null);
     const [localSelectedMinute, setLocalSelectedMinute] = useState<number | null>(null);
-    const [containerWidth, setContainerWidth] = useState(0);
 
     const isSyncedCrosshair = onSyncedCrosshairChange !== undefined;
     const selectedMinute = isSyncedCrosshair ? (syncedCrosshairMinute ?? null) : localSelectedMinute;
     const setSelectedMinute = isSyncedCrosshair ? onSyncedCrosshairChange! : setLocalSelectedMinute;
-    const showCrosshairHud = minuteCrosshair && !suppressCrosshairHud && !isSyncedCrosshair;
+    const showCrosshairHud = minuteCrosshair && !suppressCrosshairHud && !isSyncedCrosshair && selectedMinute != null;
     const compareActive = minuteCrosshair && selectedMinute != null;
 
     const setPlotRef = useCallback(
@@ -506,17 +504,6 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
         },
         [plotAreaRef],
     );
-
-    useEffect(() => {
-        if (!minuteCrosshair || !chartAreaRef.current) return;
-        const el = chartAreaRef.current;
-        const ro = new ResizeObserver((entries) => {
-            if (entries[0]) setContainerWidth(entries[0].contentRect.width);
-        });
-        ro.observe(el);
-        setContainerWidth(el.getBoundingClientRect().width);
-        return () => ro.disconnect();
-    }, [minuteCrosshair]);
 
     const gid = (base: string) => `${base}-${chartIdSuffix.replace(/[^a-zA-Z0-9_-]/g, '') || 'main'}`;
 
@@ -532,6 +519,60 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
         () => uniqueSortedMinutes(sortedMarketData),
         [sortedMarketData],
     );
+
+    const hasSecondary =
+        Array.isArray(secondaryMarketData) && secondaryMarketData.length > 0 && !!secondaryYAxisConfig;
+    const leftGutterPx = hasSecondary ? 45 + 40 + 15 : 45;
+
+    const scrubbingRef = useRef(false);
+
+    const snapMinuteFromClientX = useCallback(
+        (clientX: number): number | null => {
+            if (!minuteCrosshair || !chartAreaRef.current) return null;
+            const rect = chartAreaRef.current.getBoundingClientRect();
+            const raw = minuteFromPointer(clientX, rect, xDomain, leftGutterPx);
+            if (minuteSteps.length === 0) return Math.round(raw);
+            return minuteSteps.reduce((best, m) =>
+                Math.abs(m - raw) < Math.abs(best - raw) ? m : best,
+            minuteSteps[0]!);
+        },
+        [minuteCrosshair, xDomain, leftGutterPx, minuteSteps],
+    );
+
+    const applyPlotPointer = useCallback(
+        (clientX: number) => {
+            const minute = snapMinuteFromClientX(clientX);
+            if (minute != null) setSelectedMinute(minute);
+        },
+        [snapMinuteFromClientX, setSelectedMinute],
+    );
+
+    const onPlotPointerDown = useCallback(
+        (e: React.PointerEvent<HTMLDivElement>) => {
+            if (!minuteCrosshair || e.button !== 0) return;
+            scrubbingRef.current = true;
+            e.currentTarget.setPointerCapture(e.pointerId);
+            applyPlotPointer(e.clientX);
+        },
+        [minuteCrosshair, applyPlotPointer],
+    );
+
+    const onPlotPointerMove = useCallback(
+        (e: React.PointerEvent<HTMLDivElement>) => {
+            if (!scrubbingRef.current) return;
+            applyPlotPointer(e.clientX);
+        },
+        [applyPlotPointer],
+    );
+
+    const onPlotPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+        scrubbingRef.current = false;
+        try {
+            e.currentTarget.releasePointerCapture(e.pointerId);
+        } catch {
+            /* pointer already released */
+        }
+    }, []);
 
     useEffect(() => {
         if (isSyncedCrosshair || !minuteCrosshair || selectedMinute == null) return;
@@ -568,16 +609,12 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
         }));
     }, [underXiuMode, marketData, compareActive, selectedMinute]);
 
-    const hasSecondary =
-        Array.isArray(secondaryMarketData) && secondaryMarketData.length > 0 && !!secondaryYAxisConfig;
     const secondaryDataForChart = hasSecondary
         ? secondaryMarketData!.map((e: any) => ({
               ...e,
               __candleOddsValue: typeof e[secondaryOddsField] === 'number' ? e[secondaryOddsField] : undefined,
           }))
         : [];
-    // Trục trái thứ hai (~40px) + margin trái đổi -15→0 (~+15px) → overlay phải bù lại.
-    const leftGutterPx = hasSecondary ? 45 + 40 + 15 : 45;
     const SECONDARY_TINT = '#3b82f6';
     const SECONDARY_CANDLE_FILL = '#60a5fa';
 
@@ -592,10 +629,6 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                 : null,
         [selectedMinute, secondarySortedData],
     );
-    const crosshairPx =
-        selectedMinute != null && containerWidth > 0
-            ? crosshairLeftPx(selectedMinute, containerWidth, xDomain, leftGutterPx)
-            : null;
 
     return (
         <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
@@ -606,9 +639,17 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
             {halfSubtitle ? (
                 <p className="text-[10px] font-semibold text-amber-600/90 dark:text-amber-400/90 mb-2 uppercase tracking-wide">{halfSubtitle}</p>
             ) : null}
-            <div ref={setPlotRef} className="relative h-80 w-full">
+            <div
+                ref={setPlotRef}
+                data-ou-chart-plot
+                className={`relative h-72 sm:h-80 w-full ${minuteCrosshair ? 'cursor-crosshair touch-none' : ''}`}
+                onPointerDown={minuteCrosshair ? onPlotPointerDown : undefined}
+                onPointerMove={minuteCrosshair ? onPlotPointerMove : undefined}
+                onPointerUp={minuteCrosshair ? onPlotPointerUp : undefined}
+                onPointerCancel={minuteCrosshair ? onPlotPointerUp : undefined}
+            >
                 <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart margin={{ top: 10, right: 10, bottom: 28, left: hasSecondary ? 0 : -15 }}>
+                    <ComposedChart margin={{ top: 36, right: 10, bottom: 36, left: hasSecondary ? 0 : -15 }}>
                         <defs>
                             <filter id={gid('glowHome')} x="-40%" y="-40%" width="180%" height="180%">
                                 <feGaussianBlur stdDeviation="6" result="blur" />
@@ -695,7 +736,6 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                                 content={<CustomTooltip underXiuMode={underXiuMode} secondaryLabel={secondaryLabel} />}
                             />
                         )}
-                        <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
                         <Scatter
                             xAxisId={0}
                             yAxisId="left"
@@ -830,7 +870,7 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                                     }}
                                 />
                             ))}
-                        {compareActive && !(isSyncedCrosshair && suppressCrosshairHud) && (
+                        {compareActive && (
                             <ReferenceLine
                                 xAxisId={0}
                                 yAxisId="left"
@@ -846,47 +886,35 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                 </ResponsiveContainer>
                 <OverlayContainer>
                     <ShotBalls shots={shotEvents} xDomain={xDomain} leftGutterPx={leftGutterPx} />
-                    <GameEventMarkers events={gameEvents} xDomain={xDomain} leftGutterPx={leftGutterPx} />
+                    <GameEventMarkers
+                        events={gameEvents}
+                        xDomain={xDomain}
+                        leftGutterPx={leftGutterPx}
+                        homeTeamName={homeTeamName}
+                        awayTeamName={awayTeamName}
+                    />
                 </OverlayContainer>
-                <OddsColorLegent underXiuMode={underXiuMode} hasSecondary={hasSecondary} secondaryLabel={secondaryLabel} />
-                {showCrosshairHud && crosshairPx != null && (
-                    <div className="relative w-full min-h-[5rem] mt-0.5 mb-1">
+            </div>
+            {(showCrosshairHud || (minuteCrosshair && !suppressCrosshairHud)) && (
+                <div className="mt-2 space-y-2">
+                    {showCrosshairHud && (
                         <MinuteCrosshairHud
                             minute={selectedMinute!}
                             ou={selectedOu}
                             ah={selectedAh}
                             underXiuMode={underXiuMode}
                             secondaryLabel={secondaryLabel}
-                            leftPx={crosshairPx}
                         />
-                    </div>
-                )}
-                {gameEvents.some((e) => e.type === 'goal') && (
-                    <p className="text-[10px] text-red-600/90 dark:text-red-400/85 mt-2 px-1 text-center">
-                        ⚽ Viền đỏ trên biểu đồ: bàn thắng · 🚩 dưới trục: phạt góc
-                    </p>
-                )}
-                {alertMarkers.length > 0 && (
-                    <p className="text-[10px] text-amber-600/90 dark:text-amber-400/90 mt-2 px-1 text-center">
-                        🔔 Đường dọc: cảnh báo Nhật ký — <span className="text-amber-600">vàng</span> gia tăng ·{' '}
-                        <span className="text-red-600 dark:text-red-400">đỏ cực đại</span>
-                        {alertMarkers.some((m) => m.type === 'composite') ? (
-                            <>
-                                {' · '}
-                                <span className="text-emerald-600 dark:text-emerald-400">xanh kết hợp OU + áp lực</span>
-                            </>
-                        ) : null}{' '}
-                        ({alertMarkers.length} điểm)
-                    </p>
-                )}
-                {minuteCrosshair && !suppressCrosshairHud && (
-                    <p className="text-[10px] text-indigo-600/90 dark:text-indigo-400/90 mt-2 px-1 text-center">
-                        {compareActive
-                            ? '← → đổi phút · Esc thoát so sánh'
-                            : 'Bấm vào nến T/X để bật so sánh theo phút'}
-                    </p>
-                )}
-            </div>
+                    )}
+                    {minuteCrosshair && !suppressCrosshairHud && (
+                        <p className="text-[10px] text-indigo-600/90 dark:text-indigo-400/90 px-1 text-center">
+                            {compareActive
+                                ? '← → đổi phút · Esc thoát so sánh'
+                                : 'Bấm/kéo trên biểu đồ hoặc nến T/X để bám vạch kèo so sánh theo phút'}
+                        </p>
+                    )}
+                </div>
+            )}
         </div>
     );
 };

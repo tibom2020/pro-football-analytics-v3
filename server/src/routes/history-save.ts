@@ -2,6 +2,7 @@ import { Router } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
 import { logger } from '../logger.js';
+import { loadSimilarMatchLinksFromHistory } from '../history/similar-links-read.js';
 
 const MAX_BODY = 3 * 1024 * 1024;
 
@@ -31,6 +32,21 @@ function isSafeBasename(name: string): boolean {
 
 export function createHistorySaveRouter(): Router {
   const router = Router();
+
+  router.get('/similar-links', async (req, res) => {
+    try {
+      const matchId = String(req.query.matchId ?? '').trim();
+      if (!matchId) {
+        res.status(400).json({ error: 'matchId bắt buộc' });
+        return;
+      }
+      const links = await loadSimilarMatchLinksFromHistory(matchId);
+      res.json({ links });
+    } catch (err) {
+      logger.error('similar-links read failed:', err);
+      res.status(500).json({ error: 'đọc liên kết thất bại' });
+    }
+  });
 
   router.post('/save', async (req, res) => {
     try {

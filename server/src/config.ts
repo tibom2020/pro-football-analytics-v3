@@ -76,6 +76,8 @@ export const config = {
     datasetPath30Min: resolveDataPath(process.env.GOAL_DATASET_PATH_30MIN, 'datasets/goal-dataset-30min.jsonl'),
     /** Meta dataset (perMatch: matchId → file/ftStatus) — dùng để hiển thị "Chi tiết" tình huống tương tự. */
     datasetMetaPath: resolveDataPath(process.env.GOAL_DATASET_META_PATH, 'datasets/goal-dataset-meta.json'),
+    /** Dataset tóm tắt theo hiệp (1 dòng/trận) — RAG "% có bàn theo hiệp" theo vạch mở + kèo chấp. */
+    halvesDatasetPath: resolveDataPath(process.env.GOAL_HALVES_DATASET_PATH, 'datasets/goal-halves-dataset.jsonl'),
     /** Thư mục History/*.md — đọc lazy để lấy giải + tỷ số chung cuộc cho popup chi tiết. */
     historyDir: resolveDataPath(process.env.GOAL_HISTORY_DIR, 'History'),
     enableLLM: process.env.GOAL_PREDICT_ENABLE_LLM !== 'false',
@@ -87,6 +89,8 @@ export const config = {
     oddsDropThreshold: parseFloat(process.env.ODDS_DROP_THRESHOLD || '0.15'),
     oddsDropWindowMinutes: parseInt(process.env.ODDS_DROP_WINDOW_MINUTES || '5', 10),
     pollIntervalMs: parseInt(process.env.ODDS_POLL_INTERVAL_MS || '30000', 10),
+    /** Ngưỡng giá Tài khi hạ line 1_3/1_6 (client + server validate). */
+    ouLineDropPriceMax: parseFloat(process.env.OU_LINE_DROP_PRICE_MAX || '1.725'),
   },
 
   rateLimit: {

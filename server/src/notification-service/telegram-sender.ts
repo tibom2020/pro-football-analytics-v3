@@ -1,5 +1,5 @@
 import { OddsAlert, BetEvaluation, OddsSnapshot } from '../ai-assistant-core/types.js';
-import { logger } from '../index.js';
+import { logger } from '../logger.js';
 
 interface TelegramBotLike {
   sendMessage(chatId: number | string, text: string, options?: Record<string, unknown>): Promise<unknown>;

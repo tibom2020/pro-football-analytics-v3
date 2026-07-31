@@ -4,6 +4,7 @@
 
 import { GOAL_WINDOW_MIN, type FeatureVector } from './feature-builder.js';
 import { GOAL_WINDOW_MIN_LONG } from './onnx-service.js';
+import { parseCouncilBlock } from './deepseek-council-prompt.js';
 import { logger } from '../logger.js';
 
 export type ReasonSource = 'llm' | 'heuristic_fallback';
@@ -22,7 +23,7 @@ function extractReasonViString(parsed: Record<string, unknown>): string {
         const v = parsed[key];
         if (typeof v === 'string' && v.trim()) return v.trim();
     }
-    return '';
+    return parseCouncilBlock(parsed)?.finalConclusion ?? '';
 }
 
 export interface ParsedLlmReasonPayload {

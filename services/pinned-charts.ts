@@ -27,6 +27,8 @@ export interface PinnedChart {
   label?: 0 | 1;
   /** Kết cục 30': 1 = có bàn, 0 = không. */
   label30?: 0 | 1;
+  /** Có bàn từ phút ghim đến hết hiệp. */
+  labelHalf?: 0 | 1;
   similarity?: number;
   /** Snapshot features tại phút tình huống — phục vụ "Mở tab mới". */
   feats?: Record<string, number>;
@@ -37,6 +39,23 @@ export interface PinnedChart {
 function normMatchId(id: unknown): string | undefined {
   if (id == null || id === '') return undefined;
   return String(id);
+}
+
+/** Chuẩn hoá matchId — dùng khi so khớp ghim với trận Dashboard (string vs number). */
+export function normalizeMatchIdForPin(id: unknown): string | undefined {
+  return normMatchId(id);
+}
+
+/** Khóa ổn định cho 1 ghim — dùng mở/đóng nhiều modal so sánh song song. */
+export function pinnedChartKey(pin: Pick<PinnedChart, 'matchId' | 'sourceMatchId'>): string {
+  return `${normMatchId(pin.sourceMatchId) ?? ''}-${normMatchId(pin.matchId) ?? ''}`;
+}
+
+/** Lọc ghim thuộc trận đang xem trên Dashboard. */
+export function pinsForSourceMatch(pins: PinnedChart[], sourceMatchId: unknown): PinnedChart[] {
+  const src = normMatchId(sourceMatchId);
+  if (!src) return [];
+  return pins.filter((p) => normMatchId(p.sourceMatchId) === src);
 }
 
 /** Chuẩn hoá id — API B365 đôi khi trả number, URL/query thì string. */
@@ -110,6 +129,10 @@ function save(list: PinnedChart[]): boolean {
  */
 export function togglePinnedChart(pin: PinnedChart): boolean {
   const normalized = normalizePin(pin);
+  if (!normalized.sourceMatchId) {
+    console.warn('[pinned-charts] Không ghim được — thiếu sourceMatchId (trận đang xem).');
+    return false;
+  }
   const list = loadPinnedCharts();
   const idx = list.findIndex((p) => samePinnedEntry(p, normalized));
   if (idx >= 0) {

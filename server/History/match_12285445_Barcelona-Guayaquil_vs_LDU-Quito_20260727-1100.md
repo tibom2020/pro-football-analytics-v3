@@ -1,0 +1,2679 @@
+# Trận đấu — Barcelona Guayaquil vs LDU Quito
+
+## Thông tin chung
+
+| Trường | Giá trị |
+|--------|--------|
+| Match ID | `12285445` |
+| Giải | Ecuador LigaPro Serie A |
+| Tỷ số | 0-1 |
+| xG đội nhà (snapshot) | 1.75 |
+| xG đội khách (snapshot) | 1.08 |
+| Thời điểm / trạng thái | FT |
+| viewedAt (Unix ms) | 1785116133202 |
+| timer (raw) | `{"tm":101,"ts":58,"tt":"1","ta":10,"md":1}` |
+
+## Stats API (snapshot cuối — raw)
+
+```json
+{
+  "action_areas": [
+    "21.70",
+    "32.00"
+  ],
+  "attacks": [
+    "131",
+    "65"
+  ],
+  "corners": [
+    "8",
+    "3"
+  ],
+  "corner_h": [
+    "6",
+    "1"
+  ],
+  "crosses": [
+    "26",
+    "8"
+  ],
+  "crossing_accuracy": [
+    "0.15",
+    "0.00"
+  ],
+  "dangerous_attacks": [
+    "56",
+    "23"
+  ],
+  "goals": [
+    "0",
+    "1"
+  ],
+  "key_passes": [
+    "13",
+    "13"
+  ],
+  "off_target": [
+    "10",
+    "14"
+  ],
+  "on_target": [
+    "3",
+    "4"
+  ],
+  "passing_accuracy": [
+    "0.81",
+    "0.81"
+  ],
+  "penalties": [
+    "1",
+    "0"
+  ],
+  "possession_rt": [
+    "63",
+    "37"
+  ],
+  "redcards": [
+    "0",
+    "0"
+  ],
+  "substitutions": [
+    "5",
+    "4"
+  ],
+  "xg": [
+    "1.75",
+    "1.08"
+  ],
+  "yellowcards": [
+    "1",
+    "4"
+  ]
+}
+```
+
+## Vé cược (betTickets)
+
+_Không có vé cho trận này trong localStorage._
+
+## Thống kê theo phút (statsHistory)
+
+| Phút | Tấn công H/A | NG.nguy hiểm H/A | Tr.hợp lý H/A | Tr.hỏng H/A | Ph.góc H/A | Thẻ vàng H/A | Thẻ đỏ H/A | xG nhà | xG khách |
+|------|-------------|-----------------|---------------|------------|-----------|-------------|-----------|----------|----------|
+| 572 | 77 / 37 | 34 / 15 | 0 / 4 | 9 / 8 | 6 / 1 | 1 / 3 | 0 / 0 | 0.82 | 0.87 |
+| 573 | 78 / 38 | 35 / 15 | 0 / 4 | 9 / 8 | 6 / 1 | 1 / 3 | 0 / 0 | 0.82 | 0.87 |
+| 574 | 79 / 39 | 35 / 15 | 0 / 4 | 9 / 8 | 6 / 1 | 1 / 3 | 0 / 0 | 0.82 | 0.87 |
+| 575 | 85 / 41 | 36 / 17 | 0 / 4 | 9 / 8 | 6 / 1 | 1 / 3 | 0 / 0 | 0.82 | 0.87 |
+| 576 | 86 / 41 | 37 / 17 | 0 / 4 | 9 / 8 | 6 / 1 | 1 / 3 | 0 / 0 | 0.82 | 0.87 |
+| 577 | 86 / 42 | 37 / 17 | 0 / 4 | 9 / 9 | 6 / 1 | 1 / 3 | 0 / 0 | 0.82 | 0.87 |
+| 578 | 87 / 42 | 37 / 17 | 0 / 4 | 9 / 9 | 6 / 1 | 1 / 3 | 0 / 0 | 0.82 | 0.87 |
+| 579 | 92 / 42 | 43 / 17 | 0 / 4 | 9 / 9 | 6 / 1 | 1 / 3 | 0 / 0 | 0.82 | 0.87 |
+| 582 | 93 / 44 | 43 / 19 | 0 / 4 | 9 / 10 | 6 / 1 | 1 / 3 | 0 / 0 | 0.82 | 0.87 |
+| 583 | 95 / 49 | 43 / 20 | 0 / 4 | 9 / 11 | 6 / 1 | 1 / 3 | 0 / 0 | 0.82 | 0.90 |
+| 585 | 95 / 49 | 43 / 20 | 0 / 4 | 9 / 11 | 6 / 1 | 1 / 4 | 0 / 0 | 0.82 | 0.92 |
+| 587 | 95 / 49 | 43 / 20 | 1 / 4 | 10 / 11 | 6 / 1 | 1 / 4 | 0 / 0 | 0.82 | 0.97 |
+| 590 | 95 / 49 | 43 / 20 | 1 / 4 | 10 / 11 | 6 / 1 | 1 / 4 | 0 / 0 | 1.61 | 0.97 |
+| 592 | 95 / 49 | 43 / 20 | 1 / 4 | 10 / 11 | 6 / 1 | 1 / 4 | 0 / 0 | 1.61 | 0.97 |
+| 594 | 95 / 53 | 43 / 20 | 1 / 4 | 10 / 11 | 6 / 1 | 1 / 4 | 0 / 0 | 1.61 | 0.97 |
+| 595 | 99 / 53 | 43 / 20 | 1 / 4 | 10 / 11 | 6 / 1 | 1 / 4 | 0 / 0 | 1.61 | 0.97 |
+| 596 | 102 / 53 | 43 / 20 | 1 / 4 | 10 / 11 | 6 / 1 | 1 / 4 | 0 / 0 | 1.61 | 0.97 |
+| 597 | 104 / 53 | 45 / 20 | 1 / 4 | 10 / 11 | 6 / 1 | 1 / 4 | 0 / 0 | 1.61 | 0.97 |
+| 598 | 105 / 53 | 45 / 20 | 1 / 4 | 10 / 11 | 6 / 1 | 1 / 4 | 0 / 0 | 1.61 | 0.97 |
+| 599 | 105 / 56 | 45 / 20 | 1 / 4 | 10 / 11 | 6 / 1 | 1 / 4 | 0 / 0 | 1.61 | 0.97 |
+| 600 | 111 / 57 | 47 / 20 | 2 / 4 | 10 / 11 | 7 / 1 | 1 / 4 | 0 / 0 | 1.61 | 0.97 |
+| 601 | 117 / 57 | 53 / 20 | 2 / 4 | 10 / 11 | 7 / 1 | 1 / 4 | 0 / 0 | 1.73 | 0.97 |
+| 602 | 131 / 65 | 56 / 23 | 3 / 4 | 10 / 14 | 8 / 3 | 1 / 4 | 0 / 0 | 1.75 | 1.08 |
+| 604 | 120 / 57 | 54 / 20 | 2 / 4 | 10 / 12 | 7 / 1 | 1 / 4 | 0 / 0 | 1.73 | 0.97 |
+| 606 | 121 / 61 | 54 / 21 | 2 / 4 | 10 / 12 | 7 / 3 | 1 / 4 | 0 / 0 | 1.73 | 1.08 |
+| 608 | 124 / 63 | 54 / 23 | 2 / 4 | 10 / 14 | 7 / 3 | 1 / 4 | 0 / 0 | 1.73 | 1.08 |
+| 609 | 127 / 63 | 55 / 23 | 2 / 4 | 10 / 14 | 7 / 3 | 1 / 4 | 0 / 0 | 1.73 | 1.08 |
+| 610 | 128 / 65 | 55 / 23 | 2 / 4 | 10 / 14 | 7 / 3 | 1 / 4 | 0 / 0 | 1.73 | 1.08 |
+| 611 | 130 / 65 | 55 / 23 | 3 / 4 | 10 / 14 | 8 / 3 | 1 / 4 | 0 / 0 | 1.75 | 1.08 |
+| 613 | 131 / 65 | 56 / 23 | 3 / 4 | 10 / 14 | 8 / 3 | 1 / 4 | 0 / 0 | 1.75 | 1.08 |
+
+## Sự kiện trận (goal, corner)
+
+| Phút | Hiệp | Loại | Đội ghi bàn |
+|------|------|------|-------------|
+| 75 | 2 | goal | home |
+| 88 | 2 | corner | — |
+| 94 | 2 | corner | — |
+| 94 | 2 | corner | — |
+| 99 | 2 | corner | — |
+
+## Nhật ký cảnh báo (alertHistory)
+
+_Không có cảnh báo._
+
+## Dự đoán bàn thắng (goal-predict)
+
+_Chưa có lần dự đoán nào cho trận này._
+
+## Nhận định người dùng (userNotes)
+
+_Chưa có nhận định._
+
+## Chuỗi kèo theo phút & cường độ giảm giá
+
+_Bảng: **Phút**, **Hiệp** (1/2), **HDP**, **giá** = odds (hệ số). **Cường độ giảm** = các bước liền kề mà odds giảm (cùng HDP): số lần, tổng biên độ, bước lớn nhất._
+
+### Tài/Xỉu cả trận (1_3)
+
+_Đơn vị “giá” = odds (hệ số). 87 mốc._
+
+| Phút | Hiệp | HDP | Tài | Xỉu |
+|-----:|:---:|:---:|:---:|:---:|
+| 1 | 1 | 2.25 | 1.95 | 1.85 |
+| 2 | 1 | 2.25 | 2.00 | 1.80 |
+| 3 | 1 | 2.25 | 1.98 | 1.82 |
+| 4 | 1 | 2.25 | 1.90 | 1.90 |
+| 5 | 1 | 2.25 | 1.90 | 1.90 |
+| 7 | 1 | 2.25 | 1.98 | 1.82 |
+| 8 | 1 | 2.25 | 2.00 | 1.80 |
+| 9 | 1 | 2.25 | 1.88 | 1.93 |
+| 10 | 1 | 2.25 | 1.82 | 1.98 |
+| 11 | 1 | 2.25 | 1.82 | 1.98 |
+| 12 | 1 | 2.25 | 1.85 | 1.95 |
+| 13 | 1 | 2.25 | 1.93 | 1.88 |
+| 14 | 1 | 2.25 | 1.90 | 1.90 |
+| 15 | 1 | 2.25 | 1.93 | 1.88 |
+| 16 | 1 | 2.25 | 2.02 | 1.77 |
+| 17 | 1 | 2.25 | 1.98 | 1.82 |
+| 18 | 1 | 2.25 | 1.95 | 1.85 |
+| 19 | 1 | 2.25 | 1.93 | 1.88 |
+| 20 | 1 | 2.25 | 1.98 | 1.82 |
+| 21 | 1 | 2 | 1.80 | 2.00 |
+| 22 | 1 | 2 | 1.82 | 1.98 |
+| 23 | 1 | 2 | 1.85 | 1.95 |
+| 24 | 1 | 2 | 1.88 | 1.93 |
+| 25 | 1 | 2 | 1.93 | 1.88 |
+| 26 | 1 | 2 | 1.95 | 1.85 |
+| 27 | 1 | 2 | 1.95 | 1.85 |
+| 28 | 1 | 2 | 1.95 | 1.85 |
+| 29 | 1 | 1.75 | 1.75 | 2.05 |
+| 30 | 1 | 2 | 2.02 | 1.77 |
+| 31 | 1 | 1.75 | 1.75 | 2.05 |
+| 32 | 1 | 1.75 | 1.80 | 2.00 |
+| 33 | 1 | 1.75 | 1.85 | 1.95 |
+| 34 | 1 | 1.75 | 1.88 | 1.93 |
+| 35 | 1 | 1.75 | 1.95 | 1.85 |
+| 36 | 1 | 1.5 | 1.80 | 2.00 |
+| 37 | 1 | 1.5 | 1.80 | 2.00 |
+| 38 | 1 | 1.5 | 1.85 | 1.95 |
+| 39 | 1 | 2.5 | 1.85 | 1.95 |
+| 40 | 1 | 1.5 | 1.88 | 1.93 |
+| 41 | 1 | 1.5 | 2.02 | 1.77 |
+| 42 | 1 | 1.5 | 2.02 | 1.77 |
+| 43 | 1 | 1.5 | 1.93 | 1.88 |
+| 44 | 1 | 1.5 | 2.05 | 1.75 |
+| 45 | 1 | 1.25 | 1.80 | 2.00 |
+| 47 | 1 | 1.25 | 1.85 | 1.95 |
+| 48 | 1 | 1.25 | 1.90 | 1.90 |
+| 49 | 1 | 1.25 | 1.98 | 1.82 |
+| 50 | 1 | 1.25 | 2.08 | 1.73 |
+| 51 | 1 | 2 | 1.70 | 2.10 |
+| 52 | 1 | 2 | 1.75 | 2.05 |
+| 53 | 1 | 2.25 | 2.10 | 1.70 |
+| 54 | 1 | 2 | 1.75 | 2.05 |
+| 55 | 1 | 2 | 1.77 | 2.02 |
+| 56 | 1 | 2 | 1.82 | 1.98 |
+| 57 | 1 | 2 | 1.85 | 1.95 |
+| 58 | 1 | 2 | 1.90 | 1.90 |
+| 59 | 1 | 2 | 1.98 | 1.82 |
+| 60 | 1 | 2 | 2.00 | 1.80 |
+| 61 | 1 | 2 | 2.02 | 1.77 |
+| 62 | 1 | 2 | 2.08 | 1.73 |
+| 64 | 1 | 1.75 | 1.73 | 2.08 |
+| 66 | 1 | 1.75 | 1.80 | 2.00 |
+| 67 | 1 | 1.75 | 1.82 | 1.98 |
+| 68 | 1 | 1.75 | 1.90 | 1.90 |
+| 69 | 1 | 1.75 | 1.95 | 1.85 |
+| 70 | 1 | 1.75 | 1.98 | 1.82 |
+| 73 | 1 | 2.5 | 2.00 | 1.80 |
+| 74 | 1 | 2.5 | 1.77 | 2.02 |
+| 77 | 1 | 1.5 | 1.90 | 1.90 |
+| 78 | 1 | 1.5 | 2.02 | 1.77 |
+| 79 | 1 | 1.5 | 2.02 | 1.77 |
+| 81 | 1 | 1.5 | 2.20 | 1.65 |
+| 82 | 1 | 1.5 | 2.25 | 1.63 |
+| 83 | 1 | 1.5 | 2.30 | 1.60 |
+| 84 | 1 | 1.5 | 2.35 | 1.57 |
+| 85 | 1 | 1.5 | 2.67 | 1.45 |
+| 86 | 1 | 1.5 | 2.75 | 1.43 |
+| 87 | 1 | 1.5 | 3.00 | 1.38 |
+| 89 | 1 | 1.5 | 2.67 | 1.45 |
+| 90 | 1 | 1.5 | 2.85 | 1.40 |
+| 91 | 1 | 1.5 | 3.30 | 1.32 |
+| 92 | 1 | 1.5 | 3.45 | 1.30 |
+| 93 | 1 | 1.5 | 3.80 | 1.25 |
+| 94 | 1 | 1.5 | 4.00 | 1.23 |
+| 95 | 1 | 1.5 | 5.25 | 1.16 |
+| 96 | 1 | 1.5 | 6.25 | 1.12 |
+| 97 | 1 | 1.5 | 8.40 | 1.08 |
+
+**Cường độ giảm giá** (hai điểm liền nhau, cùng handicap):
+
+- **H1 — Tài:** 11 lần; tổng biên độ giảm 1.050; bước lớn nhất 0.325
+- **H1 — Xỉu:** 54 lần; tổng biên độ giảm 2.895; bước lớn nhất 0.150
+- **H2 — Tài:** không có bước giảm (cùng HDP)
+- **H2 — Xỉu:** không có bước giảm (cùng HDP)
+
+### Kèo chấp cả trận (đội nhà / đội khách) (1_2)
+
+_Đơn vị “giá” = odds chủ / khách. 75 mốc._
+
+| Phút | Hiệp | HDP | Chủ | Khách |
+|-----:|:---:|:---:|:---:|:---:|
+| 1 | 1 | -0.25 | 1.98 | 1.82 |
+| 2 | 1 | -0.25 | 2.05 | 1.75 |
+| 3 | 1 | -0.25 | 2.02 | 1.77 |
+| 4 | 1 | -0.25 | 2.00 | 1.80 |
+| 6 | 1 | -0.25 | 2.05 | 1.75 |
+| 7 | 1 | 0 | 1.75 | 2.05 |
+| 8 | 1 | 0 | 1.75 | 2.05 |
+| 10 | 1 | -0.25 | 2.05 | 1.75 |
+| 11 | 1 | -0.25 | 2.05 | 1.75 |
+| 12 | 1 | -0.25 | 2.02 | 1.77 |
+| 14 | 1 | -0.25 | 2.00 | 1.80 |
+| 15 | 1 | -0.25 | 1.98 | 1.82 |
+| 16 | 1 | -0.25 | 2.00 | 1.80 |
+| 17 | 1 | -0.25 | 1.95 | 1.85 |
+| 18 | 1 | -0.25 | 1.93 | 1.88 |
+| 19 | 1 | -0.25 | 1.88 | 1.93 |
+| 20 | 1 | -0.25 | 1.90 | 1.90 |
+| 21 | 1 | -0.25 | 1.93 | 1.88 |
+| 22 | 1 | -0.25 | 1.88 | 1.93 |
+| 23 | 1 | -0.25 | 1.88 | 1.93 |
+| 24 | 1 | -0.25 | 1.88 | 1.93 |
+| 25 | 1 | -0.25 | 1.90 | 1.90 |
+| 26 | 1 | -0.25 | 1.88 | 1.93 |
+| 27 | 1 | -0.25 | 1.95 | 1.85 |
+| 28 | 1 | -0.25 | 1.95 | 1.85 |
+| 29 | 1 | -0.25 | 1.98 | 1.82 |
+| 30 | 1 | -0.25 | 1.95 | 1.85 |
+| 33 | 1 | -0.25 | 1.98 | 1.82 |
+| 34 | 1 | -0.25 | 2.08 | 1.73 |
+| 35 | 1 | -0.25 | 2.00 | 1.80 |
+| 36 | 1 | -0.25 | 1.95 | 1.85 |
+| 37 | 1 | -0.25 | 2.02 | 1.77 |
+| 38 | 1 | -0.25 | 1.95 | 1.85 |
+| 39 | 1 | -0.25 | 1.77 | 2.02 |
+| 40 | 1 | -0.25 | 2.05 | 1.75 |
+| 41 | 1 | -0.25 | 2.00 | 1.80 |
+| 42 | 1 | -0.25 | 1.98 | 1.82 |
+| 43 | 1 | -0.25 | 2.00 | 1.80 |
+| 44 | 1 | -0.25 | 2.00 | 1.80 |
+| 45 | 1 | -0.25 | 1.95 | 1.85 |
+| 47 | 1 | -0.25 | 1.98 | 1.82 |
+| 49 | 1 | -0.25 | 2.00 | 1.80 |
+| 50 | 1 | -0.25 | 2.02 | 1.77 |
+| 51 | 1 | -0.25 | 1.85 | 1.95 |
+| 52 | 1 | -0.25 | 2.08 | 1.73 |
+| 53 | 1 | -0.25 | 1.82 | 1.98 |
+| 54 | 1 | -0.25 | 1.88 | 1.93 |
+| 55 | 1 | -0.25 | 1.90 | 1.90 |
+| 56 | 1 | -0.25 | 1.88 | 1.93 |
+| 57 | 1 | -0.25 | 1.88 | 1.93 |
+| 58 | 1 | -0.25 | 1.88 | 1.93 |
+| 59 | 1 | -0.25 | 1.90 | 1.90 |
+| 60 | 1 | -0.25 | 1.88 | 1.93 |
+| 61 | 1 | -0.25 | 1.90 | 1.90 |
+| 64 | 1 | -0.25 | 1.93 | 1.88 |
+| 65 | 1 | -0.25 | 1.90 | 1.90 |
+| 66 | 1 | -0.25 | 1.95 | 1.85 |
+| 68 | 1 | -0.25 | 2.00 | 1.80 |
+| 69 | 1 | -0.25 | 2.05 | 1.75 |
+| 70 | 1 | -0.25 | 2.08 | 1.73 |
+| 73 | 1 | -1 | 2.00 | 1.80 |
+| 74 | 1 | -0.25 | 2.35 | 1.57 |
+| 77 | 1 | -0.25 | 2.30 | 1.60 |
+| 78 | 1 | -0.25 | 2.35 | 1.57 |
+| 81 | 1 | -0.25 | 2.42 | 1.52 |
+| 82 | 1 | -0.25 | 2.42 | 1.52 |
+| 83 | 1 | -0.25 | 2.42 | 1.52 |
+| 84 | 1 | -0.25 | 2.50 | 1.50 |
+| 85 | 1 | 0 | 1.45 | 2.67 |
+| 86 | 1 | 0 | 1.52 | 2.42 |
+| 87 | 1 | 0 | 1.55 | 2.38 |
+| 88 | 1 | 0 | 1.63 | 2.25 |
+| 93 | 1 | 0 | 1.63 | 2.25 |
+| 94 | 1 | 0 | 1.75 | 2.05 |
+| 95 | 1 | 0 | 1.60 | 2.30 |
+
+**Cường độ giảm giá** (cùng HDP):
+
+- **H1 — Chủ:** 25 lần; tổng biên độ giảm 1.550; bước lớn nhất 0.250
+- **H1 — Khách:** 33 lần; tổng biên độ giảm 2.175; bước lớn nhất 0.275
+- **H2 — Chủ:** không có bước giảm (cùng HDP)
+- **H2 — Khách:** không có bước giảm (cùng HDP)
+
+### Tài/Xỉu hiệp 1 (thị trường H1 — API) (1_6)
+
+_Đơn vị “giá” = odds (hệ số). 42 mốc._
+
+| Phút | Hiệp | HDP | Tài | Xỉu |
+|-----:|:---:|:---:|:---:|:---:|
+| 1 | 1 | 1 | 2.10 | 1.70 |
+| 2 | 1 | 0.75 | 1.73 | 2.08 |
+| 3 | 1 | 0.75 | 1.75 | 2.05 |
+| 4 | 1 | 0.75 | 1.75 | 2.05 |
+| 6 | 1 | 0.75 | 1.75 | 2.05 |
+| 7 | 1 | 0.75 | 1.82 | 1.98 |
+| 8 | 1 | 0.75 | 1.88 | 1.93 |
+| 9 | 1 | 0.75 | 1.82 | 1.98 |
+| 10 | 1 | 0.75 | 1.80 | 2.00 |
+| 11 | 1 | 0.75 | 1.80 | 2.00 |
+| 12 | 1 | 0.75 | 1.82 | 1.98 |
+| 13 | 1 | 0.75 | 1.90 | 1.90 |
+| 14 | 1 | 0.75 | 1.93 | 1.88 |
+| 15 | 1 | 0.75 | 1.95 | 1.85 |
+| 16 | 1 | 0.75 | 1.95 | 1.85 |
+| 17 | 1 | 0.75 | 2.02 | 1.77 |
+| 18 | 1 | 0.75 | 2.02 | 1.77 |
+| 19 | 1 | 0.75 | 2.05 | 1.75 |
+| 20 | 1 | 0.5 | 1.80 | 2.00 |
+| 21 | 1 | 0.5 | 1.85 | 1.95 |
+| 22 | 1 | 0.5 | 1.90 | 1.90 |
+| 23 | 1 | 0.5 | 1.90 | 1.90 |
+| 24 | 1 | 0.5 | 1.95 | 1.85 |
+| 25 | 1 | 0.5 | 2.02 | 1.77 |
+| 26 | 1 | 0.5 | 2.05 | 1.75 |
+| 27 | 1 | 0.5 | 2.10 | 1.70 |
+| 28 | 1 | 0.5 | 2.15 | 1.68 |
+| 29 | 1 | 0.5 | 2.25 | 1.63 |
+| 30 | 1 | 0.5 | 2.38 | 1.55 |
+| 31 | 1 | 0.5 | 2.42 | 1.52 |
+| 32 | 1 | 0.5 | 2.60 | 1.48 |
+| 33 | 1 | 0.5 | 2.67 | 1.45 |
+| 34 | 1 | 0.5 | 2.75 | 1.43 |
+| 35 | 1 | 0.5 | 3.00 | 1.38 |
+| 36 | 1 | 0.5 | 3.30 | 1.32 |
+| 37 | 1 | 0.5 | 3.45 | 1.30 |
+| 38 | 1 | 0.5 | 3.30 | 1.32 |
+| 39 | 1 | 1.5 | 4.15 | 1.22 |
+| 40 | 1 | 0.5 | 5.00 | 1.17 |
+| 41 | 1 | 0.5 | 5.50 | 1.15 |
+| 42 | 1 | 0.5 | 5.50 | 1.15 |
+| 43 | 1 | 0.5 | 6.25 | 1.12 |
+
+**Cường độ giảm giá** (hai điểm liền nhau, cùng handicap):
+
+- **H1 — Tài:** 3 lần; tổng biên độ giảm 0.225; bước lớn nhất 0.150
+- **H1 — Xỉu:** 27 lần; tổng biên độ giảm 1.150; bước lớn nhất 0.075
+- **H2 — Tài:** không có bước giảm (cùng HDP)
+- **H2 — Xỉu:** không có bước giảm (cùng HDP)
+
+### Chấp hiệp 1 (thị trường H1 — API) (1_5)
+
+_Đơn vị “giá” = odds chủ / khách. 34 mốc._
+
+| Phút | Hiệp | HDP | Chủ | Khách |
+|-----:|:---:|:---:|:---:|:---:|
+| 1 | 1 | 0 | 1.73 | 2.08 |
+| 2 | 1 | 0 | 1.75 | 2.05 |
+| 4 | 1 | 0 | 1.75 | 2.05 |
+| 5 | 1 | 0 | 1.75 | 2.05 |
+| 7 | 1 | 0 | 1.75 | 2.05 |
+| 8 | 1 | 0 | 1.75 | 2.05 |
+| 12 | 1 | 0 | 1.70 | 2.10 |
+| 14 | 1 | 0 | 1.68 | 2.15 |
+| 15 | 1 | 0 | 1.75 | 2.05 |
+| 16 | 1 | 0 | 1.65 | 2.20 |
+| 17 | 1 | 0 | 1.70 | 2.10 |
+| 18 | 1 | 0 | 1.68 | 2.15 |
+| 19 | 1 | 0 | 1.65 | 2.20 |
+| 20 | 1 | 0 | 1.65 | 2.20 |
+| 21 | 1 | 0 | 1.70 | 2.10 |
+| 22 | 1 | 0 | 1.68 | 2.15 |
+| 23 | 1 | 0 | 1.68 | 2.15 |
+| 24 | 1 | 0 | 1.65 | 2.20 |
+| 26 | 1 | 0 | 1.57 | 2.35 |
+| 27 | 1 | 0 | 1.65 | 2.20 |
+| 28 | 1 | 0 | 1.60 | 2.30 |
+| 29 | 1 | 0 | 1.60 | 2.30 |
+| 30 | 1 | 0 | 1.60 | 2.30 |
+| 32 | 1 | 0 | 1.63 | 2.25 |
+| 34 | 1 | 0 | 1.68 | 2.15 |
+| 35 | 1 | 0 | 1.57 | 2.35 |
+| 36 | 1 | 0 | 1.57 | 2.35 |
+| 37 | 1 | 0 | 1.68 | 2.15 |
+| 38 | 1 | 0 | 1.63 | 2.25 |
+| 39 | 1 | 0 | 1.50 | 2.50 |
+| 40 | 1 | 0 | 1.70 | 2.10 |
+| 41 | 1 | 0 | 1.65 | 2.20 |
+| 42 | 1 | 0 | 1.48 | 2.60 |
+| 43 | 1 | 0 | 1.65 | 2.20 |
+
+**Cường độ giảm giá** (cùng HDP):
+
+- **H1 — Chủ:** 14 lần; tổng biên độ giảm 0.900; bước lớn nhất 0.175
+- **H1 — Khách:** 10 lần; tổng biên độ giảm 1.625; bước lớn nhất 0.400
+- **H2 — Chủ:** không có bước giảm (cùng HDP)
+- **H2 — Khách:** không có bước giảm (cùng HDP)
+
+## Nhật ký cường độ giảm giá (như biểu đồ *OddsDropChart*)
+
+_Định dạng bảng tương tự **Nhật ký cảnh báo** (cột **Loại** = `ou_drop / 1_3` …). **Cường độ** = số nét giảm giá tại phút đó (như cột đỏ *OddsDropChart*). **1_3** / **1_6**: Tài (over). **1_5**: Chủ (home)._
+
+### Kèo Tài cả trận (1_3)
+
+Gộp trục Hiệp 1 và Hiệp 2 trên thị trường **1_3** (đồng bộ hai panel H1/H2 trong Dashboard).
+
+| Phút | Hiệp | Loại | Cường độ | Tiêu đề | Nội dung |
+|-----:|:---:|:---|:---:|---------|----------|
+| 3 | 1 | ou_drop / 1_3 | 1 | Giảm giá Tài (1_3) | Biểu đồ cường độ: **1** lần giảm odds **Tài** (Tài/Xỉu) tại phút này (cùng HDP, bước liền kề). |
+| 4 | 1 | ou_drop / 1_3 | 1 | Giảm giá Tài (1_3) | Biểu đồ cường độ: **1** lần giảm odds **Tài** (Tài/Xỉu) tại phút này (cùng HDP, bước liền kề). |
+| 9 | 1 | ou_drop / 1_3 | 1 | Giảm giá Tài (1_3) | Biểu đồ cường độ: **1** lần giảm odds **Tài** (Tài/Xỉu) tại phút này (cùng HDP, bước liền kề). |
+| 10 | 1 | ou_drop / 1_3 | 1 | Giảm giá Tài (1_3) | Biểu đồ cường độ: **1** lần giảm odds **Tài** (Tài/Xỉu) tại phút này (cùng HDP, bước liền kề). |
+| 14 | 1 | ou_drop / 1_3 | 1 | Giảm giá Tài (1_3) | Biểu đồ cường độ: **1** lần giảm odds **Tài** (Tài/Xỉu) tại phút này (cùng HDP, bước liền kề). |
+| 17 | 1 | ou_drop / 1_3 | 1 | Giảm giá Tài (1_3) | Biểu đồ cường độ: **1** lần giảm odds **Tài** (Tài/Xỉu) tại phút này (cùng HDP, bước liền kề). |
+| 18 | 1 | ou_drop / 1_3 | 1 | Giảm giá Tài (1_3) | Biểu đồ cường độ: **1** lần giảm odds **Tài** (Tài/Xỉu) tại phút này (cùng HDP, bước liền kề). |
+| 19 | 1 | ou_drop / 1_3 | 1 | Giảm giá Tài (1_3) | Biểu đồ cường độ: **1** lần giảm odds **Tài** (Tài/Xỉu) tại phút này (cùng HDP, bước liền kề). |
+| 43 | 1 | ou_drop / 1_3 | 1 | Giảm giá Tài (1_3) | Biểu đồ cường độ: **1** lần giảm odds **Tài** (Tài/Xỉu) tại phút này (cùng HDP, bước liền kề). |
+| 74 | 2 | ou_drop / 1_3 | 1 | Giảm giá Tài (1_3) | Biểu đồ cường độ: **1** lần giảm odds **Tài** (Tài/Xỉu) tại phút này (cùng HDP, bước liền kề). |
+| 89 | 2 | ou_drop / 1_3 | 1 | Giảm giá Tài (1_3) | Biểu đồ cường độ: **1** lần giảm odds **Tài** (Tài/Xỉu) tại phút này (cùng HDP, bước liền kề). |
+
+### Kèo Tài hiệp 1 (1_6)
+
+Thị trường **1_6** — toàn bộ phút hiển thị thuộc **hiệp 1** (kể cả bù giờ H1).
+
+| Phút | Hiệp | Loại | Cường độ | Tiêu đề | Nội dung |
+|-----:|:---:|:---|:---:|---------|----------|
+| 9 | 1 | ou_drop / 1_6 | 1 | Giảm giá Tài (1_6) | Biểu đồ cường độ: **1** lần giảm odds **Tài** (Tài/Xỉu) tại phút này (cùng HDP, bước liền kề). |
+| 10 | 1 | ou_drop / 1_6 | 1 | Giảm giá Tài (1_6) | Biểu đồ cường độ: **1** lần giảm odds **Tài** (Tài/Xỉu) tại phút này (cùng HDP, bước liền kề). |
+| 38 | 1 | ou_drop / 1_6 | 1 | Giảm giá Tài (1_6) | Biểu đồ cường độ: **1** lần giảm odds **Tài** (Tài/Xỉu) tại phút này (cùng HDP, bước liền kề). |
+
+### Kèo chấp hiệp 1 — odds Chủ (1_5)
+
+Thị trường **1_5** — cường độ theo hướng giảm **Chủ** (cùng logic màu đỏ trên biểu đồ chấp H1).
+
+| Phút | Hiệp | Loại | Cường độ | Tiêu đề | Nội dung |
+|-----:|:---:|:---|:---:|---------|----------|
+| 2 | 1 | ou_drop / 1_5 | 1 | Giảm giá Chủ (1_5) | Biểu đồ cường độ: **1** lần giảm odds **Chủ** (kèo chấp hiệp 1) tại phút này (cùng HDP, bước liền kề). |
+| 15 | 1 | ou_drop / 1_5 | 1 | Giảm giá Chủ (1_5) | Biểu đồ cường độ: **1** lần giảm odds **Chủ** (kèo chấp hiệp 1) tại phút này (cùng HDP, bước liền kề). |
+| 17 | 1 | ou_drop / 1_5 | 1 | Giảm giá Chủ (1_5) | Biểu đồ cường độ: **1** lần giảm odds **Chủ** (kèo chấp hiệp 1) tại phút này (cùng HDP, bước liền kề). |
+| 21 | 1 | ou_drop / 1_5 | 1 | Giảm giá Chủ (1_5) | Biểu đồ cường độ: **1** lần giảm odds **Chủ** (kèo chấp hiệp 1) tại phút này (cùng HDP, bước liền kề). |
+| 27 | 1 | ou_drop / 1_5 | 1 | Giảm giá Chủ (1_5) | Biểu đồ cường độ: **1** lần giảm odds **Chủ** (kèo chấp hiệp 1) tại phút này (cùng HDP, bước liền kề). |
+| 32 | 1 | ou_drop / 1_5 | 1 | Giảm giá Chủ (1_5) | Biểu đồ cường độ: **1** lần giảm odds **Chủ** (kèo chấp hiệp 1) tại phút này (cùng HDP, bước liền kề). |
+| 34 | 1 | ou_drop / 1_5 | 1 | Giảm giá Chủ (1_5) | Biểu đồ cường độ: **1** lần giảm odds **Chủ** (kèo chấp hiệp 1) tại phút này (cùng HDP, bước liền kề). |
+| 37 | 1 | ou_drop / 1_5 | 1 | Giảm giá Chủ (1_5) | Biểu đồ cường độ: **1** lần giảm odds **Chủ** (kèo chấp hiệp 1) tại phút này (cùng HDP, bước liền kề). |
+| 40 | 1 | ou_drop / 1_5 | 1 | Giảm giá Chủ (1_5) | Biểu đồ cường độ: **1** lần giảm odds **Chủ** (kèo chấp hiệp 1) tại phút này (cùng HDP, bước liền kề). |
+| 43 | 1 | ou_drop / 1_5 | 1 | Giảm giá Chủ (1_5) | Biểu đồ cường độ: **1** lần giảm odds **Chủ** (kèo chấp hiệp 1) tại phút này (cùng HDP, bước liền kề). |
+
+### Phụ lục JSON: 1_3 (OU cả trận)
+
+```json
+[
+  {
+    "marketId": "1_3",
+    "minute": 1,
+    "handicap": 2.25,
+    "over": 1.95,
+    "under": 1.85,
+    "sourceId": "431447337",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 2,
+    "handicap": 2.25,
+    "over": 2,
+    "under": 1.8,
+    "sourceId": "431447400",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 3,
+    "handicap": 2.25,
+    "over": 1.975,
+    "under": 1.825,
+    "sourceId": "431447522",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 4,
+    "handicap": 2.25,
+    "over": 1.9,
+    "under": 1.9,
+    "sourceId": "431447576",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 5,
+    "handicap": 2.25,
+    "over": 1.9,
+    "under": 1.9,
+    "sourceId": "431447719",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 7,
+    "handicap": 2.25,
+    "over": 1.975,
+    "under": 1.825,
+    "sourceId": "431447928",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 8,
+    "handicap": 2.25,
+    "over": 2,
+    "under": 1.8,
+    "sourceId": "431447999",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 9,
+    "handicap": 2.25,
+    "over": 1.875,
+    "under": 1.925,
+    "sourceId": "431448057",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 10,
+    "handicap": 2.25,
+    "over": 1.825,
+    "under": 1.975,
+    "sourceId": "431448108",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 11,
+    "handicap": 2.25,
+    "over": 1.825,
+    "under": 1.975,
+    "sourceId": "431448189",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 12,
+    "handicap": 2.25,
+    "over": 1.85,
+    "under": 1.95,
+    "sourceId": "431448267",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 13,
+    "handicap": 2.25,
+    "over": 1.925,
+    "under": 1.875,
+    "sourceId": "431448372",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 14,
+    "handicap": 2.25,
+    "over": 1.9,
+    "under": 1.9,
+    "sourceId": "431448424",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 15,
+    "handicap": 2.25,
+    "over": 1.925,
+    "under": 1.875,
+    "sourceId": "431448509",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 16,
+    "handicap": 2.25,
+    "over": 2.025,
+    "under": 1.775,
+    "sourceId": "431448568",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 17,
+    "handicap": 2.25,
+    "over": 1.975,
+    "under": 1.825,
+    "sourceId": "431448590",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 18,
+    "handicap": 2.25,
+    "over": 1.95,
+    "under": 1.85,
+    "sourceId": "431448712",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 19,
+    "handicap": 2.25,
+    "over": 1.925,
+    "under": 1.875,
+    "sourceId": "431448724",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 20,
+    "handicap": 2.25,
+    "over": 1.975,
+    "under": 1.825,
+    "sourceId": "431448855",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 21,
+    "handicap": 2,
+    "over": 1.8,
+    "under": 2,
+    "sourceId": "431448990",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 22,
+    "handicap": 2,
+    "over": 1.825,
+    "under": 1.975,
+    "sourceId": "431449084",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 23,
+    "handicap": 2,
+    "over": 1.85,
+    "under": 1.95,
+    "sourceId": "431449149",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 24,
+    "handicap": 2,
+    "over": 1.875,
+    "under": 1.925,
+    "sourceId": "431449251",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 25,
+    "handicap": 2,
+    "over": 1.925,
+    "under": 1.875,
+    "sourceId": "431449320",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 26,
+    "handicap": 2,
+    "over": 1.95,
+    "under": 1.85,
+    "sourceId": "431449447",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 27,
+    "handicap": 2,
+    "over": 1.95,
+    "under": 1.85,
+    "sourceId": "431449556",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 28,
+    "handicap": 2,
+    "over": 1.95,
+    "under": 1.85,
+    "sourceId": "431449740",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 29,
+    "handicap": 1.75,
+    "over": 1.75,
+    "under": 2.05,
+    "sourceId": "431449827",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 30,
+    "handicap": 2,
+    "over": 2.025,
+    "under": 1.775,
+    "sourceId": "431449906",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 31,
+    "handicap": 1.75,
+    "over": 1.75,
+    "under": 2.05,
+    "sourceId": "431450004",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 32,
+    "handicap": 1.75,
+    "over": 1.8,
+    "under": 2,
+    "sourceId": "431450057",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 33,
+    "handicap": 1.75,
+    "over": 1.85,
+    "under": 1.95,
+    "sourceId": "431450140",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 34,
+    "handicap": 1.75,
+    "over": 1.875,
+    "under": 1.925,
+    "sourceId": "431450190",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 35,
+    "handicap": 1.75,
+    "over": 1.95,
+    "under": 1.85,
+    "sourceId": "431450258",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 36,
+    "handicap": 1.5,
+    "over": 1.8,
+    "under": 2,
+    "sourceId": "431450333",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 37,
+    "handicap": 1.5,
+    "over": 1.8,
+    "under": 2,
+    "sourceId": "431450476",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 38,
+    "handicap": 1.5,
+    "over": 1.85,
+    "under": 1.95,
+    "sourceId": "431450556",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 39,
+    "handicap": 2.5,
+    "over": 1.85,
+    "under": 1.95,
+    "sourceId": "431450628",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 40,
+    "handicap": 1.5,
+    "over": 1.875,
+    "under": 1.925,
+    "sourceId": "431450686",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 41,
+    "handicap": 1.5,
+    "over": 2.025,
+    "under": 1.775,
+    "sourceId": "431450785",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 42,
+    "handicap": 1.5,
+    "over": 2.025,
+    "under": 1.775,
+    "sourceId": "431450853",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 43,
+    "handicap": 1.5,
+    "over": 1.925,
+    "under": 1.875,
+    "sourceId": "431450905",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 44,
+    "handicap": 1.5,
+    "over": 2.05,
+    "under": 1.75,
+    "sourceId": "431450969",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 45,
+    "handicap": 1.25,
+    "over": 1.8,
+    "under": 2,
+    "sourceId": "431452280",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 47,
+    "handicap": 1.25,
+    "over": 1.85,
+    "under": 1.95,
+    "sourceId": "431452409",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 48,
+    "handicap": 1.25,
+    "over": 1.9,
+    "under": 1.9,
+    "sourceId": "431452435",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 49,
+    "handicap": 1.25,
+    "over": 1.975,
+    "under": 1.825,
+    "sourceId": "431452491",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 50,
+    "handicap": 1.25,
+    "over": 2.075,
+    "under": 1.725,
+    "sourceId": "431452529",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 51,
+    "handicap": 2,
+    "over": 1.7,
+    "under": 2.1,
+    "sourceId": "431452573",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 52,
+    "handicap": 2,
+    "over": 1.75,
+    "under": 2.05,
+    "sourceId": "431452668",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 53,
+    "handicap": 2.25,
+    "over": 2.1,
+    "under": 1.7,
+    "sourceId": "431452758",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 54,
+    "handicap": 2,
+    "over": 1.75,
+    "under": 2.05,
+    "sourceId": "431452849",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 55,
+    "handicap": 2,
+    "over": 1.775,
+    "under": 2.025,
+    "sourceId": "431452882",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 56,
+    "handicap": 2,
+    "over": 1.825,
+    "under": 1.975,
+    "sourceId": "431452916",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 57,
+    "handicap": 2,
+    "over": 1.85,
+    "under": 1.95,
+    "sourceId": "431452973",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 58,
+    "handicap": 2,
+    "over": 1.9,
+    "under": 1.9,
+    "sourceId": "431453031",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 59,
+    "handicap": 2,
+    "over": 1.975,
+    "under": 1.825,
+    "sourceId": "431453102",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 60,
+    "handicap": 2,
+    "over": 2,
+    "under": 1.8,
+    "sourceId": "431453130",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 61,
+    "handicap": 2,
+    "over": 2.025,
+    "under": 1.775,
+    "sourceId": "431453194",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 62,
+    "handicap": 2,
+    "over": 2.075,
+    "under": 1.725,
+    "sourceId": "431453253",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 64,
+    "handicap": 1.75,
+    "over": 1.725,
+    "under": 2.075,
+    "sourceId": "431453328",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 66,
+    "handicap": 1.75,
+    "over": 1.8,
+    "under": 2,
+    "sourceId": "431453455",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 67,
+    "handicap": 1.75,
+    "over": 1.825,
+    "under": 1.975,
+    "sourceId": "431453491",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 68,
+    "handicap": 1.75,
+    "over": 1.9,
+    "under": 1.9,
+    "sourceId": "431453579",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 69,
+    "handicap": 1.75,
+    "over": 1.95,
+    "under": 1.85,
+    "sourceId": "431453634",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 70,
+    "handicap": 1.75,
+    "over": 1.975,
+    "under": 1.825,
+    "sourceId": "431453701",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 73,
+    "handicap": 2.5,
+    "over": 2,
+    "under": 1.8,
+    "sourceId": "431453911",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 74,
+    "handicap": 2.5,
+    "over": 1.775,
+    "under": 2.025,
+    "sourceId": "431453975",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 77,
+    "handicap": 1.5,
+    "over": 1.9,
+    "under": 1.9,
+    "sourceId": "431454150",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 78,
+    "handicap": 1.5,
+    "over": 2.025,
+    "under": 1.775,
+    "sourceId": "431454206",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 79,
+    "handicap": 1.5,
+    "over": 2.025,
+    "under": 1.775,
+    "sourceId": "431454242",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 81,
+    "handicap": 1.5,
+    "over": 2.2,
+    "under": 1.65,
+    "sourceId": "431454404",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 82,
+    "handicap": 1.5,
+    "over": 2.25,
+    "under": 1.625,
+    "sourceId": "431454425",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 83,
+    "handicap": 1.5,
+    "over": 2.3,
+    "under": 1.6,
+    "sourceId": "431454509",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 84,
+    "handicap": 1.5,
+    "over": 2.35,
+    "under": 1.575,
+    "sourceId": "431454518",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 85,
+    "handicap": 1.5,
+    "over": 2.675,
+    "under": 1.45,
+    "sourceId": "431454585",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 86,
+    "handicap": 1.5,
+    "over": 2.75,
+    "under": 1.425,
+    "sourceId": "431454615",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 87,
+    "handicap": 1.5,
+    "over": 3,
+    "under": 1.375,
+    "sourceId": "431454675",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 89,
+    "handicap": 1.5,
+    "over": 2.675,
+    "under": 1.45,
+    "sourceId": "431454785",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 90,
+    "handicap": 1.5,
+    "over": 2.85,
+    "under": 1.4,
+    "sourceId": "431454813",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 91,
+    "handicap": 1.5,
+    "over": 3.3,
+    "under": 1.325,
+    "sourceId": "431454904",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 92,
+    "handicap": 1.5,
+    "over": 3.45,
+    "under": 1.3,
+    "sourceId": "431454946",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 93,
+    "handicap": 1.5,
+    "over": 3.8,
+    "under": 1.25,
+    "sourceId": "431455002",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 94,
+    "handicap": 1.5,
+    "over": 4,
+    "under": 1.23,
+    "sourceId": "431455048",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 95,
+    "handicap": 1.5,
+    "over": 5.25,
+    "under": 1.16,
+    "sourceId": "431455103",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 96,
+    "handicap": 1.5,
+    "over": 6.25,
+    "under": 1.12,
+    "sourceId": "431455158",
+    "half": 1
+  },
+  {
+    "marketId": "1_3",
+    "minute": 97,
+    "handicap": 1.5,
+    "over": 8.4,
+    "under": 1.08,
+    "sourceId": "431455203",
+    "half": 1
+  }
+]
+```
+
+### Phụ lục JSON: 1_2 (AH cả trận)
+
+```json
+[
+  {
+    "marketId": "1_2",
+    "minute": 1,
+    "handicap": -0.25,
+    "home": 1.975,
+    "away": 1.825,
+    "sourceId": "252674879",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 2,
+    "handicap": -0.25,
+    "home": 2.05,
+    "away": 1.75,
+    "sourceId": "252674910",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 3,
+    "handicap": -0.25,
+    "home": 2.025,
+    "away": 1.775,
+    "sourceId": "252674961",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 4,
+    "handicap": -0.25,
+    "home": 2,
+    "away": 1.8,
+    "sourceId": "252674970",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 6,
+    "handicap": -0.25,
+    "home": 2.05,
+    "away": 1.75,
+    "sourceId": "252675139",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 7,
+    "handicap": 0,
+    "home": 1.75,
+    "away": 2.05,
+    "sourceId": "252675187",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 8,
+    "handicap": 0,
+    "home": 1.75,
+    "away": 2.05,
+    "sourceId": "252675210",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 10,
+    "handicap": -0.25,
+    "home": 2.05,
+    "away": 1.75,
+    "sourceId": "252675283",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 11,
+    "handicap": -0.25,
+    "home": 2.05,
+    "away": 1.75,
+    "sourceId": "252675310",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 12,
+    "handicap": -0.25,
+    "home": 2.025,
+    "away": 1.775,
+    "sourceId": "252675358",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 14,
+    "handicap": -0.25,
+    "home": 2,
+    "away": 1.8,
+    "sourceId": "252675435",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 15,
+    "handicap": -0.25,
+    "home": 1.975,
+    "away": 1.825,
+    "sourceId": "252675482",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 16,
+    "handicap": -0.25,
+    "home": 2,
+    "away": 1.8,
+    "sourceId": "252675524",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 17,
+    "handicap": -0.25,
+    "home": 1.95,
+    "away": 1.85,
+    "sourceId": "252675542",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 18,
+    "handicap": -0.25,
+    "home": 1.925,
+    "away": 1.875,
+    "sourceId": "252675614",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 19,
+    "handicap": -0.25,
+    "home": 1.875,
+    "away": 1.925,
+    "sourceId": "252675619",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 20,
+    "handicap": -0.25,
+    "home": 1.9,
+    "away": 1.9,
+    "sourceId": "252675684",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 21,
+    "handicap": -0.25,
+    "home": 1.925,
+    "away": 1.875,
+    "sourceId": "252675760",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 22,
+    "handicap": -0.25,
+    "home": 1.875,
+    "away": 1.925,
+    "sourceId": "252675849",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 23,
+    "handicap": -0.25,
+    "home": 1.875,
+    "away": 1.925,
+    "sourceId": "252675881",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 24,
+    "handicap": -0.25,
+    "home": 1.875,
+    "away": 1.925,
+    "sourceId": "252675939",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 25,
+    "handicap": -0.25,
+    "home": 1.9,
+    "away": 1.9,
+    "sourceId": "252676005",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 26,
+    "handicap": -0.25,
+    "home": 1.875,
+    "away": 1.925,
+    "sourceId": "252676081",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 27,
+    "handicap": -0.25,
+    "home": 1.95,
+    "away": 1.85,
+    "sourceId": "252676180",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 28,
+    "handicap": -0.25,
+    "home": 1.95,
+    "away": 1.85,
+    "sourceId": "252676259",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 29,
+    "handicap": -0.25,
+    "home": 1.975,
+    "away": 1.825,
+    "sourceId": "252676310",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 30,
+    "handicap": -0.25,
+    "home": 1.95,
+    "away": 1.85,
+    "sourceId": "252676380",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 33,
+    "handicap": -0.25,
+    "home": 1.975,
+    "away": 1.825,
+    "sourceId": "252676497",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 34,
+    "handicap": -0.25,
+    "home": 2.075,
+    "away": 1.725,
+    "sourceId": "252676533",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 35,
+    "handicap": -0.25,
+    "home": 2,
+    "away": 1.8,
+    "sourceId": "252676576",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 36,
+    "handicap": -0.25,
+    "home": 1.95,
+    "away": 1.85,
+    "sourceId": "252676632",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 37,
+    "handicap": -0.25,
+    "home": 2.025,
+    "away": 1.775,
+    "sourceId": "252676695",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 38,
+    "handicap": -0.25,
+    "home": 1.95,
+    "away": 1.85,
+    "sourceId": "252676711",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 39,
+    "handicap": -0.25,
+    "home": 1.775,
+    "away": 2.025,
+    "sourceId": "252676796",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 40,
+    "handicap": -0.25,
+    "home": 2.05,
+    "away": 1.75,
+    "sourceId": "252676833",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 41,
+    "handicap": -0.25,
+    "home": 2,
+    "away": 1.8,
+    "sourceId": "252676889",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 42,
+    "handicap": -0.25,
+    "home": 1.975,
+    "away": 1.825,
+    "sourceId": "252676918",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 43,
+    "handicap": -0.25,
+    "home": 2,
+    "away": 1.8,
+    "sourceId": "252676960",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 44,
+    "handicap": -0.25,
+    "home": 2,
+    "away": 1.8,
+    "sourceId": "252676988",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 45,
+    "handicap": -0.25,
+    "home": 1.95,
+    "away": 1.85,
+    "sourceId": "252677660",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 47,
+    "handicap": -0.25,
+    "home": 1.975,
+    "away": 1.825,
+    "sourceId": "252677722",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 49,
+    "handicap": -0.25,
+    "home": 2,
+    "away": 1.8,
+    "sourceId": "252677773",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 50,
+    "handicap": -0.25,
+    "home": 2.025,
+    "away": 1.775,
+    "sourceId": "252677784",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 51,
+    "handicap": -0.25,
+    "home": 1.85,
+    "away": 1.95,
+    "sourceId": "252677802",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 52,
+    "handicap": -0.25,
+    "home": 2.075,
+    "away": 1.725,
+    "sourceId": "252677871",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 53,
+    "handicap": -0.25,
+    "home": 1.825,
+    "away": 1.975,
+    "sourceId": "252677919",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 54,
+    "handicap": -0.25,
+    "home": 1.875,
+    "away": 1.925,
+    "sourceId": "252677972",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 55,
+    "handicap": -0.25,
+    "home": 1.9,
+    "away": 1.9,
+    "sourceId": "252677998",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 56,
+    "handicap": -0.25,
+    "home": 1.875,
+    "away": 1.925,
+    "sourceId": "252678031",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 57,
+    "handicap": -0.25,
+    "home": 1.875,
+    "away": 1.925,
+    "sourceId": "252678052",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 58,
+    "handicap": -0.25,
+    "home": 1.875,
+    "away": 1.925,
+    "sourceId": "252678084",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 59,
+    "handicap": -0.25,
+    "home": 1.9,
+    "away": 1.9,
+    "sourceId": "252678119",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 60,
+    "handicap": -0.25,
+    "home": 1.875,
+    "away": 1.925,
+    "sourceId": "252678147",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 61,
+    "handicap": -0.25,
+    "home": 1.9,
+    "away": 1.9,
+    "sourceId": "252678190",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 64,
+    "handicap": -0.25,
+    "home": 1.925,
+    "away": 1.875,
+    "sourceId": "252678249",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 65,
+    "handicap": -0.25,
+    "home": 1.9,
+    "away": 1.9,
+    "sourceId": "252678293",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 66,
+    "handicap": -0.25,
+    "home": 1.95,
+    "away": 1.85,
+    "sourceId": "252678363",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 68,
+    "handicap": -0.25,
+    "home": 2,
+    "away": 1.8,
+    "sourceId": "252678461",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 69,
+    "handicap": -0.25,
+    "home": 2.05,
+    "away": 1.75,
+    "sourceId": "252678498",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 70,
+    "handicap": -0.25,
+    "home": 2.075,
+    "away": 1.725,
+    "sourceId": "252678543",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 73,
+    "handicap": -1,
+    "home": 2,
+    "away": 1.8,
+    "sourceId": "252678649",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 74,
+    "handicap": -0.25,
+    "home": 2.35,
+    "away": 1.575,
+    "sourceId": "252678677",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 77,
+    "handicap": -0.25,
+    "home": 2.3,
+    "away": 1.6,
+    "sourceId": "252678757",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 78,
+    "handicap": -0.25,
+    "home": 2.35,
+    "away": 1.575,
+    "sourceId": "252678792",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 81,
+    "handicap": -0.25,
+    "home": 2.425,
+    "away": 1.525,
+    "sourceId": "252678901",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 82,
+    "handicap": -0.25,
+    "home": 2.425,
+    "away": 1.525,
+    "sourceId": "252678928",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 83,
+    "handicap": -0.25,
+    "home": 2.425,
+    "away": 1.525,
+    "sourceId": "252678959",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 84,
+    "handicap": -0.25,
+    "home": 2.5,
+    "away": 1.5,
+    "sourceId": "252678986",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 85,
+    "handicap": 0,
+    "home": 1.45,
+    "away": 2.675,
+    "sourceId": "252679003",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 86,
+    "handicap": 0,
+    "home": 1.525,
+    "away": 2.425,
+    "sourceId": "252679018",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 87,
+    "handicap": 0,
+    "home": 1.55,
+    "away": 2.375,
+    "sourceId": "252679047",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 88,
+    "handicap": 0,
+    "home": 1.625,
+    "away": 2.25,
+    "sourceId": "252679064",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 93,
+    "handicap": 0,
+    "home": 1.625,
+    "away": 2.25,
+    "sourceId": "252679235",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 94,
+    "handicap": 0,
+    "home": 1.75,
+    "away": 2.05,
+    "sourceId": "252679270",
+    "half": 1
+  },
+  {
+    "marketId": "1_2",
+    "minute": 95,
+    "handicap": 0,
+    "home": 1.6,
+    "away": 2.3,
+    "sourceId": "252679284",
+    "half": 1
+  }
+]
+```
+
+### Phụ lục JSON: 1_6 (OU hiệp 1)
+
+```json
+[
+  {
+    "marketId": "1_6",
+    "minute": 1,
+    "handicap": 1,
+    "over": 2.1,
+    "under": 1.7,
+    "sourceId": "187556757",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 2,
+    "handicap": 0.75,
+    "over": 1.725,
+    "under": 2.075,
+    "sourceId": "187556780",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 3,
+    "handicap": 0.75,
+    "over": 1.75,
+    "under": 2.05,
+    "sourceId": "187556820",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 4,
+    "handicap": 0.75,
+    "over": 1.75,
+    "under": 2.05,
+    "sourceId": "187556844",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 6,
+    "handicap": 0.75,
+    "over": 1.75,
+    "under": 2.05,
+    "sourceId": "187556877",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 7,
+    "handicap": 0.75,
+    "over": 1.825,
+    "under": 1.975,
+    "sourceId": "187556883",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 8,
+    "handicap": 0.75,
+    "over": 1.875,
+    "under": 1.925,
+    "sourceId": "187556895",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 9,
+    "handicap": 0.75,
+    "over": 1.825,
+    "under": 1.975,
+    "sourceId": "187556909",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 10,
+    "handicap": 0.75,
+    "over": 1.8,
+    "under": 2,
+    "sourceId": "187556924",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 11,
+    "handicap": 0.75,
+    "over": 1.8,
+    "under": 2,
+    "sourceId": "187556935",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 12,
+    "handicap": 0.75,
+    "over": 1.825,
+    "under": 1.975,
+    "sourceId": "187556964",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 13,
+    "handicap": 0.75,
+    "over": 1.9,
+    "under": 1.9,
+    "sourceId": "187557001",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 14,
+    "handicap": 0.75,
+    "over": 1.925,
+    "under": 1.875,
+    "sourceId": "187557025",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 15,
+    "handicap": 0.75,
+    "over": 1.95,
+    "under": 1.85,
+    "sourceId": "187557050",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 16,
+    "handicap": 0.75,
+    "over": 1.95,
+    "under": 1.85,
+    "sourceId": "187557071",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 17,
+    "handicap": 0.75,
+    "over": 2.025,
+    "under": 1.775,
+    "sourceId": "187557088",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 18,
+    "handicap": 0.75,
+    "over": 2.025,
+    "under": 1.775,
+    "sourceId": "187557105",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 19,
+    "handicap": 0.75,
+    "over": 2.05,
+    "under": 1.75,
+    "sourceId": "187557134",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 20,
+    "handicap": 0.5,
+    "over": 1.8,
+    "under": 2,
+    "sourceId": "187557161",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 21,
+    "handicap": 0.5,
+    "over": 1.85,
+    "under": 1.95,
+    "sourceId": "187557200",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 22,
+    "handicap": 0.5,
+    "over": 1.9,
+    "under": 1.9,
+    "sourceId": "187557221",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 23,
+    "handicap": 0.5,
+    "over": 1.9,
+    "under": 1.9,
+    "sourceId": "187557238",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 24,
+    "handicap": 0.5,
+    "over": 1.95,
+    "under": 1.85,
+    "sourceId": "187557264",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 25,
+    "handicap": 0.5,
+    "over": 2.025,
+    "under": 1.775,
+    "sourceId": "187557337",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 26,
+    "handicap": 0.5,
+    "over": 2.05,
+    "under": 1.75,
+    "sourceId": "187557383",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 27,
+    "handicap": 0.5,
+    "over": 2.1,
+    "under": 1.7,
+    "sourceId": "187557403",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 28,
+    "handicap": 0.5,
+    "over": 2.15,
+    "under": 1.675,
+    "sourceId": "187557437",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 29,
+    "handicap": 0.5,
+    "over": 2.25,
+    "under": 1.625,
+    "sourceId": "187557455",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 30,
+    "handicap": 0.5,
+    "over": 2.375,
+    "under": 1.55,
+    "sourceId": "187557474",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 31,
+    "handicap": 0.5,
+    "over": 2.425,
+    "under": 1.525,
+    "sourceId": "187557482",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 32,
+    "handicap": 0.5,
+    "over": 2.6,
+    "under": 1.475,
+    "sourceId": "187557515",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 33,
+    "handicap": 0.5,
+    "over": 2.675,
+    "under": 1.45,
+    "sourceId": "187557541",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 34,
+    "handicap": 0.5,
+    "over": 2.75,
+    "under": 1.425,
+    "sourceId": "187557565",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 35,
+    "handicap": 0.5,
+    "over": 3,
+    "under": 1.375,
+    "sourceId": "187557580",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 36,
+    "handicap": 0.5,
+    "over": 3.3,
+    "under": 1.325,
+    "sourceId": "187557619",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 37,
+    "handicap": 0.5,
+    "over": 3.45,
+    "under": 1.3,
+    "sourceId": "187557643",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 38,
+    "handicap": 0.5,
+    "over": 3.3,
+    "under": 1.325,
+    "sourceId": "187557656",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 39,
+    "handicap": 1.5,
+    "over": 4.15,
+    "under": 1.22,
+    "sourceId": "187557685",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 40,
+    "handicap": 0.5,
+    "over": 5,
+    "under": 1.17,
+    "sourceId": "187557712",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 41,
+    "handicap": 0.5,
+    "over": 5.5,
+    "under": 1.15,
+    "sourceId": "187557732",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 42,
+    "handicap": 0.5,
+    "over": 5.5,
+    "under": 1.15,
+    "sourceId": "187557754",
+    "half": 1
+  },
+  {
+    "marketId": "1_6",
+    "minute": 43,
+    "handicap": 0.5,
+    "over": 6.25,
+    "under": 1.12,
+    "sourceId": "187557785",
+    "half": 1
+  }
+]
+```
+
+### Phụ lục JSON: 1_5 (AH hiệp 1)
+
+```json
+[
+  {
+    "marketId": "1_5",
+    "minute": 1,
+    "handicap": 0,
+    "home": 1.725,
+    "away": 2.075,
+    "sourceId": "105311686",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 2,
+    "handicap": 0,
+    "home": 1.75,
+    "away": 2.05,
+    "sourceId": "105311700",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 4,
+    "handicap": 0,
+    "home": 1.75,
+    "away": 2.05,
+    "sourceId": "105311734",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 5,
+    "handicap": 0,
+    "home": 1.75,
+    "away": 2.05,
+    "sourceId": "105311756",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 7,
+    "handicap": 0,
+    "home": 1.75,
+    "away": 2.05,
+    "sourceId": "105311778",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 8,
+    "handicap": 0,
+    "home": 1.75,
+    "away": 2.05,
+    "sourceId": "105311790",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 12,
+    "handicap": 0,
+    "home": 1.7,
+    "away": 2.1,
+    "sourceId": "105311822",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 14,
+    "handicap": 0,
+    "home": 1.675,
+    "away": 2.15,
+    "sourceId": "105311857",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 15,
+    "handicap": 0,
+    "home": 1.75,
+    "away": 2.05,
+    "sourceId": "105311871",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 16,
+    "handicap": 0,
+    "home": 1.65,
+    "away": 2.2,
+    "sourceId": "105311879",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 17,
+    "handicap": 0,
+    "home": 1.7,
+    "away": 2.1,
+    "sourceId": "105311887",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 18,
+    "handicap": 0,
+    "home": 1.675,
+    "away": 2.15,
+    "sourceId": "105311907",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 19,
+    "handicap": 0,
+    "home": 1.65,
+    "away": 2.2,
+    "sourceId": "105311911",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 20,
+    "handicap": 0,
+    "home": 1.65,
+    "away": 2.2,
+    "sourceId": "105311934",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 21,
+    "handicap": 0,
+    "home": 1.7,
+    "away": 2.1,
+    "sourceId": "105311951",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 22,
+    "handicap": 0,
+    "home": 1.675,
+    "away": 2.15,
+    "sourceId": "105311968",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 23,
+    "handicap": 0,
+    "home": 1.675,
+    "away": 2.15,
+    "sourceId": "105311974",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 24,
+    "handicap": 0,
+    "home": 1.65,
+    "away": 2.2,
+    "sourceId": "105311998",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 26,
+    "handicap": 0,
+    "home": 1.575,
+    "away": 2.35,
+    "sourceId": "105312058",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 27,
+    "handicap": 0,
+    "home": 1.65,
+    "away": 2.2,
+    "sourceId": "105312072",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 28,
+    "handicap": 0,
+    "home": 1.6,
+    "away": 2.3,
+    "sourceId": "105312097",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 29,
+    "handicap": 0,
+    "home": 1.6,
+    "away": 2.3,
+    "sourceId": "105312115",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 30,
+    "handicap": 0,
+    "home": 1.6,
+    "away": 2.3,
+    "sourceId": "105312123",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 32,
+    "handicap": 0,
+    "home": 1.625,
+    "away": 2.25,
+    "sourceId": "105312142",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 34,
+    "handicap": 0,
+    "home": 1.675,
+    "away": 2.15,
+    "sourceId": "105312171",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 35,
+    "handicap": 0,
+    "home": 1.575,
+    "away": 2.35,
+    "sourceId": "105312190",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 36,
+    "handicap": 0,
+    "home": 1.575,
+    "away": 2.35,
+    "sourceId": "105312210",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 37,
+    "handicap": 0,
+    "home": 1.675,
+    "away": 2.15,
+    "sourceId": "105312229",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 38,
+    "handicap": 0,
+    "home": 1.625,
+    "away": 2.25,
+    "sourceId": "105312245",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 39,
+    "handicap": 0,
+    "home": 1.5,
+    "away": 2.5,
+    "sourceId": "105312263",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 40,
+    "handicap": 0,
+    "home": 1.7,
+    "away": 2.1,
+    "sourceId": "105312274",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 41,
+    "handicap": 0,
+    "home": 1.65,
+    "away": 2.2,
+    "sourceId": "105312287",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 42,
+    "handicap": 0,
+    "home": 1.475,
+    "away": 2.6,
+    "sourceId": "105312296",
+    "half": 1
+  },
+  {
+    "marketId": "1_5",
+    "minute": 43,
+    "handicap": 0,
+    "home": 1.65,
+    "away": 2.2,
+    "sourceId": "105312320",
+    "half": 1
+  }
+]
+```
+
+## Liên kết trận tương tự (similar-match-links)
+
+_Chưa ghi chú trận tương tự nào._
+
+---
+
+_File được xuất tự động từ Pro Football Analytics (localStorage)._

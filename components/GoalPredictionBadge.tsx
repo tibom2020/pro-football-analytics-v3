@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { Flame, Loader2, AlertCircle, Info, Check, X, Zap } from 'lucide-react';
+import { Flame, Loader2, AlertCircle, Info, Check, X, Zap, Link2 } from 'lucide-react';
 import type {
   MatchInfo,
   ProcessedStats,
@@ -12,7 +12,7 @@ import {
   fetchGoalPrediction,
   fetchGoalReason,
   fetchMatchDetail,
-  fetchSimilarMatches,
+  fetchSimilarMatchesWithAi,
   appendGoalProbEntry,
   loadPredictionSnapshots,
   appendPredictionSnapshot,
@@ -35,7 +35,33 @@ import {
   type PredictionVerdict,
   type GoalPredictNotifyPayload,
   type SimilarMatchDetail,
+  type AiSimilarEvaluation,
+  type Label30Stats,
+  type HalfGoalStats,
+  type HalfGoalMatchRef,
+  type SimilarMatchesData,
+  filterSimilarCatalogByOpenLine,
+  catalogQueryHalf,
+  catalogQueryOpenOu13,
 } from '../services/goal-prediction';
+import {
+  appendSimilarMatchSnapshot,
+  type SimilarMatchSnapshotData,
+} from '../services/similar-match-snapshots';
+import { loadMatchNotes } from '../services/match-notes';
+import {
+  loadSimilarMatchLinks,
+  saveSimilarMatchLink,
+  removeSimilarMatchLink,
+  mergeSimilarMatchLinksFromServer,
+  isSimilarMatchLinked,
+  SIMILAR_MATCH_LINKS_UPDATED_EVENT,
+  TIER_LABEL,
+  formatSimilarLinkTime,
+  type SimilarMatchLinkRecord,
+  type SimilarMatchLinkTier,
+} from '../services/similar-match-links';
+import { fetchSimilarMatchLinksFromHistory } from '../services/similar-match-links-api';
 import {
   buildGoalPredictionSheetPayload,
   fetchSheetsHealth,
@@ -50,6 +76,7 @@ interface GameEvent {
   minute: number;
   half: MatchHalf;
   type: 'goal' | 'corner';
+  team?: 'home' | 'away';
 }
 
 interface GoalPredictionBadgeProps {
@@ -160,7 +187,9 @@ const SimilarMatchDetailDialog: React.FC<{
   sim: SimilarMatchItem;
   queryFeatures?: Record<string, number>;
   onClose: () => void;
-}> = ({ sim, queryFeatures, onClose }) => {
+  /** Khi mở chồng lên AllSimilarMatchesModal (z-70). */
+  zClass?: string;
+}> = ({ sim, queryFeatures, onClose, zClass = 'z-[60]' }) => {
   const [detail, setDetail] = useState<SimilarMatchDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(true);
 
@@ -187,7 +216,7 @@ const SimilarMatchDetailDialog: React.FC<{
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[60] bg-black/50 flex items-end sm:items-center justify-center p-2 sm:p-4"
+      className={`fixed inset-0 ${zClass} bg-black/50 flex items-end sm:items-center justify-center p-2 sm:p-4`}
       onClick={onClose}
     >
       <div
@@ -232,6 +261,17 @@ const SimilarMatchDetailDialog: React.FC<{
               }`}
             >
               {sim.label30 == null ? '30p sau: chưa rõ' : sim.label30 === 1 ? '30p sau: CÓ BÀN' : '30p sau: không có bàn'}
+            </span>
+            <span
+              className={`text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${
+                sim.labelHalf == null
+                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
+                  : sim.labelHalf === 1
+                    ? 'bg-amber-500 text-white'
+                    : 'bg-slate-300 dark:bg-slate-600 text-slate-700 dark:text-slate-100'
+              }`}
+            >
+              {sim.labelHalf == null ? 'đến hết hiệp: chưa rõ' : sim.labelHalf === 1 ? 'đến hết hiệp: CÓ BÀN' : 'đến hết hiệp: không có bàn'}
             </span>
             <span className="text-[10px] text-gray-500 dark:text-gray-400">độ giống {sim.similarity.toFixed(2)}</span>
           </div>
@@ -313,7 +353,7 @@ function dedupeByMatchId<T extends { matchId: string | number }>(rows: T[]): T[]
 }
 
 /** Cách cũ trên modal: ưu tiên phút gần trận đang xem, rồi sim (client, như trước). */
-function sortLegacyForDisplay<T extends { matchId: string | number; minute: number; similarity: number }>(
+function sortOpenLineForDisplay<T extends { matchId: string | number; minute: number; similarity: number }>(
   rows: T[],
   curMin: number | null,
 ): T[] {
@@ -327,9 +367,65 @@ function sortLegacyForDisplay<T extends { matchId: string | number; minute: numb
   });
 }
 
+/** Catalog: chỉ hiển thị vạch mở 1_3/1_2 của hiệp đang so (H1↔H1 hoặc H2↔H2). */
+function formatCatalogOpenLineForHalf(c: ComparisonColumn, queryHalf: 1 | 2): string {
+  const hLabel = queryHalf === 1 ? 'H1' : 'H2';
+  const ou13 = queryHalf === 1 ? c.h1OpenOu13 : c.h2OpenOu13;
+  const ah12 = queryHalf === 1 ? c.h1OpenAh12 : c.h2OpenAh12;
+  return [
+    ou13 != null ? `1_3 ${hLabel} ${HCAP(ou13)}` : null,
+    ah12 != null ? `1_2 ${hLabel} ${HCAP(ah12)}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ') || '—';
+}
+
+function formatCatalogOpenLineMatch(c: ComparisonColumn, queryHalf: 1 | 2): string {
+  const ou13 = queryHalf === 1 ? c.h1OpenOu13 : c.h2OpenOu13;
+  const hLabel = queryHalf === 1 ? 'H1' : 'H2';
+  const linePart = ou13 != null ? `1_3 ${hLabel} ${HCAP(ou13)}` : `${hLabel} —`;
+  const note = c.openAh12MismatchNote;
+  return note ? `${linePart} · ${note}` : linePart;
+}
+
+/** Hướng dẫn 3 tầng tìm trận tương tự — HDP 1_3 mở hiệp bắt buộc trùng. */
+const SimilarMatchHowItWorks: React.FC<{
+  queryHalf: 1 | 2;
+  queryOpenOu13?: number;
+}> = ({ queryHalf, queryOpenOu13 }) => {
+  const hLabel = queryHalf === 1 ? 'H1' : 'H2';
+  const lineLabel = queryOpenOu13 != null ? HCAP(queryOpenOu13) : '—';
+  return (
+    <details className="mx-2 mt-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/40 text-[11px] text-slate-600 dark:text-slate-300">
+      <summary className="cursor-pointer select-none px-3 py-2 font-semibold text-slate-700 dark:text-slate-200">
+        Cách tìm trận tương tự
+      </summary>
+      <div className="px-3 pb-2.5 space-y-1.5 leading-snug border-t border-slate-200/80 dark:border-slate-700/80 pt-2">
+        <p>
+          <strong>Điều kiện bắt buộc:</strong> vạch mở kèo Tài/Xỉu cả trận (<code className="font-mono text-[10px]">1_3</code>)
+          {' '}đầu hiệp đang xem phải <strong>trùng tuyệt đối</strong> — đang xem {hLabel} thì so với vạch mở {hLabel} của trận lịch sử (H1↔H1, H2↔H2).
+          {queryOpenOu13 != null && (
+            <span className="block mt-0.5 text-indigo-700 dark:text-indigo-300">
+              Trận này: 1_3 {hLabel} mở = {lineLabel}
+            </span>
+          )}
+        </p>
+        <ul className="list-disc pl-4 space-y-1">
+          <li><span className="text-indigo-700 dark:text-indigo-300 font-medium">Top vạch mở (indigo):</span> top-N trận giống nhất về chỉ số thế trận, trong nhóm đã khớp vạch mở 1_3 cùng hiệp.</li>
+          <li><span className="text-emerald-700 dark:text-emerald-300 font-medium">Catalog (xanh lá):</span> mọi trận trong dataset có vạch mở 1_3 cùng hiệp trùng (1_2 mở khác vẫn giữ, kèm ghi chú).</li>
+          <li><span className="text-sky-700 dark:text-sky-300 font-medium">Catalog + thời gian vạch (xanh dương):</span> catalog trên + pattern thời gian giữ từng vạch 1_3 gần giống (vd. 2.5×5p · 2.25×6p).</li>
+        </ul>
+        <p className="text-slate-500 dark:text-slate-400">
+          Tự chụp similar: phút <strong>10</strong> H1 và phút <strong>52</strong> H2 (hoặc phút mở trận nếu vào muộn).
+        </p>
+      </div>
+    </details>
+  );
+};
+
 function toComparisonColumns(
   matches: SimilarMatchFull[],
-  prefix: 'legacy' | 'open',
+  prefix: 'open' | 'catalog' | 'catalogRuns',
 ): ComparisonColumn[] {
   return matches.map((s, i) => ({
     key: `${prefix}-${s.matchId}-${i}`,
@@ -342,10 +438,19 @@ function toComparisonColumns(
     minute: s.minute,
     label: s.label,
     label30: s.label30,
+    labelHalf: s.labelHalf,
     similarity: s.similarity,
     feats: s.features,
     totals: s.totals,
     prob30: s.prob30,
+    matchedOpenHalves: s.matchedOpenHalves,
+    h1OpenOu13: s.h1OpenOu13,
+    h2OpenOu13: s.h2OpenOu13,
+    h1OpenAh12: s.h1OpenAh12,
+    h2OpenAh12: s.h2OpenAh12,
+    openAh12MismatchNote: s.openAh12MismatchNote,
+    ou13LineRuns: s.ou13LineRuns,
+    lineRunsScore: s.lineRunsScore,
   }));
 }
 
@@ -353,8 +458,8 @@ function toComparisonColumns(
 interface ComparisonColumn {
   key: string;
   isCurrent: boolean;
-  /** Nhóm xếp hạng — hiển thị 2 block cột trên bảng modal. */
-  rankGroup?: 'legacy' | 'open';
+  /** Nhóm xếp hạng — hiển thị 3 block cột trên bảng modal. */
+  rankGroup?: 'open' | 'catalog' | 'catalogRuns';
   /** matchId của trận tương tự (current: undefined) — để fetch biểu đồ odds 1_3. */
   matchId?: string;
   team: string;
@@ -365,12 +470,23 @@ interface ComparisonColumn {
   label?: 0 | 1;
   /** Kết cục 30': 1 = có bàn, 0 = không, null/undefined = chưa rõ. (current: undefined) */
   label30?: 0 | 1;
+  /** Kết cục "đến hết hiệp": 1 = có bàn, 0 = không, null/undefined = chưa rõ. */
+  labelHalf?: 0 | 1;
   similarity?: number;
   feats?: Record<string, number>;
   /** Tổng lũy kế từ đầu trận đến phút này (DA/sút/trúng đích/phạt góc). */
   totals?: CumulativeTotals | null;
   /** Xác suất có bàn 30' theo model chính tại phút này (null = không có). */
   prob30?: number | null;
+  /** Catalog vạch mở — cùng hiệp (H1↔H1 hoặc H2↔H2). */
+  matchedOpenHalves?: 'H1' | 'H2';
+  h1OpenOu13?: number;
+  h2OpenOu13?: number;
+  h1OpenAh12?: number;
+  h2OpenAh12?: number;
+  openAh12MismatchNote?: string;
+  ou13LineRuns?: string;
+  lineRunsScore?: number;
 }
 
 const fmtCell = (feats: Record<string, number> | undefined, key: string, fmt: (v: number) => string): string => {
@@ -384,6 +500,82 @@ const colTint = (label30: 0 | 1 | undefined): string => {
   if (label30 === 0) return 'bg-slate-50 dark:bg-slate-800/30';
   return 'bg-slate-50/40 dark:bg-slate-800/10';
 };
+/** Tên trận trong header bảng — bấm mở biểu đồ so sánh kèo 1_3. */
+function SimColTeamName({
+  c,
+  onOpenChart,
+}: {
+  c: ComparisonColumn;
+  onOpenChart?: (c: ComparisonColumn) => void;
+}) {
+  if (onOpenChart && c.matchId) {
+    return (
+      <button
+        type="button"
+        onClick={() => onOpenChart(c)}
+        className="truncate max-w-full w-full text-left font-semibold hover:underline cursor-pointer"
+        title={`Xem biểu đồ so sánh kèo 1_3 — ${c.team}`}
+      >
+        {c.team}
+      </button>
+    );
+  }
+  return (
+    <div className="truncate" title={c.team}>
+      {c.team}
+    </div>
+  );
+}
+
+function SimilarMatchLinksBanner({ links }: { links: SimilarMatchLinkRecord[] }) {
+  if (links.length === 0) return null;
+  return (
+    <div className="m-2 text-xs leading-snug px-3 py-2 rounded-md bg-indigo-50 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-100 border border-indigo-200 dark:border-indigo-800">
+      <div className="font-semibold mb-1">
+        Đã ghi chú {links.length} trận liên quan — sẽ có trong file .md khi export
+      </div>
+      <ul className="space-y-0.5 text-[11px] text-indigo-800 dark:text-indigo-200">
+        {links.map((r) => (
+          <li key={r.id} className="truncate" title={r.relatedTeam}>
+            {r.relatedTeam} · H{r.relatedHalf} {r.relatedMinute}&apos; · {TIER_LABEL[r.tier]}
+            {r.ts ? ` · ${formatSimilarLinkTime(r.ts)}` : ''}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function SimColNoteButton({
+  linked,
+  savedAt,
+  onToggle,
+}: {
+  linked: boolean;
+  savedAt?: number;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`text-[10px] px-1.5 py-0.5 rounded border font-sans inline-flex items-center gap-0.5 ${
+        linked
+          ? 'bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-500'
+          : 'border-indigo-300 dark:border-indigo-700 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30'
+      }`}
+      title={
+        linked && savedAt
+          ? `Đã ghi chú lúc ${formatSimilarLinkTime(savedAt)} — bấm để bỏ`
+          : 'Ghi chú liên kết 2 trận (lưu .md khi export)'
+      }
+    >
+      <Link2 className="w-3 h-3" />
+      {linked ? 'Đã ghi' : 'Ghi chú'}
+    </button>
+  );
+}
+
 /** Nền ô header (tên đội) — đậm hơn để nhìn nhanh có bàn / không. */
 const headTint = (label30: 0 | 1 | undefined): string => {
   if (label30 === 1) return 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-200';
@@ -404,7 +596,7 @@ export function buildLocalChartBundle(input: PredictGoalInput): Ou13ChartBundle 
     const prev = byKey.get(k);
     if (!prev || a.timestamp > prev.timestamp) byKey.set(k, a);
   });
-  return {
+    return {
     odds13: input.oddsHistory
       .filter((o) => o.marketId === '1_3')
       .map((o) => ({
@@ -419,6 +611,24 @@ export function buildLocalChartBundle(input: PredictGoalInput): Ou13ChartBundle 
       .map((o) => ({
         minute: o.minute,
         half: halfFromMinute(o.half, o.minute),
+        handicap: o.handicap,
+        home: o.home,
+        away: o.away,
+      })),
+    odds16: (input.h1OuHistory ?? [])
+      .filter((o) => o.marketId === '1_6' || !o.marketId)
+      .map((o) => ({
+        minute: o.minute,
+        half: 1 as const,
+        handicap: o.handicap,
+        over: o.over,
+        under: o.under,
+      })),
+    odds15: (input.h1AhHistory ?? [])
+      .filter((o) => o.marketId === '1_5' || !o.marketId)
+      .map((o) => ({
+        minute: o.minute,
+        half: 1 as const,
         handicap: o.handicap,
         home: o.home,
         away: o.away,
@@ -442,6 +652,7 @@ export function buildLocalChartBundle(input: PredictGoalInput): Ou13ChartBundle 
       minute: e.minute,
       half: (e.half === 2 ? 2 : 1) as 1 | 2,
       type: e.type,
+      ...(e.team ? { team: e.team } : {}),
     })),
     alertMarkers: Array.from(byKey.values())
       .filter((a) => typeof a.minute === 'number' && Number.isFinite(a.minute) && a.minute >= 0 && a.minute <= 130)
@@ -454,10 +665,424 @@ export function buildLocalChartBundle(input: PredictGoalInput): Ou13ChartBundle 
         title: a.title ?? '',
         pressureLevel: a.pressureLevel,
       })),
+    homeName: input.liveMatch.home.name,
+    awayName: input.liveMatch.away.name,
+    userNotes: loadMatchNotes(String(input.matchId)).map((n) => ({
+      minute: n.minute,
+      half: n.half,
+      verdict: n.verdict ?? null,
+      text: n.text,
+    })),
   };
 }
 
 /** Modal "Xem tất cả tình huống tương tự" — bảng so sánh dạng cột. */
+/** Nhãn + màu nghiêng Tài/Xỉu của đánh giá AI. */
+function aiLeanDisplay(lean: AiSimilarEvaluation['lean']): { text: string; cls: string } {
+  if (lean === 'over') return { text: 'Nghiêng TÀI', cls: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border-red-300 dark:border-red-700' };
+  if (lean === 'under') return { text: 'Nghiêng XỈU', cls: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700' };
+  return { text: 'Trung lập', cls: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600' };
+}
+
+const CONF_LABEL: Record<AiSimilarEvaluation['confidence'], string> = {
+  high: 'tin cậy cao',
+  medium: 'tin cậy vừa',
+  low: 'tin cậy thấp',
+};
+
+function label30Chip(stats?: Label30Stats): string | null {
+  if (!stats || stats.total === 0) return null;
+  return `${stats.hits}/${stats.total} có bàn 30' · ${Math.round(stats.rate * 100)}%`;
+}
+
+function labelHalfChip(stats?: Label30Stats): string | null {
+  if (!stats || stats.total === 0) return null;
+  return `${stats.hits}/${stats.total} có bàn đến hết hiệp · ${Math.round(stats.rate * 100)}%`;
+}
+
+/**
+ * Panel RAG "% có bàn theo hiệp": lọc trận lịch sử theo vạch mở T/X hiệp đang xem
+ * (+ điều kiện H1 khi hỏi H2, + kèo chấp mềm). Trả lời trực tiếp "H2 mở X → % có bàn".
+ */
+const SMALL_SAMPLE = 10;
+
+/** Màu theo mức tỷ lệ có bàn: cao → xanh đậm, quanh 50% → hổ phách, thấp → xám. */
+function rateTone(rate: number): { bar: string; text: string } {
+  if (rate >= 0.6) return { bar: 'bg-emerald-500', text: 'text-emerald-700 dark:text-emerald-300' };
+  if (rate >= 0.45) return { bar: 'bg-amber-500', text: 'text-amber-700 dark:text-amber-300' };
+  return { bar: 'bg-slate-400 dark:bg-slate-500', text: 'text-slate-600 dark:text-slate-300' };
+}
+
+const HalfGoalStatsPanel: React.FC<{
+  stats?: HalfGoalStats;
+  onMatchClick?: (m: HalfGoalMatchRef, half: 1 | 2, siblings: HalfGoalMatchRef[]) => void;
+}> = ({ stats, onMatchClick }) => {
+  const [showAhList, setShowAhList] = useState(false);
+  const [showMainList, setShowMainList] = useState(true);
+  if (!stats) return null;
+  const pct = Math.round(stats.rate * 100);
+  const hLabel = `H${stats.half}`;
+  const halfNum = (stats.half === 2 ? 2 : 1) as 1 | 2;
+  const priorG = stats.priorHalfGoals;
+  const cond = stats.priorHalfUnknown
+    ? 'H1 chưa rõ (mở trận muộn)'
+    : stats.conditionedOnPriorHalf
+      ? priorG && priorG > 0
+        ? `H1 có ${priorG} bàn`
+        : 'H1 không bàn'
+      : null;
+
+  // Header dùng chung.
+  const header = (
+    <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
+      <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+        RAG số bàn theo hiệp
+      </span>
+      <span className="px-1.5 py-0.5 rounded bg-white/70 dark:bg-slate-900/50 border border-emerald-200 dark:border-emerald-800 text-[11px] font-semibold text-emerald-800 dark:text-emerald-200">
+        {hLabel} mở {HCAP(stats.openOu13)}
+      </span>
+      {cond && (
+        <span className={`text-[10px] font-medium ${stats.priorHalfUnknown ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600/80 dark:text-emerald-400/80'}`}>
+          {cond}
+        </span>
+      )}
+    </div>
+  );
+
+  // Không có trận lịch sử nào cùng vạch mở (kể cả sau khi hạ điều kiện H1).
+  if (stats.total === 0) {
+    return (
+      <div className="m-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-3 py-2.5">
+        {header}
+        <p className="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+          Chưa có trận lịch sử nào cùng vạch mở T/X {hLabel} = {HCAP(stats.openOu13)}
+          {cond && !stats.priorHalfUnknown ? ` và ${cond}` : ''}. Vạch hiếm hoặc dữ liệu còn ít — thêm trận vào History rồi chạy lại extract để có mẫu.
+        </p>
+      </div>
+    );
+  }
+  const ah = stats.ahSoft;
+  // Khớp |HDP| — +0.25 và −0.25 cùng nhóm “Trùng kèo chấp” (mirror server openLineAhMagnitudeMatch).
+  const ahMatches = ah
+    ? stats.matches.filter(
+        (m) => m.openAh12 != null && Math.abs(Math.abs(m.openAh12) - Math.abs(ah.openAh12)) < 1e-6,
+      )
+    : [];
+  const ahIds = new Set(ahMatches.map((m) => m.matchId));
+  const tone = rateTone(stats.rate);
+  const smallMain = stats.total < SMALL_SAMPLE;
+
+  // 1 dòng trận trong danh sách — tên bấm được → mở biểu đồ so sánh (điều hướng ◀▶ trong `siblings`).
+  const renderMatchRow = (m: HalfGoalMatchRef, markChap: boolean, siblings: HalfGoalMatchRef[]) => (
+    <li key={m.matchId} className="flex items-center gap-2 text-[11px]">
+      <button
+        type="button"
+        onClick={() => onMatchClick?.(m, halfNum, siblings)}
+        disabled={!onMatchClick}
+        className={`truncate max-w-[15rem] text-left font-medium ${
+          onMatchClick
+            ? 'text-emerald-800 dark:text-emerald-200 hover:underline cursor-pointer'
+            : 'text-slate-700 dark:text-slate-300'
+        }`}
+        title={onMatchClick ? `Xem biểu đồ so sánh kèo 1_3 — ${m.home} vs ${m.away}` : undefined}
+      >
+        {m.home && m.away ? `${m.home} vs ${m.away}` : `Match ${m.matchId}`}
+      </button>
+      {m.finalScore && <span className="text-[10px] text-slate-500 dark:text-slate-400">FT {m.finalScore}</span>}
+      {markChap && ahIds.has(m.matchId) && (
+        <span className="px-1 rounded bg-emerald-100 dark:bg-emerald-900/50 text-[9px] font-semibold text-emerald-700 dark:text-emerald-300">
+          chấp
+        </span>
+      )}
+      <span
+        className={`ml-auto shrink-0 text-[10px] font-semibold ${
+          m.hasGoal === 1 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'
+        }`}
+      >
+        {hLabel}: {m.hasGoal === 1 ? `${m.goals} bàn` : 'không'}
+      </span>
+    </li>
+  );
+
+  const d = stats.dist;
+  const dTot = d.zero + d.one + d.twoPlus || 1;
+  const segs = [
+    { key: '0 bàn', n: d.zero, cls: 'bg-slate-300 dark:bg-slate-600', dot: 'bg-slate-400 dark:bg-slate-500' },
+    { key: '1 bàn', n: d.one, cls: 'bg-emerald-400', dot: 'bg-emerald-400' },
+    { key: '2+ bàn', n: d.twoPlus, cls: 'bg-emerald-600', dot: 'bg-emerald-600' },
+  ];
+
+  return (
+    <div className="m-2 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50/80 dark:bg-emerald-950/40 px-3 py-2.5">
+      {/* Tiêu đề + bối cảnh vạch/điều kiện */}
+      {header}
+      {stats.priorHalfNoMatch && (
+        <p className="mt-1 text-[10px] text-amber-600 dark:text-amber-400">
+          Không có trận cùng số bàn H1 — hiển thị thống kê chung cho vạch mở {hLabel}.
+        </p>
+      )}
+
+      {/* Tỷ lệ CÓ BÀN — số lớn + thanh tiến trình */}
+      <div className="mt-2">
+        <div className="flex items-baseline justify-between">
+          <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
+            Tỷ lệ có bàn ở {hLabel}
+          </span>
+          <span className="flex items-baseline gap-1">
+            <span className={`text-lg font-extrabold leading-none ${tone.text}`}>{pct}%</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400">{stats.hits}/{stats.total} trận</span>
+          </span>
+        </div>
+        <div className="mt-1 h-2.5 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+          <div className={`h-full rounded-full ${tone.bar} transition-all`} style={{ width: `${pct}%` }} />
+        </div>
+        {smallMain && (
+          <p className="mt-0.5 text-[10px] text-amber-600 dark:text-amber-400">⚠ Mẫu nhỏ — tham khảo dè dặt.</p>
+        )}
+      </div>
+
+      {/* Danh sách đầy đủ pool — bấm tên trận để mở biểu đồ so sánh */}
+      {stats.matches.length > 0 && (
+        <div className="mt-2">
+          <button
+            type="button"
+            onClick={() => setShowMainList((v) => !v)}
+            className="text-[10px] font-medium text-emerald-700 dark:text-emerald-300 hover:underline"
+          >
+            {showMainList ? `Ẩn danh sách ${stats.matches.length} trận` : `Xem ${stats.matches.length} trận`}
+          </button>
+          {showMainList && (
+            <ul className="mt-1 max-h-48 overflow-auto space-y-0.5 pl-1">
+              {stats.matches.map((m) => renderMatchRow(m, true, stats.matches))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {/* Kèo chấp trùng (ưu tiên mềm) — kèm danh sách trận bấm được để mở biểu đồ so sánh */}
+      {ah && ah.total > 0 && (
+        <div className="mt-2">
+          <div className="flex items-center gap-2 text-[11px]">
+            <span className="text-slate-600 dark:text-slate-300">Trùng kèo chấp {HCAP(ah.openAh12)}:</span>
+            <div className="h-1.5 flex-1 max-w-[80px] rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+              <div className="h-full rounded-full bg-emerald-500" style={{ width: `${Math.round(ah.rate * 100)}%` }} />
+            </div>
+            <span className="font-semibold text-emerald-700 dark:text-emerald-300">{Math.round(ah.rate * 100)}%</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400">
+              ({ah.hits}/{ah.total}){ah.total < SMALL_SAMPLE ? ' · mẫu nhỏ' : ''}
+            </span>
+            {ahMatches.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowAhList((v) => !v)}
+                className="ml-auto text-[10px] font-medium text-emerald-700 dark:text-emerald-300 hover:underline"
+              >
+                {showAhList ? 'Ẩn danh sách' : `Xem ${ahMatches.length} trận`}
+              </button>
+            )}
+          </div>
+          {showAhList && ahMatches.length > 0 && (
+            <ul className="mt-1.5 max-h-44 overflow-auto space-y-0.5 pl-1">
+              {ahMatches.map((m) => renderMatchRow(m, false, ahMatches))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {/* Phân bố số bàn — thanh xếp chồng + chú thích */}
+      <div className="mt-2">
+        <div className="flex items-baseline justify-between">
+          <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">Phân bố số bàn {hLabel}</span>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400">TB {stats.goalsAvg.toFixed(2)} bàn/trận</span>
+        </div>
+        <div className="mt-1 flex h-2.5 w-full rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
+          {segs.map((s) =>
+            s.n > 0 ? <div key={s.key} className={s.cls} style={{ width: `${(s.n / dTot) * 100}%` }} title={`${s.key}: ${s.n}`} /> : null,
+          )}
+        </div>
+        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+          {segs.map((s) => (
+            <span key={s.key} className="inline-flex items-center gap-1 text-[10px] text-slate-600 dark:text-slate-300">
+              <span className={`inline-block w-2 h-2 rounded-sm ${s.dot}`} />
+              {s.key}: <b className="font-semibold">{s.n}</b> ({Math.round((s.n / dTot) * 100)}%)
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/** Panel đánh giá AI (DeepSeek) ở đầu modal — chỉ hiện khi snapshot chụp qua /similar/evaluate. */
+const AiSimilarEvalPanel: React.FC<{
+  ai?: AiSimilarEvaluation | null;
+  disabledReason?: string;
+  label30ByTier?: Record<'openLine' | 'catalog' | 'catalogRuns', Label30Stats>;
+  labelHalfByTier?: Record<'openLine' | 'catalog' | 'catalogRuns', Label30Stats>;
+  onTopMatchClick?: (matchId: string) => void;
+}> = ({ ai, disabledReason, label30ByTier, labelHalfByTier, onTopMatchClick }) => {
+  if (!ai) {
+    if (!disabledReason) return null;
+    return (
+      <div className="m-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-3 py-2 text-[11px] text-slate-500 dark:text-slate-400">
+        Đánh giá AI không khả dụng: {disabledReason}
+      </div>
+    );
+  }
+  const lean = aiLeanDisplay(ai.lean);
+  const topRate = label30Chip(ai.topMatchesLabel30);
+  const tierRate = label30ByTier ? label30Chip(label30ByTier.catalogRuns) ?? label30Chip(label30ByTier.catalog) : null;
+  const topRateHalf = labelHalfChip(ai.topMatchesLabelHalf);
+  const tierRateHalf = labelHalfByTier ? labelHalfChip(labelHalfByTier.catalogRuns) ?? labelHalfChip(labelHalfByTier.catalog) : null;
+  return (
+    <div className="m-2 rounded-lg border border-violet-200 dark:border-violet-800 bg-violet-50/80 dark:bg-violet-950/40 px-3 py-2.5">
+      <div className="flex items-center flex-wrap gap-2">
+        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-violet-700 dark:text-violet-300">
+          <Zap className="w-3.5 h-3.5" /> Đánh giá AI (DeepSeek)
+        </span>
+        <span className={`px-2 py-0.5 rounded-full border text-[11px] font-bold ${lean.cls}`}>{lean.text}</span>
+        <span className="text-[10px] text-violet-600/80 dark:text-violet-400/80">{CONF_LABEL[ai.confidence]}</span>
+        {topRate && (
+          <span className="px-2 py-0.5 rounded-full bg-white/70 dark:bg-slate-900/50 border border-violet-200 dark:border-violet-800 text-[11px] font-semibold text-violet-800 dark:text-violet-200">
+            Top đối chiếu: {topRate}
+          </span>
+        )}
+        {topRateHalf && (
+          <span className="px-2 py-0.5 rounded-full bg-white/70 dark:bg-slate-900/50 border border-amber-200 dark:border-amber-800 text-[11px] font-semibold text-amber-800 dark:text-amber-200">
+            Top đối chiếu: {topRateHalf}
+          </span>
+        )}
+        {tierRate && (
+          <span className="text-[10px] text-violet-600/70 dark:text-violet-400/70">nhóm catalog+vạch: {tierRate}</span>
+        )}
+        {tierRateHalf && (
+          <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70">nhóm catalog+vạch: {tierRateHalf}</span>
+        )}
+      </div>
+      {ai.summaryVi && (
+        <p className="mt-1.5 text-[12px] leading-snug text-violet-900 dark:text-violet-100">{ai.summaryVi}</p>
+      )}
+      {ai.council && (
+        <details className="mt-2 text-[11px] text-violet-800 dark:text-violet-200">
+          <summary className="cursor-pointer font-semibold text-violet-700 dark:text-violet-300">
+            The Council — 5 góc nhìn
+          </summary>
+          <ul className="mt-1.5 space-y-1 pl-1">
+            {ai.council.devilsAdvocate && (
+              <li><span className="font-semibold">Phản biện:</span> {ai.council.devilsAdvocate}</li>
+            )}
+            {ai.council.firstPrinciples && (
+              <li><span className="font-semibold">Nguyên lý:</span> {ai.council.firstPrinciples}</li>
+            )}
+            {ai.council.opportunityExpander && (
+              <li><span className="font-semibold">Cơ hội:</span> {ai.council.opportunityExpander}</li>
+            )}
+            {ai.council.outsider && (
+              <li><span className="font-semibold">Ngoài cuộc:</span> {ai.council.outsider}</li>
+            )}
+            {ai.council.executor && (
+              <li><span className="font-semibold">Thực thi:</span> {ai.council.executor}</li>
+            )}
+          </ul>
+        </details>
+      )}
+      {ai.topMatches.length > 0 && (
+        <div className="mt-2">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-violet-700/80 dark:text-violet-300/80">
+            Top trận đối chiếu đáng tin
+          </p>
+          <ul className="mt-1 space-y-1">
+            {ai.topMatches.map((m, i) => (
+              <li
+                key={`${m.matchId}-${i}`}
+                className="text-[11px] leading-snug text-violet-900 dark:text-violet-100 flex flex-wrap items-center gap-x-2"
+              >
+                <button
+                  type="button"
+                  onClick={() => onTopMatchClick?.(m.matchId)}
+                  disabled={!onTopMatchClick}
+                  className={`font-semibold truncate max-w-[18rem] text-left ${
+                    onTopMatchClick
+                      ? 'text-violet-800 dark:text-violet-200 hover:underline cursor-pointer'
+                      : ''
+                  }`}
+                  title={onTopMatchClick ? `Xem biểu đồ odds Tài/Xỉu (1_3) — ${m.team}` : m.team}
+                >
+                  {m.team}
+                </button>
+                <span
+                  className={`shrink-0 font-semibold text-[10px] ${
+                    m.label30 === 1
+                      ? 'text-red-600 dark:text-red-400'
+                      : m.label30 === 0
+                        ? 'text-slate-500 dark:text-slate-400'
+                        : 'text-slate-400'
+                  }`}
+                >
+                  {m.label30 == null ? '30\' chưa rõ' : m.label30 === 1 ? 'CÓ BÀN' : 'không bàn'}
+                </span>
+                <span
+                  className={`shrink-0 font-semibold text-[10px] ${
+                    m.labelHalf === 1
+                      ? 'text-amber-600 dark:text-amber-400'
+                      : m.labelHalf === 0
+                        ? 'text-slate-500 dark:text-slate-400'
+                        : 'text-slate-400'
+                  }`}
+                >
+                  {m.labelHalf == null ? 'hết hiệp: ?' : m.labelHalf === 1 ? 'hết hiệp: CÓ BÀN' : 'hết hiệp: không'}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {ai.caveats && ai.caveats.length > 0 && (
+        <ul className="mt-2 space-y-0.5">
+          {ai.caveats.map((c, i) => (
+            <li key={i} className="text-[10px] text-amber-700 dark:text-amber-400 flex items-start gap-1">
+              <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" /> {c}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
+
+/** Chuyển response /similar/evaluate → payload lưu snapshot. */
+function similarDataForSnapshot(data: SimilarMatchesData): SimilarMatchSnapshotData {
+  return {
+    queryFeatures: data.queryFeatures,
+    openingLines: data.openingLines,
+    openingLineNotice: data.openingLineNotice,
+    similarMatchesOpenLine: data.similarMatchesOpenLine,
+    similarMatchesOpenLineCatalog: data.similarMatchesOpenLineCatalog,
+    similarMatchesOpenLineCatalogRuns: data.similarMatchesOpenLineCatalogRuns,
+    queryOu13LineRuns: data.queryOu13LineRuns,
+    currentTotals: data.currentTotals,
+    aiEvaluation: data.aiEvaluation,
+    aiDisabledReason: data.aiDisabledReason,
+    label30ByTier: data.label30ByTier,
+    labelHalfByTier: data.labelHalfByTier,
+    halfGoalStats: data.halfGoalStats,
+  };
+}
+
+function captureHalfMinute(
+  current: { half?: number; minute?: number },
+  feats?: Record<string, number>,
+): { half: 1 | 2; minute: number } {
+  const half = current.half === 2 || feats?.half === 2 ? 2 : 1;
+  const minute =
+    typeof current.minute === 'number'
+      ? current.minute
+      : typeof feats?.minute === 'number'
+        ? feats.minute
+        : 0;
+  return { half, minute };
+}
+
 export const AllSimilarMatchesModal: React.FC<{
   input: PredictGoalInput;
   current: { home: string; away: string; score: string; half?: number; minute?: number };
@@ -465,41 +1090,166 @@ export const AllSimilarMatchesModal: React.FC<{
   openingLines?: import('../services/goal-prediction').OpeningLinesRef;
   /** Xác suất 30' của trận đang xem (hiển thị ở cột "Trận hiện tại"). */
   currentProb30?: number | null;
+  /** Dữ liệu đã lưu — bỏ qua fetch (xem lại snapshot). */
+  initialData?: import('../services/similar-match-snapshots').SimilarMatchSnapshotData;
+  initialError?: string;
+  /** Banner khi snapshot được kích hoạt bởi đổi line 1_3. */
+  lineChangeBanner?: {
+    half: 1 | 2;
+    minute: number;
+    prevHandicap: number;
+    newHandicap: number;
+  };
+  /** Lưu vào localStorage sau fetch (mặc định: có, trừ khi xem lại snapshot). */
+  persistSnapshot?: boolean;
+  /** Mở sẵn biểu đồ so sánh kèo 1_3 cho trận tương tự (matchId). */
+  initialChartMatchId?: string;
   onClose: () => void;
-}> = ({ input, current, queryFeatures, openingLines: openingLinesProp, currentProb30, onClose }) => {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [matchesLegacy, setMatchesLegacy] = useState<SimilarMatchFull[]>([]);
-  const [matchesOpenLine, setMatchesOpenLine] = useState<SimilarMatchFull[]>([]);
-  const [qFeats, setQFeats] = useState<Record<string, number> | undefined>(queryFeatures);
-  const [openingLines, setOpeningLines] = useState(openingLinesProp);
-  const [currentTotals, setCurrentTotals] = useState<CumulativeTotals | null>(null);
+}> = ({
+  input,
+  current,
+  queryFeatures,
+  openingLines: openingLinesProp,
+  currentProb30,
+  initialData,
+  initialError,
+  lineChangeBanner,
+  persistSnapshot: persistSnapshotProp,
+  initialChartMatchId,
+  onClose,
+}) => {
+  const hasCached = initialData != null || initialError != null;
+  const persistSnapshot = persistSnapshotProp ?? !hasCached;
+  const [loading, setLoading] = useState(!hasCached);
+  const [error, setError] = useState<string | null>(initialError ?? null);
+  const [matchesOpenLine, setMatchesOpenLine] = useState<SimilarMatchFull[]>(initialData?.similarMatchesOpenLine ?? []);
+  const [matchesOpenLineCatalog, setMatchesOpenLineCatalog] = useState<SimilarMatchFull[]>(initialData?.similarMatchesOpenLineCatalog ?? []);
+  const [matchesOpenLineCatalogRuns, setMatchesOpenLineCatalogRuns] = useState<SimilarMatchFull[]>(initialData?.similarMatchesOpenLineCatalogRuns ?? []);
+  const [queryOu13LineRuns, setQueryOu13LineRuns] = useState<string | undefined>(initialData?.queryOu13LineRuns);
+  const [qFeats, setQFeats] = useState<Record<string, number> | undefined>(initialData?.queryFeatures ?? queryFeatures);
+  const [openingLines, setOpeningLines] = useState(initialData?.openingLines ?? openingLinesProp);
+  const [openingLineNotice, setOpeningLineNotice] = useState(initialData?.openingLineNotice);
+  const [currentTotals, setCurrentTotals] = useState<CumulativeTotals | null>(initialData?.currentTotals ?? null);
+  const [aiEvaluation, setAiEvaluation] = useState(initialData?.aiEvaluation ?? null);
+  const [aiDisabledReason, setAiDisabledReason] = useState(initialData?.aiDisabledReason);
+  const [label30ByTier, setLabel30ByTier] = useState(initialData?.label30ByTier);
+  const [labelHalfByTier, setLabelHalfByTier] = useState(initialData?.labelHalfByTier);
+  const [halfGoalStats, setHalfGoalStats] = useState(initialData?.halfGoalStats);
+  const [savedLinks, setSavedLinks] = useState<SimilarMatchLinkRecord[]>(() =>
+    loadSimilarMatchLinks(input.matchId),
+  );
   /** Cột đang mở biểu đồ odds Tài/Xỉu 1_3 (null = đóng). */
   const [chartCol, setChartCol] = useState<ComparisonColumn | null>(null);
+  /** Phạm vi điều hướng ◀▶ trong modal biểu đồ. null = dùng danh sách tổng (bảng RAG + top AI).
+   *  Khi mở từ 1 nhóm cụ thể (vd trùng kèo chấp) → ghim đúng nhóm đó để so sánh xoay vòng trong nhóm. */
+  const [chartNav, setChartNav] = useState<ComparisonColumn[] | null>(null);
+  /** Chỉ auto-mở biểu đồ từ initialChartMatchId một lần — tránh mở lại sau khi user đóng. */
+  const initialChartOpenedRef = useRef(false);
 
   useEffect(() => {
+    const refresh = () => setSavedLinks(loadSimilarMatchLinks(input.matchId));
+    refresh();
+    const ctrl = new AbortController();
+    void fetchSimilarMatchLinksFromHistory(input.matchId, ctrl.signal).then((incoming) => {
+      if (ctrl.signal.aborted || incoming.length === 0) return;
+      mergeSimilarMatchLinksFromServer(input.matchId, incoming);
+      refresh();
+    });
+    const onUpdated = (e: Event) => {
+      const mid = (e as CustomEvent<{ matchId?: string }>).detail?.matchId;
+      if (mid === input.matchId) refresh();
+    };
+    window.addEventListener(SIMILAR_MATCH_LINKS_UPDATED_EVENT, onUpdated);
+    return () => {
+      ctrl.abort();
+      window.removeEventListener(SIMILAR_MATCH_LINKS_UPDATED_EVENT, onUpdated);
+    };
+  }, [input.matchId]);
+
+  useEffect(() => {
+    initialChartOpenedRef.current = false;
+  }, [initialChartMatchId]);
+
+  const closeChart = useCallback(() => {
+    setChartCol(null);
+    setChartNav(null);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    closeChart();
+    onClose();
+  }, [onClose, closeChart]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (chartCol) closeChart();
+      else handleClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [chartCol, handleClose, closeChart]);
+
+  const allSimilarById = useMemo(() => {
+    const map = new Map<string, SimilarMatchFull>();
+    for (const m of dedupeByMatchId([
+      ...matchesOpenLine,
+      ...matchesOpenLineCatalog,
+      ...matchesOpenLineCatalogRuns,
+    ])) {
+      map.set(String(m.matchId), m);
+    }
+    return map;
+  }, [matchesOpenLine, matchesOpenLineCatalog, matchesOpenLineCatalogRuns]);
+
+  useEffect(() => {
+    if (hasCached) return;
     const ctrl = new AbortController();
     setLoading(true);
     setError(null);
-    void fetchSimilarMatches(input, 20, ctrl.signal, queryFeatures).then((r) => {
+    void fetchSimilarMatchesWithAi(input, 20, ctrl.signal, queryFeatures).then((r) => {
       if (ctrl.signal.aborted) return;
+      const ts = Date.now();
+      const { half: capHalf, minute: capMinute } = captureHalfMinute(current, queryFeatures);
+      const score = current.score || '0-0';
       if (r.ok === false) {
         setError(r.error);
+        if (persistSnapshot) {
+          appendSimilarMatchSnapshot(input.matchId, {
+            half: capHalf,
+            minute: capMinute,
+            ts,
+            score,
+            error: r.error,
+          });
+        }
       } else {
-        const curMin =
-          current.minute ??
-          (typeof r.data.queryFeatures?.minute === 'number'
-            ? r.data.queryFeatures.minute
-            : typeof queryFeatures?.minute === 'number'
-              ? queryFeatures.minute
-              : null);
-        const legacy = dedupeByMatchId(sortLegacyForDisplay(r.data.similarMatches, curMin));
-        const openLine = dedupeByMatchId(r.data.similarMatchesOpenLine ?? []);
-        setMatchesLegacy(legacy);
-        setMatchesOpenLine(openLine);
-        if (r.data.queryFeatures) setQFeats(r.data.queryFeatures);
+        const catalog = r.data.similarMatchesOpenLineCatalog ?? [];
+        const catalogRuns = r.data.similarMatchesOpenLineCatalogRuns ?? [];
+        setMatchesOpenLine(r.data.similarMatchesOpenLine ?? []);
+        setMatchesOpenLineCatalog(catalog);
+        setMatchesOpenLineCatalogRuns(catalogRuns);
+        setQueryOu13LineRuns(r.data.queryOu13LineRuns);
+        const feats = r.data.queryFeatures ?? queryFeatures;
+        if (feats) setQFeats(feats);
         if (r.data.openingLines) setOpeningLines(r.data.openingLines);
+        setOpeningLineNotice(r.data.openingLineNotice);
         setCurrentTotals(r.data.currentTotals ?? null);
+        setAiEvaluation(r.data.aiEvaluation ?? null);
+        setAiDisabledReason(r.data.aiDisabledReason);
+        setLabel30ByTier(r.data.label30ByTier);
+        setLabelHalfByTier(r.data.labelHalfByTier);
+        setHalfGoalStats(r.data.halfGoalStats);
+        if (persistSnapshot) {
+          const cm = captureHalfMinute(current, feats);
+          appendSimilarMatchSnapshot(input.matchId, {
+            half: cm.half,
+            minute: cm.minute,
+            ts,
+            score,
+            data: similarDataForSnapshot(r.data),
+          });
+        }
       }
       setLoading(false);
     });
@@ -518,14 +1268,101 @@ export const AllSimilarMatchesModal: React.FC<{
     totals: currentTotals,
     prob30: currentProb30,
   };
-  const simColsLegacy = toComparisonColumns(matchesLegacy, 'legacy');
-  const simColsOpenLine = toComparisonColumns(matchesOpenLine, 'open');
-  const hasAnySim = simColsLegacy.length > 0 || simColsOpenLine.length > 0;
+  const queryHalf = catalogQueryHalf(currentCol.half, qFeats);
+  const queryOpenOu13 = catalogQueryOpenOu13(openingLines, queryHalf);
+  const linkSourceHalf: 1 | 2 = currentCol.half === 2 ? 2 : 1;
+  const linkSourceMinute =
+    typeof currentCol.minute === 'number' ? currentCol.minute : 0;
+
+  const getLinkRecord = useCallback(
+    (col: ComparisonColumn): SimilarMatchLinkRecord | undefined => {
+      if (!col.matchId) return undefined;
+      const id = `${input.matchId}:${col.matchId}:${linkSourceHalf}:${linkSourceMinute}`;
+      return savedLinks.find((r) => r.id === id);
+    },
+    [input.matchId, linkSourceHalf, linkSourceMinute, savedLinks],
+  );
+
+  const toggleSimilarLink = useCallback(
+    (col: ComparisonColumn) => {
+      if (!col.matchId) return;
+      const relatedHalf: 1 | 2 = col.half === 2 ? 2 : 1;
+      const relatedMinute = typeof col.minute === 'number' ? col.minute : 0;
+      const tier: SimilarMatchLinkTier =
+        col.rankGroup === 'open'
+          ? 'openLine'
+          : col.rankGroup === 'catalogRuns'
+            ? 'catalogRuns'
+            : 'catalog';
+      if (
+        isSimilarMatchLinked(
+          input.matchId,
+          col.matchId,
+          linkSourceHalf,
+          linkSourceMinute,
+        )
+      ) {
+        removeSimilarMatchLink(
+          input.matchId,
+          col.matchId,
+          linkSourceHalf,
+          linkSourceMinute,
+          relatedHalf,
+          relatedMinute,
+        );
+      } else {
+        saveSimilarMatchLink(input.matchId, {
+          relatedMatchId: col.matchId,
+          relatedTeam: col.team,
+          relatedFt: col.ft,
+          relatedHalf,
+          relatedMinute,
+          tier,
+          similarity: col.similarity,
+          label30: col.label30,
+          sourceHalf: linkSourceHalf,
+          sourceMinute: linkSourceMinute,
+          sourceScore: currentCol.ft !== '—' ? currentCol.ft : undefined,
+          sourceTeam: currentCol.team,
+        });
+      }
+      setSavedLinks(loadSimilarMatchLinks(input.matchId));
+    },
+    [input.matchId, linkSourceHalf, linkSourceMinute, currentCol.ft, currentCol.team],
+  );
+  const curMin =
+    current.minute ?? (typeof qFeats?.minute === 'number' ? qFeats.minute : null);
+  const filteredOpenLine = useMemo(() => {
+    const sorted = sortOpenLineForDisplay(matchesOpenLine, curMin);
+    const deduped = dedupeByMatchId(sorted);
+    return filterSimilarCatalogByOpenLine(deduped, openingLines, queryHalf);
+  }, [matchesOpenLine, curMin, openingLines, queryHalf]);
+  const filteredCatalog = useMemo(
+    () => dedupeByMatchId(filterSimilarCatalogByOpenLine(matchesOpenLineCatalog, openingLines, queryHalf)),
+    [matchesOpenLineCatalog, openingLines, queryHalf],
+  );
+  const filteredCatalogRuns = useMemo(
+    () => dedupeByMatchId(filterSimilarCatalogByOpenLine(matchesOpenLineCatalogRuns, openingLines, queryHalf)),
+    [matchesOpenLineCatalogRuns, openingLines, queryHalf],
+  );
+  const simColsOpenLine = toComparisonColumns(filteredOpenLine, 'open');
+  const simColsCatalog = toComparisonColumns(filteredCatalog, 'catalog');
+  const simColsCatalogRuns = toComparisonColumns(filteredCatalogRuns, 'catalogRuns');
+  const hasAnySim =
+    simColsOpenLine.length > 0
+    || simColsCatalog.length > 0
+    || simColsCatalogRuns.length > 0;
 
   const simHeadClass = (c: ComparisonColumn, firstInGroup: boolean) => {
     const base = `sticky top-0 z-20 w-28 min-w-[7rem] border-b border-slate-200 dark:border-slate-700 px-2 py-1 text-center font-semibold ${headTint(c.label30)}`;
     if (c.rankGroup === 'open' && firstInGroup) {
       return `${base} border-l-2 border-l-indigo-400 dark:border-l-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/40`;
+    }
+    if (c.rankGroup === 'catalog' && firstInGroup) {
+      return `${base} border-l-2 border-l-emerald-400 dark:border-l-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/40`;
+    }
+    if (c.rankGroup === 'catalogRuns' && firstInGroup) {
+      return `${base} border-l-2 border-l-sky-400 dark:border-l-sky-500 bg-sky-50/80 dark:bg-sky-950/40`;
     }
     return base;
   };
@@ -534,22 +1371,109 @@ export const AllSimilarMatchesModal: React.FC<{
     if (c.rankGroup === 'open' && firstInGroup) {
       return `${base} border-l-2 border-l-indigo-400 dark:border-l-indigo-500`;
     }
+    if (c.rankGroup === 'catalog' && firstInGroup) {
+      return `${base} border-l-2 border-l-emerald-400 dark:border-l-emerald-500`;
+    }
+    if (c.rankGroup === 'catalogRuns' && firstInGroup) {
+      return `${base} border-l-2 border-l-sky-400 dark:border-l-sky-500`;
+    }
     return base;
   };
 
-  // Danh sách cột để chuyển nhanh qua lại trong modal biểu đồ (trận đang xem + cả 2 nhóm).
-  const chartNavCols: ComparisonColumn[] = [currentCol, ...simColsLegacy, ...simColsOpenLine];
+  // Dựng cột so sánh từ 1 trận "RAG số bàn theo hiệp" — ưu tiên cột RAG có sẵn (giàu dữ liệu),
+  // nếu không thì cột tối thiểu (Ou13ChartModal tự fetch odds 1_3 theo matchId nên vẫn vẽ được).
+  const buildHalfGoalCol = useCallback(
+    (m: HalfGoalMatchRef, half: 1 | 2): ComparisonColumn => {
+      const found = allSimilarById.get(m.matchId);
+      if (found) {
+        const built = toComparisonColumns([found], 'catalog')[0];
+        if (built) return built;
+      }
+      return {
+        key: `halfgoal-${m.matchId}`,
+        isCurrent: false,
+        rankGroup: 'catalog',
+        matchId: m.matchId,
+        team: m.home && m.away ? `${m.home} vs ${m.away}` : `Match ${m.matchId}`,
+        ft: m.finalScore || m.ftStatus || '—',
+        half,
+        labelHalf: m.hasGoal,
+      };
+    },
+    [allSimilarById],
+  );
+
+  // Danh sách cột để chuyển nhanh qua lại trong modal biểu đồ (trận đang xem + 3 nhóm RAG + pool số bàn theo hiệp).
+  const chartNavCols = useMemo(() => {
+    const base = [currentCol, ...simColsOpenLine, ...simColsCatalog, ...simColsCatalogRuns];
+    const seen = new Set(base.map((c) => c.matchId).filter(Boolean));
+    const half = (halfGoalStats?.half === 2 ? 2 : 1) as 1 | 2;
+    const extra = (halfGoalStats?.matches ?? [])
+      .filter((m) => m.matchId && !seen.has(m.matchId))
+      .map((m) => buildHalfGoalCol(m, half));
+    return [...base, ...extra];
+  }, [currentCol, simColsOpenLine, simColsCatalog, simColsCatalogRuns, halfGoalStats, buildHalfGoalCol]);
+
+  // Phạm vi điều hướng đang dùng: nhóm đã ghim (chartNav) hoặc danh sách tổng.
+  const activeNav = chartNav ?? chartNavCols;
+
+  /** Mở modal 📈 Xem cho trận trong top AI / bảng RAG — điều hướng theo danh sách tổng. */
+  const openTopMatchChart = useCallback(
+    (matchId: string) => {
+      const inTable = chartNavCols.find((c) => c.matchId === matchId && !c.isCurrent);
+      if (inTable) {
+        setChartNav(null);
+        setChartCol(inTable);
+        return;
+      }
+      const found = allSimilarById.get(matchId);
+      if (found) {
+        const built = toComparisonColumns([found], 'catalog')[0];
+        if (built) {
+          setChartNav(null);
+          setChartCol(built);
+        }
+      }
+    },
+    [chartNavCols, allSimilarById],
+  );
+
+  useEffect(() => {
+    if (!initialChartMatchId || loading || initialChartOpenedRef.current) return;
+    initialChartOpenedRef.current = true;
+    openTopMatchChart(initialChartMatchId);
+  }, [initialChartMatchId, loading, openTopMatchChart]);
+
+  // Mở biểu đồ so sánh từ 1 danh sách "RAG số bàn theo hiệp" (pool đầy đủ HOẶC nhóm trùng kèo chấp).
+  // GHIM điều hướng ◀▶ trong đúng `siblings` để so sánh xoay vòng chỉ trong nhóm đó.
+  const openHalfGoalMatchChart = useCallback(
+    (m: HalfGoalMatchRef, half: 1 | 2, siblings: HalfGoalMatchRef[]) => {
+      const scope = siblings.map((s) => buildHalfGoalCol(s, half));
+      const target = scope.find((c) => c.matchId === m.matchId) ?? buildHalfGoalCol(m, half);
+      setChartNav(scope);
+      setChartCol(target);
+    },
+    [buildHalfGoalCol],
+  );
+
+  /** Mở chart từ bảng RAG / cột trận đang xem — dùng danh sách điều hướng tổng (bỏ ghim nhóm). */
+  const openChartGlobal = useCallback((c: ComparisonColumn) => {
+    setChartNav(null);
+    setChartCol(c);
+  }, []);
+
   const renderSimTds = (render: (c: ComparisonColumn, cls: string) => React.ReactNode) => (
     <>
-      {simColsLegacy.map((c) => render(c, simCellClass(c, false)))}
       {simColsOpenLine.map((c, i) => render(c, simCellClass(c, i === 0)))}
+      {simColsCatalog.map((c, i) => render(c, simCellClass(c, i === 0)))}
+      {simColsCatalogRuns.map((c, i) => render(c, simCellClass(c, i === 0)))}
     </>
   );
-  const chartNavIdx = chartCol ? chartNavCols.findIndex((c) => c.key === chartCol.key) : -1;
+  const chartNavIdx = chartCol ? activeNav.findIndex((c) => c.key === chartCol.key) : -1;
   const gotoChart = (dir: -1 | 1) => {
     if (chartNavIdx < 0) return;
-    const n = chartNavCols.length;
-    setChartCol(chartNavCols[(chartNavIdx + dir + n) % n]);
+    const n = activeNav.length;
+    setChartCol(activeNav[(chartNavIdx + dir + n) % n]);
   };
 
   // Lớp sticky dùng chung cho 2 cột trái (nhãn + trận đang xem).
@@ -562,7 +1486,7 @@ export const AllSimilarMatchesModal: React.FC<{
       role="dialog"
       aria-modal="true"
       className="fixed inset-0 z-[70] bg-black/50 flex items-end sm:items-center justify-center p-2 sm:p-4"
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div
         className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full sm:max-w-5xl max-h-[88vh] flex flex-col"
@@ -572,19 +1496,43 @@ export const AllSimilarMatchesModal: React.FC<{
           <div className="min-w-0">
             <div className="text-sm font-bold text-gray-900 dark:text-white">Tất cả tình huống tương tự</div>
             <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 flex items-center flex-wrap gap-x-2 gap-y-0.5">
-              <span>Cột trái: cách cũ (vạch snapshot + sim) · cột phải: cách mới (vạch mở hiệp) · kéo ngang</span>
+              <span>Indigo: top vạch mở · xanh lá: catalog 1_3 cùng hiệp (note nếu 1_2 khác) · xanh dương: + thời gian vạch · kéo ngang</span>
               <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-red-200 dark:bg-red-800 inline-block" /> CÓ BÀN</span>
               <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-slate-200 dark:bg-slate-600 inline-block" /> không</span>
               <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-slate-100 dark:bg-slate-800 inline-block" /> chưa rõ</span>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg leading-none flex-shrink-0">✕</button>
+          <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg leading-none flex-shrink-0">✕</button>
         </div>
 
         <div className="flex-1 overflow-auto p-2">
+          {lineChangeBanner && (
+            <div className="m-2 text-xs leading-snug px-3 py-2 rounded-md bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800">
+              <span className="font-semibold">Tự động khi đổi line 1_3:</span>{' '}
+              H{lineChangeBanner.half} phút {lineChangeBanner.minute}&apos; — line{' '}
+              {lineChangeBanner.prevHandicap} → {lineChangeBanner.newHandicap}. AI chọn top 5 trận
+              khớp vạch mở + vạch tại thời điểm (1_3 và 1_2).
+            </div>
+          )}
+          <SimilarMatchHowItWorks queryHalf={queryHalf} queryOpenOu13={queryOpenOu13} />
+          <SimilarMatchLinksBanner links={savedLinks} />
+          {openingLineNotice && (
+            <div className="m-2 text-xs leading-snug px-3 py-2 rounded-md bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800 flex items-start gap-1.5">
+              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+              <span className="break-words">{openingLineNotice}</span>
+            </div>
+          )}
+          <HalfGoalStatsPanel stats={halfGoalStats} onMatchClick={loading ? undefined : openHalfGoalMatchChart} />
+          <AiSimilarEvalPanel
+            ai={aiEvaluation}
+            disabledReason={aiDisabledReason}
+            label30ByTier={label30ByTier}
+            labelHalfByTier={labelHalfByTier}
+            onTopMatchClick={loading ? undefined : openTopMatchChart}
+          />
           {loading ? (
             <div className="flex items-center justify-center gap-2 py-10 text-sm text-gray-500 dark:text-gray-400">
-              <Loader2 className="w-4 h-4 animate-spin" /> Đang tải tình huống tương tự…
+              <Loader2 className="w-4 h-4 animate-spin" /> Đang tải tình huống tương tự và đánh giá AI…
             </div>
           ) : error ? (
             <div className="m-2 text-xs leading-snug px-3 py-2 rounded-md bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-200 border border-red-200 dark:border-red-800 flex items-start gap-1.5">
@@ -592,7 +1540,9 @@ export const AllSimilarMatchesModal: React.FC<{
               <span className="break-words">{error}</span>
             </div>
           ) : !hasAnySim ? (
-            <div className="py-10 text-center text-sm text-gray-500 dark:text-gray-400">Không tìm thấy tình huống tương tự (server có thể chưa nạp dataset).</div>
+            <div className="py-10 text-center text-sm text-gray-500 dark:text-gray-400 px-4">
+              {openingLineNotice ?? 'Không tìm thấy tình huống tương tự (server có thể chưa nạp dataset).'}
+            </div>
           ) : (
             <table className="border-separate border-spacing-0 text-xs">
               <thead>
@@ -602,41 +1552,78 @@ export const AllSimilarMatchesModal: React.FC<{
                     <div className="truncate" title={currentCol.team}>{currentCol.team}</div>
                     <div className="text-[10px] font-normal">đang xem</div>
                   </th>
-                  {simColsLegacy.length > 0 && (
-                    <th
-                      colSpan={simColsLegacy.length}
-                      className="sticky top-0 z-25 border-b border-slate-200 dark:border-slate-700 px-2 py-1 text-center text-[10px] font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/80"
-                    >
-                      Cách cũ · vạch T/X + chấp tại phút
-                    </th>
-                  )}
                   {simColsOpenLine.length > 0 && (
                     <th
                       colSpan={simColsOpenLine.length}
-                      className="sticky top-0 z-25 border-b border-l-2 border-l-indigo-400 dark:border-l-indigo-500 border-slate-200 dark:border-slate-700 px-2 py-1 text-center text-[10px] font-bold uppercase tracking-wide text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50"
+                      className="sticky top-0 z-[25] border-b border-l-2 border-l-indigo-400 dark:border-l-indigo-500 border-slate-200 dark:border-slate-700 px-2 py-1 text-center text-[10px] font-bold uppercase tracking-wide text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50"
                     >
-                      Cách mới · vạch mở hiệp 1_3
-                      {openingLines && (openingLines.h1OpenOu13 != null || openingLines.h2OpenOu13 != null) && (
+                      Top {simColsOpenLine.length} · vạch mở hiệp 1_3
+                      {queryOpenOu13 != null && (
                         <span className="block font-normal normal-case tracking-normal text-indigo-600/90 dark:text-indigo-400/90 mt-0.5">
-                          H1 mở {openingLines.h1OpenOu13 != null ? HCAP(openingLines.h1OpenOu13) : '—'}
-                          {' · H2 mở '}
-                          {openingLines.h2OpenOu13 != null ? HCAP(openingLines.h2OpenOu13) : '—'}
+                          Đang so {queryHalf === 1 ? 'H1' : 'H2'} mở {HCAP(queryOpenOu13)}
+                          {' · '}{simColsOpenLine.length} trận · 1 cột/trận
+                        </span>
+                      )}
+                    </th>
+                  )}
+                  {simColsCatalog.length > 0 && (
+                    <th
+                      colSpan={simColsCatalog.length}
+                      className="sticky top-0 z-[25] border-b border-l-2 border-l-emerald-400 dark:border-l-emerald-500 border-slate-200 dark:border-slate-700 px-2 py-1 text-center text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50"
+                    >
+                      Tất cả trận · vạch mở 1_3 cùng hiệp
+                      {queryOpenOu13 != null && (
+                        <span className="block font-normal normal-case tracking-normal text-emerald-600/90 dark:text-emerald-400/90 mt-0.5">
+                          Đang so {queryHalf === 1 ? 'H1' : 'H2'} mở {HCAP(queryOpenOu13)}
+                          {' · '}{simColsCatalog.length} trận khớp
+                          {' · '}chỉ hiện trận trùng vạch mở cùng hiệp
+                        </span>
+                      )}
+                    </th>
+                  )}
+                  {simColsCatalogRuns.length > 0 && (
+                    <th
+                      colSpan={simColsCatalogRuns.length}
+                      className="sticky top-0 z-[25] border-b border-l-2 border-l-sky-400 dark:border-l-sky-500 border-slate-200 dark:border-slate-700 px-2 py-1 text-center text-[10px] font-bold uppercase tracking-wide text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50"
+                    >
+                      Catalog + thời gian vạch gần giống
+                      {queryOu13LineRuns && (
+                        <span className="block font-normal normal-case tracking-normal text-sky-600/90 dark:text-sky-400/90 mt-0.5">
+                          pattern {queryOu13LineRuns} · ±2p · {simColsCatalogRuns.length} trận
                         </span>
                       )}
                     </th>
                   )}
                 </tr>
                 <tr>
-                  {simColsLegacy.map((c) => (
-                    <th key={c.key} className={simHeadClass(c, false)}>
-                      <div className="truncate" title={c.team}>{c.team}</div>
-                      <div className="text-[10px] font-normal">30': {c.label30 == null ? 'chưa rõ' : c.label30 === 1 ? 'CÓ BÀN' : 'không'}</div>
-                    </th>
-                  ))}
                   {simColsOpenLine.map((c, i) => (
                     <th key={c.key} className={simHeadClass(c, i === 0)}>
                       <div className="truncate" title={c.team}>{c.team}</div>
                       <div className="text-[10px] font-normal">30': {c.label30 == null ? 'chưa rõ' : c.label30 === 1 ? 'CÓ BÀN' : 'không'}</div>
+                    </th>
+                  ))}
+                  {simColsCatalog.map((c, i) => (
+                    <th key={c.key} className={simHeadClass(c, i === 0)}>
+                      <div className="truncate" title={c.team}>{c.team}</div>
+                      <div className="text-[10px] font-normal text-emerald-700 dark:text-emerald-300">
+                        khớp {c.matchedOpenHalves ?? '—'}
+                      </div>
+                      {c.openAh12MismatchNote && (
+                        <div
+                          className="text-[9px] font-normal text-amber-700 dark:text-amber-300 mt-0.5 leading-tight"
+                          title={c.openAh12MismatchNote}
+                        >
+                          ⚠ {c.openAh12MismatchNote}
+                        </div>
+                      )}
+                    </th>
+                  ))}
+                  {simColsCatalogRuns.map((c, i) => (
+                    <th key={c.key} className={simHeadClass(c, i === 0)}>
+                      <SimColTeamName c={c} onOpenChart={loading ? undefined : openChartGlobal} />
+                      <div className="text-[10px] font-normal text-sky-700 dark:text-sky-300">
+                        Δ{c.lineRunsScore ?? '—'}p
+                      </div>
                     </th>
                   ))}
                 </tr>
@@ -656,26 +1643,38 @@ export const AllSimilarMatchesModal: React.FC<{
                   <td className={labelCell}>Kèo Tài 1_3</td>
                   <td className={curCell}>
                     <button
-                      onClick={() => setChartCol(currentCol)}
+                      onClick={() => openChartGlobal(currentCol)}
                       className="text-[10px] px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-sans"
                       title="Xem biểu đồ odds Tài/Xỉu cả trận (1_3)"
                     >
                       📈 Xem
                     </button>
                   </td>
-                  {renderSimTds((c, cls) => (
-                    <td key={c.key} className={cls}>
-                      {c.matchId ? (
-                        <button
-                          onClick={() => setChartCol(c)}
-                          className="text-[10px] px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-sans"
-                          title="Xem biểu đồ odds Tài/Xỉu cả trận (1_3)"
-                        >
-                          📈 Xem
-                        </button>
-                      ) : '—'}
-                    </td>
-                  ))}
+                  {renderSimTds((c, cls) => {
+                    const rec = getLinkRecord(c);
+                    return (
+                      <td key={c.key} className={cls}>
+                        {c.matchId ? (
+                          <div className="flex flex-col items-center gap-0.5">
+                            <button
+                              onClick={() => openChartGlobal(c)}
+                              className="text-[10px] px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-sans"
+                              title="Xem biểu đồ odds Tài/Xỉu cả trận (1_3)"
+                            >
+                              📈 Xem
+                            </button>
+                            <SimColNoteButton
+                              linked={!!rec}
+                              savedAt={rec?.ts}
+                              onToggle={() => toggleSimilarLink(c)}
+                            />
+                          </div>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                    );
+                  })}
                 </tr>
                 <tr>
                   <td className={labelCell}>Kết cục 15'</td>
@@ -687,10 +1686,52 @@ export const AllSimilarMatchesModal: React.FC<{
                   ))}
                 </tr>
                 <tr>
+                  <td className={labelCell}>Khớp vạch mở</td>
+                  <td className={curCell}>
+                    {openingLines
+                      ? [
+                          openingLines.h1OpenOu13 != null ? `1_3 H1 ${HCAP(openingLines.h1OpenOu13)}` : null,
+                          openingLines.h2OpenOu13 != null ? `1_3 H2 ${HCAP(openingLines.h2OpenOu13)}` : null,
+                          openingLines.h1OpenAh12 != null ? `1_2 H1 ${HCAP(openingLines.h1OpenAh12)}` : null,
+                          openingLines.h2OpenAh12 != null ? `1_2 H2 ${HCAP(openingLines.h2OpenAh12)}` : null,
+                        ].filter(Boolean).join(' · ') || '—'
+                      : '—'}
+                  </td>
+                  {renderSimTds((c, cls) => (
+                    <td key={c.key} className={cls}>
+                      {formatCatalogOpenLineMatch(c, queryHalf)}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td className={labelCell}>Vạch mở 1_3 / 1_2</td>
+                  <td className={curCell}>—</td>
+                  {renderSimTds((c, cls) => (
+                    <td key={c.key} className={`${cls} text-[10px]`}>
+                      {formatCatalogOpenLineForHalf(c, queryHalf)}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td className={labelCell}>Thời gian vạch 1_3</td>
+                  <td className={`${curCell} text-[10px]`}>{queryOu13LineRuns || '—'}</td>
+                  {renderSimTds((c, cls) => (
+                    <td key={c.key} className={`${cls} text-[10px]`}>
+                      {c.rankGroup === 'catalogRuns' ? (c.ou13LineRuns ?? '—') : '—'}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
                   <td className={labelCell}>Độ giống (sim)</td>
                   <td className={curCell}>—</td>
                   {renderSimTds((c, cls) => (
-                    <td key={c.key} className={`${cls} font-semibold`}>{c.similarity != null ? c.similarity.toFixed(2) : '—'}</td>
+                    <td key={c.key} className={`${cls} font-semibold`}>
+                      {c.rankGroup === 'catalog' || c.rankGroup === 'catalogRuns'
+                        ? '—'
+                        : c.similarity != null
+                          ? c.similarity.toFixed(2)
+                          : '—'}
+                    </td>
                   ))}
                 </tr>
                 <tr>
@@ -699,6 +1740,24 @@ export const AllSimilarMatchesModal: React.FC<{
                   {renderSimTds((c, cls) => (
                     <td key={c.key} className={`${cls} font-semibold`}>
                       {c.prob30 != null ? `${(c.prob30 * 100).toFixed(0)}%` : '—'}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td className={`${labelCell} text-amber-600 dark:text-amber-400 font-medium`}>Kết cục đến hết hiệp</td>
+                  <td className={curCell}>—</td>
+                  {renderSimTds((c, cls) => (
+                    <td
+                      key={c.key}
+                      className={`${cls} font-semibold ${
+                        c.labelHalf === 1
+                          ? 'text-amber-600 dark:text-amber-400'
+                          : c.labelHalf === 0
+                            ? 'text-slate-500 dark:text-slate-400'
+                            : 'text-slate-400'
+                      }`}
+                    >
+                      {c.labelHalf == null ? 'chưa rõ' : c.labelHalf === 1 ? 'CÓ BÀN' : 'không'}
                     </td>
                   ))}
                 </tr>
@@ -755,6 +1814,7 @@ export const AllSimilarMatchesModal: React.FC<{
                   ft: chartCol.ft,
                   label: chartCol.label,
                   label30: chartCol.label30,
+                  labelHalf: chartCol.labelHalf,
                   similarity: chartCol.similarity,
                   feats: chartCol.feats,
                   queryFeats: qFeats,
@@ -771,23 +1831,23 @@ export const AllSimilarMatchesModal: React.FC<{
             !chartCol.isCurrent && chartCol.matchId
               ? {
                   matchId: chartCol.matchId,
-                  sourceMatchId: input.matchId,
+                  sourceMatchId: String(input.matchId),
                   team: chartCol.team,
                   ft: chartCol.ft,
                   half: chartCol.half === 2 ? 2 : chartCol.half === 1 ? 1 : undefined,
                   minute: chartCol.minute,
                   label: chartCol.label,
-                  label30: chartCol.label30,
+                  labelHalf: chartCol.labelHalf,
                   similarity: chartCol.similarity,
                   feats: chartCol.feats,
                   pinnedAt: 0,
                 }
               : undefined
           }
-          onPrev={chartNavCols.length > 1 ? () => gotoChart(-1) : undefined}
-          onNext={chartNavCols.length > 1 ? () => gotoChart(1) : undefined}
-          navPosition={chartNavIdx >= 0 ? { index: chartNavIdx, total: chartNavCols.length } : undefined}
-          onClose={() => setChartCol(null)}
+          onPrev={activeNav.length > 1 ? () => gotoChart(-1) : undefined}
+          onNext={activeNav.length > 1 ? () => gotoChart(1) : undefined}
+          navPosition={chartNavIdx >= 0 ? { index: chartNavIdx, total: activeNav.length } : undefined}
+          onClose={closeChart}
         />
       )}
     </div>
@@ -1096,7 +2156,7 @@ export const GoalPredictionBadge: React.FC<GoalPredictionBadgeProps> = ({
   const buildPredictInput = useCallback((): PredictGoalInput => {
     const p = propsRef.current;
     return {
-      matchId: p.liveMatch.id,
+      matchId: String(p.liveMatch.id),
       liveMatch: p.liveMatch,
       statsHistory: p.statsHistory,
       oddsHistory: p.oddsHistory,
@@ -1318,6 +2378,20 @@ export const GoalPredictionBadge: React.FC<GoalPredictionBadgeProps> = ({
   const latestColorCls = latestPct != null ? probColor(latestMainProb ?? 0, latestMainMeta?.displayThresholds) : 'bg-gray-100 dark:bg-slate-800 text-gray-500';
 
   const shortReason = displayResult?.reasonVi || displayResult?.fallback || '';
+
+  const inlineSimilarQueryHalf = catalogQueryHalf(
+    displayedHalf ?? displayResult?.queryFeatures?.half,
+    displayResult?.queryFeatures,
+  );
+  const inlineSimilarOpenOu13 = catalogQueryOpenOu13(displayResult?.openingLines, inlineSimilarQueryHalf);
+  const inlineSimilarMatches = useMemo(() => {
+    if (!displayResult?.similarMatches.length) return [];
+    return filterSimilarCatalogByOpenLine(
+      displayResult.similarMatches as SimilarMatchFull[],
+      displayResult.openingLines,
+      inlineSimilarQueryHalf,
+    );
+  }, [displayResult?.similarMatches, displayResult?.openingLines, inlineSimilarQueryHalf]);
 
   // Tabs: snapshot cũ nhất → mới nhất; tab cuối cùng tương ứng với prediction mới nhất.
   const tabs = snapshots;
@@ -1683,12 +2757,21 @@ export const GoalPredictionBadge: React.FC<GoalPredictionBadgeProps> = ({
                 </div>
               )}
 
-              {displayResult.similarMatches.length > 0 && (
+              {displayResult.openingLineNotice && (
+                <div className="text-xs leading-snug px-3 py-2 rounded-md bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800">
+                  {displayResult.openingLineNotice}
+                </div>
+              )}
+
+              {(inlineSimilarMatches.length > 0 || displayResult.openingLineNotice) && (
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="font-semibold text-gray-900 dark:text-white">
                       Tình huống tương tự
-                      <span className="ml-1 text-[10px] font-normal text-gray-400 dark:text-gray-500">(cùng vạch T/X + chấp · xem bảng để so cách mới)</span>
+                      <span className="ml-1 text-[10px] font-normal text-gray-400 dark:text-gray-500">
+                        (1_3 {inlineSimilarQueryHalf === 1 ? 'H1' : 'H2'} mở
+                        {inlineSimilarOpenOu13 != null ? ` ${HCAP(inlineSimilarOpenOu13)}` : ''} · bắt buộc trùng)
+                      </span>
                     </div>
                     <button
                       type="button"
@@ -1699,15 +2782,15 @@ export const GoalPredictionBadge: React.FC<GoalPredictionBadgeProps> = ({
                       Xem tất cả (top 20)
                     </button>
                   </div>
+                  {inlineSimilarMatches.length === 0 ? (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 px-1">Chưa có trận khớp vạch mở 1_3 cùng hiệp.</p>
+                  ) : (
                   <div className="space-y-1">
-                    {displayResult.similarMatches.slice(0, 5).map((s, i) => {
+                    {inlineSimilarMatches.slice(0, 5).map((s, i) => {
+                      const openOu = inlineSimilarQueryHalf === 1 ? s.h1OpenOu13 : s.h2OpenOu13;
+                      const openAh = inlineSimilarQueryHalf === 1 ? s.h1OpenAh12 : s.h2OpenAh12;
                       const sOu = s.features?.ou13_handicap;
                       const sAh = s.features?.ah12_handicap;
-                      const qOu = displayResult.queryFeatures?.ou13_handicap;
-                      const qAh = displayResult.queryFeatures?.ah12_handicap;
-                      const ouOff = typeof sOu === 'number' && typeof qOu === 'number' && Math.abs(sOu - qOu) >= 0.005;
-                      const ahOff = typeof sAh === 'number' && typeof qAh === 'number' && Math.abs(sAh - qAh) >= 0.005;
-                      const approx = ouOff || ahOff;
                       return (
                         <div key={i} className="flex justify-between items-center gap-2 text-xs bg-gray-50 dark:bg-slate-800 rounded px-2 py-1">
                           <span className="font-mono truncate min-w-0" title={`Match ${s.matchId}`}>
@@ -1715,8 +2798,9 @@ export const GoalPredictionBadge: React.FC<GoalPredictionBadgeProps> = ({
                               {s.home && s.away ? `${s.home} vs ${s.away}` : `Match ${s.matchId}`} · H{s.half} · phút {s.minute}
                             </span>
                             <span className="block text-[10px] text-gray-500 dark:text-gray-400">
-                              T/X {typeof sOu === 'number' ? HCAP(sOu) : '—'} · chấp {typeof sAh === 'number' ? HCAP(sAh) : '—'}
-                              {approx && <span className="ml-1 text-amber-600 dark:text-amber-400">≈ xấp xỉ</span>}
+                              mở 1_3 {typeof openOu === 'number' ? HCAP(openOu) : '—'}
+                              {typeof openAh === 'number' ? ` · 1_2 ${HCAP(openAh)}` : ''}
+                              {' · '}T/X lúc đó {typeof sOu === 'number' ? HCAP(sOu) : '—'}
                             </span>
                           </span>
                           <div className="flex items-center gap-2 flex-shrink-0">
@@ -1741,7 +2825,12 @@ export const GoalPredictionBadge: React.FC<GoalPredictionBadgeProps> = ({
                       );
                     })}
                   </div>
+                  )}
                 </div>
+              )}
+
+              {!displayResult.openingLineNotice && displayResult.similarMatches.length === 0 && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">Không có tình huống tương tự (thiếu vạch mở 1_3 hoặc dataset trống).</p>
               )}
 
               {(displayResult.modelMeta30 ?? displayResult.modelMeta) && (

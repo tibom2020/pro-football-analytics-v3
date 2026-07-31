@@ -14,6 +14,8 @@ const PER_MATCH_KEY_PREFIXES: ReadonlyArray<string> = [
   'ahSnapshots1_5_',
   'mlSnapshots1_1_',
   'goalPredictionSnapshots_',
+  'similarMatchSnapshots_',
+  'similarMatchLinks_',
   'goalProbHistory_',
   'goalCloudAiEnabled_',
 ];
@@ -54,9 +56,11 @@ function removePerMatchKeys(matchId: string): void {
 }
 
 /**
- * Xoá dữ liệu của các trận cũ nhất (trừ `keepMatchId`). Trả về số trận đã dọn.
+ * Xoá dữ liệu nặng per-match của các trận cũ nhất (trừ `keepMatchId`).
+ * KHÔNG xoá mục trong viewedMatchesHistory — tab "Đã xem" vẫn giữ danh sách trận.
+ * Trả về số trận đã dọn dữ liệu.
  */
-function pruneOldestMatches(keepMatchId: string | undefined): number {
+function pruneOldestMatchData(keepMatchId: string | undefined): number {
   const history = readViewedHistory();
   if (!history) return 0;
 
@@ -66,22 +70,10 @@ function pruneOldestMatches(keepMatchId: string | undefined): number {
 
   if (sorted.length === 0) return 0;
 
-  // Dọn một nửa (tối thiểu 1) để khỏi phải retry nhiều lần.
-  const removeCount = Math.max(1, Math.ceil(sorted.length / 2));
-  const toRemove = sorted.slice(0, removeCount);
-
-  for (const [id] of toRemove) {
-    removePerMatchKeys(id);
-    delete history[id];
-  }
-
-  try {
-    localStorage.setItem(VIEWED_HISTORY_KEY, JSON.stringify(history));
-  } catch {
-    /* nếu vẫn lỗi thì cứ kệ — caller sẽ retry hoặc fail mềm */
-  }
-
-  return toRemove.length;
+  // Dọn từng trận cũ nhất một — tránh xóa hàng loạt khỏi lịch sử đã xem.
+  const [id] = sorted[0]!;
+  removePerMatchKeys(id);
+  return 1;
 }
 
 export interface SafeSetItemOptions {
@@ -106,8 +98,8 @@ export function safeSetItem(key: string, value: string, opts: SafeSetItemOptions
     }
   }
 
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const pruned = pruneOldestMatches(opts.keepMatchId);
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const pruned = pruneOldestMatchData(opts.keepMatchId);
     if (pruned === 0) break;
     try {
       localStorage.setItem(key, value);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { MatchInfo, ViewedMatchHistory, HistoryItem } from '../types';
 import { Clock, ChevronRight, Trash2, Download, Loader2, CheckCircle2 } from 'lucide-react';
-import { VIEWED_MATCHES_HISTORY_UPDATED_EVENT, matchMdAutosavedKey } from '../services/match-markdown-export';
+import { VIEWED_MATCHES_HISTORY_UPDATED_EVENT, MATCH_MD_EXPORTED_EVENT, normalizeMatchIdForStorage } from '../services/match-markdown-export';
 import { saveMatchMarkdown } from '../services/save-match-history-md';
 
 interface MatchHistoryProps {
@@ -18,9 +18,19 @@ export const MatchHistory: React.FC<MatchHistoryProps> = ({ onSelectMatch }) => 
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
       if (!k?.startsWith('matchMdAutoSaved_') || !localStorage.getItem(k)) continue;
-      ids.add(k.slice('matchMdAutoSaved_'.length));
+      ids.add(normalizeMatchIdForStorage(k.slice('matchMdAutoSaved_'.length)));
     }
     setExportedIds(ids);
+  }, []);
+
+  const markExportedInState = useCallback((matchId: string | number) => {
+    const id = normalizeMatchIdForStorage(matchId);
+    setExportedIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
   }, []);
 
   const loadFromStorage = useCallback(() => {
@@ -41,11 +51,18 @@ export const MatchHistory: React.FC<MatchHistoryProps> = ({ onSelectMatch }) => 
     };
     window.addEventListener('storage', onStorage);
     window.addEventListener(VIEWED_MATCHES_HISTORY_UPDATED_EVENT, loadFromStorage);
+    const onMdExported = (e: Event) => {
+      const id = (e as CustomEvent<{ matchId?: string }>).detail?.matchId;
+      if (id) markExportedInState(id);
+      else refreshExportedIds();
+    };
+    window.addEventListener(MATCH_MD_EXPORTED_EVENT, onMdExported);
     return () => {
       window.removeEventListener('storage', onStorage);
       window.removeEventListener(VIEWED_MATCHES_HISTORY_UPDATED_EVENT, loadFromStorage);
+      window.removeEventListener(MATCH_MD_EXPORTED_EVENT, onMdExported);
     };
-  }, [loadFromStorage, refreshExportedIds]);
+  }, [loadFromStorage, refreshExportedIds, markExportedInState]);
 
   const sortedHistory = useMemo(
     () => Object.values(history).sort((a: HistoryItem, b: HistoryItem) => b.viewedAt - a.viewedAt),
@@ -59,17 +76,17 @@ export const MatchHistory: React.FC<MatchHistoryProps> = ({ onSelectMatch }) => 
     }
   };
 
-  const handleExportMd = async (e: React.MouseEvent, matchId: string) => {
+  const handleExportMd = async (e: React.MouseEvent, matchId: string | number) => {
     e.stopPropagation();
-    setSavingId(matchId);
+    const id = normalizeMatchIdForStorage(matchId);
+    setSavingId(id);
     try {
-      const { ok } = await saveMatchMarkdown(matchId);
+      const { ok } = await saveMatchMarkdown(id);
       if (!ok) {
         window.alert('Không có dữ liệu lịch sử. Hãy mở trận trong phân tích trước.');
         return;
       }
-      try { localStorage.setItem(matchMdAutosavedKey(matchId), '1'); } catch { /* ignore */ }
-      refreshExportedIds();
+      markExportedInState(id);
     } finally {
       setSavingId(null);
     }
@@ -92,9 +109,11 @@ export const MatchHistory: React.FC<MatchHistoryProps> = ({ onSelectMatch }) => 
         </button>
       </div>
       {sortedHistory.map(({ match, viewedAt }) => {
+        const matchId = normalizeMatchIdForStorage(match.id);
         const isLive = match.timer && parseInt(match.timer.tt) !== 1;
+        const exported = exportedIds.has(matchId);
         return (
-          <div key={match.id} onClick={() => onSelectMatch(match)} className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-slate-800 hover:shadow-md cursor-pointer">
+          <div key={matchId} onClick={() => onSelectMatch(match)} className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-slate-800 hover:shadow-md cursor-pointer">
             <div className="flex justify-between items-start mb-3">
               <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-md truncate max-w-[70%]">{match.league.name}</span>
               <div className={`flex items-center text-xs font-bold ${isLive ? 'text-red-500' : 'text-gray-500'}`}>
@@ -109,14 +128,14 @@ export const MatchHistory: React.FC<MatchHistoryProps> = ({ onSelectMatch }) => 
             <div className="mt-3 flex flex-wrap gap-2 justify-between items-center text-[10px] text-gray-400 uppercase tracking-wider">
               <span>Đã xem: {new Date(viewedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
               <div className="flex items-center gap-2 ml-auto">
-                {exportedIds.has(match.id) && (
+                {exported && (
                   <span className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold normal-case bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 border border-emerald-200">
                     <CheckCircle2 className="w-3 h-3" /> Đã xuất
                   </span>
                 )}
-                <button type="button" onClick={(e) => void handleExportMd(e, match.id)} disabled={savingId === match.id} className="flex items-center gap-1 px-2.5 py-1 rounded-md font-semibold normal-case text-[11px] bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 disabled:opacity-50">
-                  {savingId === match.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-                  {isLive ? 'Lưu .md' : exportedIds.has(match.id) ? 'Xuất lại' : 'Xuất .md'}
+                <button type="button" onClick={(e) => void handleExportMd(e, matchId)} disabled={savingId === matchId} className="flex items-center gap-1 px-2.5 py-1 rounded-md font-semibold normal-case text-[11px] bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 disabled:opacity-50">
+                  {savingId === matchId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                  {isLive ? 'Lưu .md' : exported ? 'Xuất lại' : 'Xuất .md'}
                 </button>
                 <span className="flex items-center font-semibold text-blue-500 normal-case cursor-pointer" onClick={(e) => { e.stopPropagation(); onSelectMatch(match); }}>
                   Mở lại <ChevronRight className="w-3.5 h-3.5 ml-0.5" />

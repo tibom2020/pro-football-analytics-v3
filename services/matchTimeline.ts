@@ -38,6 +38,17 @@ export function resolveStatsHalfFromSnapshots(
 ): MatchHalf {
   if (isSecondHalfTimer(timer)) {
     const cm = Math.max(0, Math.round(clockMinute));
+    const tm = timer?.tm;
+    /** tt>=2 sớm trong bù H1: đồng hồ 45–49 vẫn hiệp 1. */
+    if (
+      typeof tm === 'number'
+      && Number.isFinite(tm)
+      && tm >= 45
+      && tm < H1_STOPPAGE_CLOCK_END
+      && cm < H1_STOPPAGE_CLOCK_END
+    ) {
+      return 1;
+    }
     if (snapshots.length > 0) {
       const atOrBefore = snapshots.filter((s) => s.minute <= cm);
       if (atOrBefore.length > 0) {
@@ -67,6 +78,15 @@ export function resolveStatsHalfFromSnapshots(
   return 1;
 }
 
+/** Đồng hồ liên tục: phút 45–49 = bù H1; từ 50 coi là đã vào H2 (WC bù >12' hiếm). */
+export const H1_STOPPAGE_CLOCK_END = 50;
+
+/**
+ * @deprecated Dùng `H1_STOPPAGE_CLOCK_END` cho nhận diện hiệp; giữ alias cho trục biểu đồ.
+ * Trần trục X H1 khi vẫn đang bù (có thể >45).
+ */
+export const H1_CLOCK_MAX_WHILE_TT1 = 63;
+
 /**
  * Hiệp 2 cho UI + tách H1/H2: không chỉ dựa `timer.tt` (nhiều feed B365 vẫn tt=1 trong H2).
  * Ưu tiên: tt + kèo (như khi lưu stats) → fallback mốc đã lưu trong statsHistory (khóa >= 512).
@@ -77,11 +97,27 @@ export function resolveMatchHalfForUI(
   oddsSnapshots: readonly { minute: number; half?: MatchHalf }[],
   statsHistoryKeyStrings: readonly string[],
 ): MatchHalf {
-  const fromOdds = resolveStatsHalfFromSnapshots(timer, clockMinute, oddsSnapshots);
-  if (fromOdds === 2) return 2;
   const cm = Math.max(0, Math.round(clockMinute));
+  const fromOdds = resolveStatsHalfFromSnapshots(timer, cm, oddsSnapshots);
+
+  /** Bù giờ H1 (45–49): giữ panel H1 — tránh nhảy H2 lúc 46' khi feed báo tt=2 sớm. */
+  if (cm >= 45 && cm < H1_STOPPAGE_CLOCK_END) {
+    if (!isSecondHalfTimer(timer)) return 1;
+    const hasH2SnapInWindow = oddsSnapshots.some(
+      (s) => s.half === 2 && s.minute >= 45 && s.minute < H1_STOPPAGE_CLOCK_END,
+    );
+    if (!hasH2SnapInWindow) return 1;
+  }
+
+  if (!isSecondHalfTimer(timer)) {
+    if (cm < H1_STOPPAGE_CLOCK_END) return 1;
+    if (fromOdds === 2) return 2;
+    return cm >= H1_STOPPAGE_CLOCK_END ? 2 : 1;
+  }
+
+  if (fromOdds === 2) return 2;
   /** Chỉ suy H2 từ localStorage khi feed chưa báo `tt>=2` (tt=1 trong H2); tránh đè lên bù H1 khi tt>=2. */
-  const allowHistoryInference = !isSecondHalfTimer(timer) && cm >= 46;
+  const allowHistoryInference = !isSecondHalfTimer(timer) && cm >= 50;
   for (const k of statsHistoryKeyStrings) {
     const num = Number(k);
     if (!Number.isFinite(num)) continue;

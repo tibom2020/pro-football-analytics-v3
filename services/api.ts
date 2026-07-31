@@ -96,7 +96,8 @@ const mockOdds: OddsData = {
     odds: {
       "1_2": [], // Mock for home/away odds
       "1_3": [ // Mock for over/under odds
-        { id: '1', over_od: '1.85', under_od: '1.95', handicap: '2.5', time_str: '0', add_time: '0' }
+        { id: '1', over_od: '1.85', under_od: '1.95', handicap: '2.5', time_str: '0', add_time: '0' },
+        { id: '2', over_od: '1.90', under_od: '1.90', handicap: '1.75', time_str: '45', add_time: '1' },
       ]
     }
   }
@@ -213,9 +214,11 @@ export const getInPlayEvents = async (token: string): Promise<MatchInfo[]> => {
     }
 
     const results = data.results || [];
-    return results.filter((event: MatchInfo) =>
-      event.league && event.league.name && !event.league.name.toLowerCase().includes('esoccer')
-    );
+    return results
+      .filter((event: MatchInfo) =>
+        event.league && event.league.name && !event.league.name.toLowerCase().includes('esoccer')
+      )
+      .map((event: MatchInfo) => ({ ...event, id: String(event.id) }));
   } catch (error) {
     console.error("Failed to load match list:", error);
     throw error;
@@ -238,8 +241,8 @@ export const getMatchDetails = async (token: string, eventId: string): Promise<M
       return null;
     }
 
-    const results: MatchInfo[] = data.results || [];
-    const match = results.find(e => e.id === eventId);
+    const results: MatchInfo[] = (data.results || []).map((e: MatchInfo) => ({ ...e, id: String(e.id) }));
+    const match = results.find(e => e.id === String(eventId));
 
     if (match && match.league && match.league.name && match.league.name.toLowerCase().includes('esoccer')) {
       return null;
