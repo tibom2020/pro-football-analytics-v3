@@ -380,7 +380,7 @@ const App = () => {
   }
 
   if (currentMatch) {
-    return <Dashboard token={token} match={currentMatch} onBack={handleCloseMatch} sessionActive={hasToken} />;
+    return <Dashboard token={token} match={currentMatch} onBack={handleCloseMatch} sessionActive={hasToken} theme={theme} onToggleTheme={toggleTheme} />;
   }
 
   return (

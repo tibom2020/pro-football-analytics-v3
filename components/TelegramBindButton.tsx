@@ -16,6 +16,7 @@ export const TelegramBindButton: React.FC = () => {
     try {
       const ok = await checkTelegramStatus(getAppUserId());
       setBound(ok);
+      if (ok) setCode(null);
     } catch {
       setBound(false);
     }
@@ -25,6 +26,13 @@ export const TelegramBindButton: React.FC = () => {
     void refreshStatus();
   }, [refreshStatus]);
 
+  // Đang chờ /bind trên Telegram → poll status vài giây một lần.
+  useEffect(() => {
+    if (!code || bound) return;
+    const id = window.setInterval(() => void refreshStatus(), 3000);
+    return () => window.clearInterval(id);
+  }, [code, bound, refreshStatus]);
+
   const handleBind = useCallback(async () => {
     setBusy(true);
     setError(null);
@@ -32,7 +40,7 @@ export const TelegramBindButton: React.FC = () => {
     try {
       const res = await getTelegramBindCode(getAppUserId());
       if (!res?.code) {
-        setError('Không lấy được mã — kiểm tra AI server');
+        setError('Không lấy được mã — kiểm tra AI server (localhost:3001)');
         return;
       }
       setCode(res.code);
@@ -82,23 +90,23 @@ export const TelegramBindButton: React.FC = () => {
         Telegram
       </button>
       {(code || error) && (
-        <div className="absolute right-0 top-full mt-1 z-30 w-56 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg p-2 text-[11px] text-slate-700 dark:text-slate-200">
+        <div className="absolute right-0 top-full mt-1 z-30 w-64 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg p-2 text-[11px] text-slate-700 dark:text-slate-200">
           {error ? (
             <p className="text-red-500">{error}</p>
           ) : (
             <>
-              <p className="font-semibold mb-1">Gửi cho bot:</p>
+              <p className="font-semibold mb-1">Gửi cho bot @TieuTuebot:</p>
               <code className="block bg-slate-100 dark:bg-slate-800 rounded px-1.5 py-1 break-all">
                 /bind {code}
               </code>
               {copied && <p className="text-emerald-600 mt-1">Đã copy lệnh</p>}
+              <p className="text-slate-500 mt-1.5">
+                Bot phải trả lời ✅ hoặc ❌. Đang tự kiểm tra liên kết…
+              </p>
               <button
                 type="button"
                 className="mt-1.5 text-sky-600 underline"
-                onClick={() => {
-                  setCode(null);
-                  void refreshStatus();
-                }}
+                onClick={() => void refreshStatus()}
               >
                 Đã bind? Kiểm tra lại
               </button>

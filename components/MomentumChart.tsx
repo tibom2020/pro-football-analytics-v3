@@ -4,6 +4,12 @@ import { TrendingUp } from 'lucide-react';
 import type { ChartAlertMarker } from '../types';
 export type { ChartAlertMarker } from '../types';
 import { formatMinuteAxisTick } from './chartAxisFormat';
+import { OU_LINE_DROP_PRICE_MAX } from '../services/ou-line-drop-alert';
+
+/** Nến Tài ≤ ngưỡng — dễ tách khỏi đỏ/xanh áp lực. */
+const LOW_OVER_CANDLE_FILL = '#f59e0b';
+const LOW_OVER_CANDLE_STROKE = '#b45309';
+const LOW_OVER_LABEL_FILL = '#b45309';
 
 // --- Shared Helper Components ---
 
@@ -100,7 +106,7 @@ const CustomApiDot = (props: any) => {
 };
 
 const CustomCandle = (props: any) => {
-    const { cx, cy, fill, payload, secondary } = props;
+    const { cx, cy, fill, payload, secondary, underXiuMode } = props;
     const oddsValue = payload.__candleOddsValue ?? payload.over ?? payload.home ?? payload.under ?? 1.9;
 
     let height = 12;
@@ -116,7 +122,7 @@ const CustomCandle = (props: any) => {
     height = Math.max(10, Math.min(height, 55));
 
     // Kèo phụ (Đội nhà): dạng bong bóng — màu vẫn theo quy tắc áp lực (fill = e.color).
-    // Bán kính vừa phải để dễ quan sát mà không che nến chính.
+    // Bán kính vừa đủ để dễ quan sát mà không che nến chính.
     if (secondary) {
         const r = 5.5;
         return (
@@ -127,12 +133,55 @@ const CustomCandle = (props: any) => {
         );
     }
 
-    const width = payload.highlight ? 7 : 4;
+    const over =
+        typeof payload.over === 'number' && Number.isFinite(payload.over) ? payload.over : null;
+    const isLowOver =
+        !underXiuMode && over != null && over <= OU_LINE_DROP_PRICE_MAX;
+
+    const candleFill = isLowOver ? LOW_OVER_CANDLE_FILL : fill;
+    const wickStroke = isLowOver ? LOW_OVER_CANDLE_STROKE : fill;
+    const width = payload.highlight ? 7 : isLowOver ? 6 : 4;
+    const topY = cy - height / 2;
 
     return (
         <g>
-            <line x1={cx} y1={cy - height / 2 - 4} x2={cx} y2={cy + height / 2 + 4} stroke={fill} strokeWidth={1.5} opacity={0.6} />
-            <rect x={cx - width / 2} y={cy - height / 2} width={width} height={height} fill={fill} stroke={payload.highlight ? "#fff" : "none"} strokeWidth={payload.highlight ? 1.5 : 0} rx={1} style={{ filter: payload.highlight ? 'drop-shadow(0px 0px 2px rgba(0,0,0,0.3))' : 'none' }} />
+            <line
+                x1={cx}
+                y1={topY - 4}
+                x2={cx}
+                y2={cy + height / 2 + 4}
+                stroke={wickStroke}
+                strokeWidth={isLowOver ? 2 : 1.5}
+                opacity={0.75}
+            />
+            <rect
+                x={cx - width / 2}
+                y={topY}
+                width={width}
+                height={height}
+                fill={candleFill}
+                stroke={payload.highlight ? '#fff' : isLowOver ? LOW_OVER_CANDLE_STROKE : 'none'}
+                strokeWidth={payload.highlight || isLowOver ? 1.5 : 0}
+                rx={1}
+                style={{
+                    filter: payload.highlight || isLowOver
+                        ? 'drop-shadow(0px 0px 3px rgba(245,158,11,0.55))'
+                        : 'none',
+                }}
+            />
+            {isLowOver && over != null && (
+                <text
+                    x={cx}
+                    y={topY - 8}
+                    textAnchor="middle"
+                    fill={LOW_OVER_LABEL_FILL}
+                    fontSize={9}
+                    fontWeight={700}
+                    style={{ pointerEvents: 'none' }}
+                >
+                    {over.toFixed(3)}
+                </text>
+            )}
         </g>
     );
 };
@@ -636,6 +685,15 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                 <TrendingUp className={`w-4 h-4 ${iconColor}`} />
                 {title}
             </h3>
+            {!underXiuMode && marketData.some((e: any) => typeof e.over === 'number' && e.over <= OU_LINE_DROP_PRICE_MAX) ? (
+                <p className="text-[10px] text-amber-700 dark:text-amber-400 mb-1 flex items-center gap-1.5">
+                    <span
+                        className="inline-block w-2.5 h-2.5 rounded-sm shrink-0"
+                        style={{ backgroundColor: LOW_OVER_CANDLE_FILL }}
+                    />
+                    Nến vàng = Tài ≤ {OU_LINE_DROP_PRICE_MAX} (có ghi giá phía trên)
+                </p>
+            ) : null}
             {halfSubtitle ? (
                 <p className="text-[10px] font-semibold text-amber-600/90 dark:text-amber-400/90 mb-2 uppercase tracking-wide">{halfSubtitle}</p>
             ) : null}
@@ -741,11 +799,21 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                             yAxisId="left"
                             name="Thị trường"
                             data={marketDataForChart}
-                            shape={<CustomCandle />}
+                            shape={(p: Record<string, unknown>) => (
+                                <CustomCandle {...p} underXiuMode={underXiuMode} />
+                            )}
                             cursor={minuteCrosshair ? 'pointer' : undefined}
                             onClick={(pt: { payload?: { minute?: number } }) => handleCandleClick(pt?.payload)}
                         >
-                            {marketDataForChart.map((e: any, i: number) => (<Cell key={`c-${i}`} fill={e.color} />))}
+                            {marketDataForChart.map((e: any, i: number) => {
+                                const low =
+                                    !underXiuMode &&
+                                    typeof e.over === 'number' &&
+                                    e.over <= OU_LINE_DROP_PRICE_MAX;
+                                return (
+                                    <Cell key={`c-${i}`} fill={low ? LOW_OVER_CANDLE_FILL : e.color} />
+                                );
+                            })}
                         </Scatter>
                         <Line xAxisId={0} yAxisId="left" type="monotone" data={sortedMarketData} dataKey="handicap" stroke="#ef4444" strokeWidth={2} dot={false} activeDot={{ r: 4 }} opacity={0.8} />
                         {hasSecondary && (

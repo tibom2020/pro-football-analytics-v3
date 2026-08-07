@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { dedupeOverUnderByLowestOver, normalizeOverUnderSnapshots } from '../oddsNormalize';
+import {
+  dedupeOverUnderByLowestOver,
+  mergeOuSnapshotsKeepLowestOver,
+  normalizeOverUnderSnapshots,
+} from '../oddsNormalize';
 import type { OddsItem, OverUnderMinuteSnapshot } from '../../types';
 import type { MatchHalf } from '../matchTimeline';
 
@@ -26,20 +30,37 @@ describe('dedupeOverUnderByLowestOver', () => {
     expect(out[0].handicap).toBe(2.5);
   });
 
-  it('cùng phút đổi line → lấy giá thấp nhất trên line cuối', () => {
+  it('cùng phút đổi line → vẫn lấy over thấp nhất trong phút (mọi line)', () => {
     const out = dedupeOverUnderByLowestOver([
-      ou(20, 2.5, 1.7, 2.1), // line cũ, giá thấp hơn nhưng không phải line cuối
+      ou(20, 2.5, 1.7, 2.1), // line cũ nhưng Tài thấp hơn
       ou(20, 2.25, 1.95, 1.85),
       ou(20, 2.25, 1.82, 1.98),
     ]);
     expect(out).toHaveLength(1);
-    expect(out[0].handicap).toBe(2.25);
-    expect(out[0].over).toBe(1.82);
+    expect(out[0].over).toBe(1.7);
+    expect(out[0].handicap).toBe(2.5);
+  });
+});
+
+describe('mergeOuSnapshotsKeepLowestOver', () => {
+  it('fetch sau giá cao hơn → giữ đáy đã thấy', () => {
+    const prev = [ou(30, 2.5, 1.72, 2.1)];
+    const next = [ou(30, 2.5, 1.88, 1.92), ou(31, 2.5, 1.9, 1.9)];
+    const out = mergeOuSnapshotsKeepLowestOver(prev, next);
+    expect(out.find((r) => r.minute === 30)!.over).toBe(1.72);
+    expect(out.find((r) => r.minute === 31)!.over).toBe(1.9);
+  });
+
+  it('fetch sau giá thấp hơn → cập nhật đáy', () => {
+    const prev = [ou(30, 2.5, 1.85, 1.95)];
+    const next = [ou(30, 2.5, 1.7, 2.1)];
+    const out = mergeOuSnapshotsKeepLowestOver(prev, next);
+    expect(out[0].over).toBe(1.7);
   });
 });
 
 describe('normalizeOverUnderSnapshots (1_3 / 1_6)', () => {
-  it('gộp theo phút lấy over thấp nhất trên line', () => {
+  it('gộp theo phút lấy over thấp nhất', () => {
     const items: OddsItem[] = [
       { id: 'a', time_str: '12', handicap: '2.5', over_od: '1.95', under_od: '1.85', add_time: '1' },
       { id: 'b', time_str: '12', handicap: '2.5', over_od: '1.78', under_od: '2.02', add_time: '2' },

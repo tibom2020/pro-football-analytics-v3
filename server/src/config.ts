@@ -127,6 +127,8 @@ export const config = {
     chatAssistant: process.env.FEATURE_CHAT_ASSISTANT !== 'false',
     sheetsLogging: process.env.FEATURE_SHEETS_LOGGING !== 'false',
     liveAgent: process.env.FEATURE_LIVE_AGENT !== 'false',
+    /** DeepSeek "The Council" (5 cố vấn). Mặc định tắt — bật bằng FEATURE_DEEPSEEK_COUNCIL=true. */
+    deepseekCouncil: process.env.FEATURE_DEEPSEEK_COUNCIL === 'true',
   },
 
   /** Single-user live betting agents (GPT / Gemini / Deepseek) — PAPER mặc định. */

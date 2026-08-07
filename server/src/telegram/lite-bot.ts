@@ -9,6 +9,15 @@ import { TelegramSender } from '../notification-service/telegram-sender.js';
 import { saveTelegramBindings } from '../data/telegram-persistence.js';
 import { consumeBindCode } from './bind-codes.js';
 
+/** Bắt lệnh kể cả dạng /cmd@BotUsername (Telegram hay thêm khi chọn từ menu). */
+function cmd(name: string, withArg = false): RegExp {
+  const base = `^\\/${name}(?:@[\\w_]+)?`;
+  // withArg: /bind CODE hoặc /bind@Bot CODE (CODE optional để vẫn trả lời khi thiếu mã)
+  return withArg
+    ? new RegExp(`${base}(?:\\s+(.+))?$`, 'i')
+    : new RegExp(`${base}(?:\\s.*)?$`, 'i');
+}
+
 export function initLiteTelegramBot(sender: TelegramSender): TelegramBot | null {
   if (!config.telegram.enabled || !config.features.telegramBot) {
     logger.info('Telegram bot disabled (no token or FEATURE_TELEGRAM_BOT=false)');
@@ -18,7 +27,17 @@ export function initLiteTelegramBot(sender: TelegramSender): TelegramBot | null 
   const bot = new TelegramBot(config.telegram.botToken, { polling: true });
   sender.setBot(bot);
 
-  bot.onText(/\/start/, (msg) => {
+  bot.on('polling_error', (err) => {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error(`[telegram-lite] polling_error: ${msg}`);
+  });
+
+  bot.on('error', (err) => {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error(`[telegram-lite] bot error: ${msg}`);
+  });
+
+  bot.onText(cmd('start'), (msg) => {
     void bot.sendMessage(
       msg.chat.id,
       [
@@ -36,7 +55,7 @@ export function initLiteTelegramBot(sender: TelegramSender): TelegramBot | null 
     );
   });
 
-  bot.onText(/\/help/, (msg) => {
+  bot.onText(cmd('help'), (msg) => {
     void bot.sendMessage(
       msg.chat.id,
       [
@@ -50,16 +69,21 @@ export function initLiteTelegramBot(sender: TelegramSender): TelegramBot | null 
     );
   });
 
-  bot.onText(/\/bind\s+(.+)/, (msg, match) => {
+  bot.onText(cmd('bind', true), (msg, match) => {
     const chatId = msg.chat.id;
-    const code = match?.[1]?.trim().toUpperCase();
+    const raw = match?.[1]?.trim() ?? '';
+    // Bỏ @BotName nếu dính vào mã; chỉ lấy token chữ/số.
+    const code = raw.replace(/^@[\w_]+\s*/i, '').replace(/[^\w-]/g, '').toUpperCase();
     if (!code) {
       void bot.sendMessage(chatId, '❌ Vui lòng cung cấp mã: /bind <code>');
       return;
     }
     const consumed = consumeBindCode(code);
     if (!consumed) {
-      void bot.sendMessage(chatId, '❌ Mã không hợp lệ hoặc đã hết hạn. Tạo mã mới từ web app.');
+      void bot.sendMessage(
+        chatId,
+        '❌ Mã không hợp lệ hoặc đã hết hạn (TTL 10 phút).\nTạo mã mới từ web → nút Telegram, rồi gửi lại /bind <mã> tại đây (@TieuTuebot).',
+      );
       return;
     }
     sender.bindUser(consumed.userId, chatId);
@@ -68,7 +92,7 @@ export function initLiteTelegramBot(sender: TelegramSender): TelegramBot | null 
     logger.info(`Telegram bound (lite): user=${consumed.userId} chat=${chatId}`);
   });
 
-  bot.onText(/\/unbind/, (msg) => {
+  bot.onText(cmd('unbind'), (msg) => {
     const chatId = msg.chat.id;
     const userId = sender.getUserIdByChatId(chatId);
     if (!userId) {
@@ -80,7 +104,7 @@ export function initLiteTelegramBot(sender: TelegramSender): TelegramBot | null 
     void bot.sendMessage(chatId, '✅ Đã hủy liên kết. Bạn sẽ không nhận cảnh báo nữa.');
   });
 
-  bot.onText(/\/status/, (msg) => {
+  bot.onText(cmd('status'), (msg) => {
     const chatId = msg.chat.id;
     const userId = sender.getUserIdByChatId(chatId);
     if (!userId) {
@@ -94,13 +118,16 @@ export function initLiteTelegramBot(sender: TelegramSender): TelegramBot | null 
     );
   });
 
-  bot.onText(/\/ping/, async (msg) => {
+  bot.onText(cmd('ping'), async (msg) => {
     const chatId = msg.chat.id;
     const lineTime = `${new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Bangkok' })} GMT+7`;
-    await sender.sendTextToChat(
+    const ok = await sender.sendTextToChat(
       chatId,
       ['🧪 Ping — Pro Football Analytics (lite)', '', `Thời gian: ${lineTime}`].join('\n'),
     );
+    if (!ok) {
+      void bot.sendMessage(chatId, '❌ Ping thất bại (xem log server).');
+    }
   });
 
   logger.info('Telegram lite bot initialized (polling)');

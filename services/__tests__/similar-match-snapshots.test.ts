@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  AUTO_SIMILAR_CLOCK_ENABLED,
   formatAutoSimilarLabel,
   hasAutoSimilarForSlot,
   pendingAutoSimilarSlots,
@@ -18,32 +19,12 @@ function snap(partial: Partial<SimilarMatchSnapshot> & Pick<SimilarMatchSnapshot
 }
 
 describe('planAutoSimilarCaptures', () => {
-  it('chụp H1 10 khi đồng hồ >= 10', () => {
-    const plans = planAutoSimilarCaptures({ half: 1, minute: 10 }, { half: 1, minute: 5 }, []);
-    expect(plans).toHaveLength(1);
-    expect(plans[0].slot).toBe('h1-10');
-    expect(plans[0].captureMinute).toBe(10);
-    expect(plans[0].lateCapture).toBe(false);
-  });
-
-  it('chụp H2 52 khi hiệp 2 >= 52', () => {
-    const plans = planAutoSimilarCaptures({ half: 2, minute: 52 }, { half: 1, minute: 5 }, []);
-    expect(plans.some((p) => p.slot === 'h2-52')).toBe(true);
-  });
-
-  it('không lên lịch lại khi đã có snapshot slot', () => {
-    const existing = [
-      snap({ autoSlot: 'h1-10', half: 1, minute: 10 }),
-    ];
-    expect(planAutoSimilarCaptures({ half: 1, minute: 15 }, null, existing)).toHaveLength(0);
-    expect(hasAutoSimilarForSlot(existing, 'h1-10')).toBe(true);
-  });
-
-  it('pending khi chưa tới mốc', () => {
-    expect(pendingAutoSimilarSlots({ half: 1, minute: 8 }, [])).toEqual(['h1-10']);
-    expect(pendingAutoSimilarSlots({ half: 2, minute: 50 }, [snap({ autoSlot: 'h1-10', half: 1, minute: 10 })])).toEqual([
-      'h2-52',
-    ]);
+  it('tắt lịch đồng hồ khi AUTO_SIMILAR_CLOCK_ENABLED=false', () => {
+    expect(AUTO_SIMILAR_CLOCK_ENABLED).toBe(false);
+    expect(planAutoSimilarCaptures({ half: 1, minute: 10 }, { half: 1, minute: 5 }, [])).toHaveLength(0);
+    expect(planAutoSimilarCaptures({ half: 2, minute: 52 }, { half: 1, minute: 5 }, [])).toHaveLength(0);
+    expect(pendingAutoSimilarSlots({ half: 1, minute: 8 }, [])).toEqual([]);
+    expect(pendingAutoSimilarSlots({ half: 2, minute: 50 }, [])).toEqual([]);
   });
 
   it('hasAutoSimilarForSlot nhận slot đổi line', () => {

@@ -1,7 +1,9 @@
 /**
- * Khung prompt "The Council" — dùng cho mọi lần gọi DeepSeek.
- * Năm cố vấn phân tích đa góc, sau đó tổng hợp kết luận cuối.
+ * Khung prompt "The Council" — tùy chọn cho DeepSeek (FEATURE_DEEPSEEK_COUNCIL=true).
+ * Mặc định tắt: wrapDeepSeekSystemPrompt trả prompt JSON thường, không 5 cố vấn.
  */
+
+import { config } from '../config.js';
 
 export const COUNCIL_JSON_FIELDS = [
     '  "council": {',
@@ -14,8 +16,15 @@ export const COUNCIL_JSON_FIELDS = [
     '  },',
 ].join('\n');
 
-/** Khối hướng dẫn Council — ghép vào đầu system prompt DeepSeek. */
+export function isDeepSeekCouncilEnabled(): boolean {
+    return config.features.deepseekCouncil === true;
+}
+
+/** Khối hướng dẫn Council — ghép vào đầu system prompt DeepSeek (khi bật). */
 export function buildDeepSeekCouncilPreamble(taskSpecificRules: string): string {
+    if (!isDeepSeekCouncilEnabled()) {
+        return taskSpecificRules;
+    }
     return [
         'Bạn là The Council. Không bao giờ trả lời chỉ bằng một góc nhìn duy nhất.',
         'Với mỗi câu hỏi, hãy tạo ra 5 cố vấn, mỗi người tiếp cận từ một góc độ khác nhau, sau đó kết thúc bằng một kết luận cuối cùng.',
@@ -35,12 +44,34 @@ export function buildDeepSeekCouncilPreamble(taskSpecificRules: string): string 
     ].join('\n');
 }
 
-/** Gói system prompt gốc với Council + nhắc điền trường council trong JSON. */
+/** Gói system prompt — có Council khi FEATURE_DEEPSEEK_COUNCIL=true, ngược lại JSON schema thường. */
 export function wrapDeepSeekSystemPrompt(
     taskRules: string,
     jsonSchemaLines: string[],
     finalFieldHint: string,
 ): string {
+    if (!isDeepSeekCouncilEnabled()) {
+        const plainHint = finalFieldHint
+            .replace(/\s*=\s*council\.finalConclusion/gi, '')
+            .replace(/council\.finalConclusion/gi, 'kết luận chính')
+            .trim();
+        const cleanedSchema = jsonSchemaLines.map((line) =>
+            line.replace(/\s*\/\/\s*=\s*council\.finalConclusion/gi, ''),
+        );
+        return [
+            taskRules,
+            '',
+            'Trả DUY NHẤT một JSON object:',
+            '{',
+            ...cleanedSchema,
+            '}',
+            '',
+            plainHint,
+        ]
+            .filter((s) => s !== '')
+            .join('\n');
+    }
+
     const schema = [
         'Trả DUY NHẤT một JSON object. Bắt buộc có khối "council" (5 cố vấn + finalConclusion):',
         '{',

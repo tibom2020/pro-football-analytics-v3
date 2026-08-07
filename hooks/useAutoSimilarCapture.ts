@@ -1,5 +1,6 @@
 /**
  * Tự gọi /similar/evaluate tại mốc H1 10' và H2 52' (hoặc chụp muộn khi mở trận).
+ * Hiện tắt qua `AUTO_SIMILAR_CLOCK_ENABLED` trong similar-match-snapshots.
  */
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
 import type { MatchInfo } from '../types';

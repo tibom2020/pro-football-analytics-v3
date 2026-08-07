@@ -513,20 +513,30 @@ predictGoalRouter.post('/reason', async (req: Request, res: Response): Promise<v
 
     const deepseekP: Promise<ReasonOutput> = deepseekEnabled
         ? callDeepSeekReason({
-              system: buildDeepSeekCouncilPreamble(
-                  [
-                      llmPrompt.system,
-                      '',
-                      'Bổ sung bắt buộc vào JSON output (giữ các field schema gốc):',
-                      '{',
-                      COUNCIL_JSON_FIELDS,
-                      expectGoalProb30Pct
-                          ? '  "goalProb30Pct": number, "reasonVi": string'
-                          : '  "reasonVi": string',
-                      '}',
-                      'reasonVi PHẢI trùng council.finalConclusion. Không ghi % trong reasonVi nếu có goalProb30Pct.',
-                  ].join('\n'),
-              ),
+              system: config.features.deepseekCouncil
+                  ? buildDeepSeekCouncilPreamble(
+                        [
+                            llmPrompt.system,
+                            '',
+                            'Bổ sung bắt buộc vào JSON output (giữ các field schema gốc):',
+                            '{',
+                            COUNCIL_JSON_FIELDS,
+                            expectGoalProb30Pct
+                                ? '  "goalProb30Pct": number, "reasonVi": string'
+                                : '  "reasonVi": string',
+                            '}',
+                            'reasonVi PHẢI trùng council.finalConclusion. Không ghi % trong reasonVi nếu có goalProb30Pct.',
+                        ].join('\n'),
+                    )
+                  : [
+                        llmPrompt.system,
+                        '',
+                        'Trả DUY NHẤT một JSON object:',
+                        expectGoalProb30Pct
+                            ? '{ "goalProb30Pct": number, "reasonVi": string }'
+                            : '{ "reasonVi": string }',
+                        'Không ghi % trong reasonVi nếu có goalProb30Pct.',
+                    ].join('\n'),
               user: llmPrompt.user,
               json: true,
           }).then((r) =>

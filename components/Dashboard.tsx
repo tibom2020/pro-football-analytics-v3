@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { MatchInfo, ProcessedStats, OverUnderMinuteSnapshot, AsianHandicapMinuteSnapshot } from '../types';
 import { parseStats, getMatchDetails, getMatchOdds } from '../services/api';
-import { normalizeOverUnderSnapshots, normalizeAsianHandicapSnapshots } from '../services/oddsNormalize';
+import { normalizeOverUnderSnapshots, normalizeAsianHandicapSnapshots, mergeOuSnapshotsKeepLowestOver } from '../services/oddsNormalize';
 import {
     decodeStatTimelineKey,
     encodeStatTimelineKey,
@@ -17,8 +17,9 @@ import {
     halfChartDomainMax,
     minuteTicks,
 } from '../services/odds-pressure-series';
-import { ArrowLeft, RefreshCw } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Moon, Sun } from 'lucide-react';
 import { LiveStatsTable } from './LiveStatsTable';
+import { OuLowPriceTable } from './OuLowPriceTable';
 import { Ou13ChartModal } from './Ou13ChartModal';
 import { PinnedChartsBar } from './PinnedChartsBar';
 import { PinnedMatchAiAnalysisPanel } from './PinnedMatchAiAnalysisPanel';
@@ -147,9 +148,11 @@ interface DashboardProps {
     onBack: () => void;
     /** Giữ tương thích App.tsx — không dùng trong bản rút gọn. */
     sessionActive?: boolean;
+    theme?: 'light' | 'dark';
+    onToggleTheme?: () => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, theme = 'dark', onToggleTheme }) => {
     const AUTO_REFRESH_INTERVAL_MS = 15_000;
     const [liveMatch, setLiveMatch] = useState<MatchInfo>(() => ({ ...match, id: String(match.id) }));
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -460,6 +463,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack }) =>
         setGameEvents(dedupeGoalMarkersByHalfMinute(hydratedGe));
         setH1OuOddsHistory(safeParse<OverUnderMinuteSnapshot[]>(localStorage.getItem(OU_H1_KEY(match.id)), []));
         setH1HomeOddsHistory(safeParse<AsianHandicapMinuteSnapshot[]>(localStorage.getItem(AH_H1_KEY(match.id)), []));
+        setOddsHistory(safeParse<OverUnderMinuteSnapshot[]>(localStorage.getItem(OU_KEY(match.id)), []));
+        setHomeOddsHistory(safeParse<AsianHandicapMinuteSnapshot[]>(localStorage.getItem(AH_KEY(match.id)), []));
         setGoalToast(null);
         maxGoalsSeen.current = null;
         maxCornersSeen.current = null;
@@ -772,13 +777,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack }) =>
                 const o = odds.results.odds;
                 normalizedOu = normalizeOverUnderSnapshots(o['1_3'], '1_3', { matchTimer: timerForOdds });
                 normalizedAh = normalizeAsianHandicapSnapshots(o['1_2'], '1_2', { matchTimer: timerForOdds });
-                setOddsHistory(normalizedOu);
+                // Giữ giá Tài thấp nhất từng thấy theo phút — fetch sau không ghi đè nến bằng giá cao hơn.
+                setOddsHistory((prev) => mergeOuSnapshotsKeepLowestOver(prev, normalizedOu));
                 setHomeOddsHistory(normalizedAh);
                 // Kèo hiệp 1 (1_6 T/X H1, 1_5 chấp H1): feed thường ngừng trả sau giờ nghỉ →
                 // chỉ ghi đè khi có dữ liệu mới, giữ giá trị H1 cuối cùng xuyên suốt H2.
                 normalizedH1Ou = normalizeOverUnderSnapshots(o['1_6'], '1_6', { matchTimer: timerForOdds });
                 const normalizedH1Ah = normalizeAsianHandicapSnapshots(o['1_5'], '1_5', { matchTimer: timerForOdds });
-                if (normalizedH1Ou.length > 0) setH1OuOddsHistory(normalizedH1Ou);
+                if (normalizedH1Ou.length > 0) {
+                    setH1OuOddsHistory((prev) => mergeOuSnapshotsKeepLowestOver(prev, normalizedH1Ou));
+                }
                 if (normalizedH1Ah.length > 0) setH1HomeOddsHistory(normalizedH1Ah);
 
                 // Cảnh báo hạ line 1_3 / 1_6 + Tài ≤ ngưỡng (tab đang mở).
@@ -1038,6 +1046,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack }) =>
                         </span>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
+                        {onToggleTheme && (
+                            <button
+                                type="button"
+                                onClick={onToggleTheme}
+                                className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full"
+                                title={theme === 'light' ? 'Chế độ tối' : 'Chế độ sáng'}
+                            >
+                                {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+                            </button>
+                        )}
                         <TelegramBindButton />
                         <HermesConnectButton
                             matchId={liveMatch.id}
@@ -1114,6 +1132,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack }) =>
                     apiChartData={apiChartDataFull}
                     h1HomeOddsHistory={h1HomeOddsHistory}
                     h1OverUnderOddsHistory={h1OuOddsHistory}
+                />
+
+                <OuLowPriceTable
+                    oddsHistory={oddsHistory}
+                    h1OuOddsHistory={h1OuOddsHistory}
+                    statsHistory={statsHistory}
+                    liveHalf={inSecondHalf ? (2 as const) : (1 as const)}
+                    liveMinute={clockTm}
+                    liveStats={parseStats(liveMatch.stats)}
                 />
 
                 <MatchNotesPanel

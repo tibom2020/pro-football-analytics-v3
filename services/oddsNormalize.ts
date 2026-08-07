@@ -104,28 +104,27 @@ function keepAllHalfMinuteSnapshots<T extends { minute: number; half: MatchHalf 
 }
 
 /**
- * Mỗi (hiệp, phút) giữ snapshot có **giá Tài (`over`) thấp nhất** trên line của phút đó.
- * Line = handicap tick cuối trong phút; trong các tick cùng line chọn `over` min.
- * Nến 1_3 / 1_6 trên biểu đồ dùng giá này (thay vì tick cuối).
+ * Mỗi (hiệp, phút) giữ snapshot có **giá Tài (`over`) thấp nhất** trong phút đó
+ * (mọi tick / mọi line trong phút — nến biểu đồ dùng giá này).
+ * Cùng over → giữ tick sau (handicap/under mới hơn).
  */
 export function dedupeOverUnderByLowestOver(
   rows: (OverUnderMinuteSnapshot & { half: MatchHalf })[],
 ): (OverUnderMinuteSnapshot & { half: MatchHalf })[] {
   const groups = new Map<string, (OverUnderMinuteSnapshot & { half: MatchHalf })[]>();
   for (const r of rows) {
-    const k = `${r.half}-${r.minute}`;
+    const half = r.half === 2 ? 2 : 1;
+    const k = `${half}-${r.minute}`;
     const arr = groups.get(k);
     if (arr) arr.push(r);
-    else groups.set(k, [r]);
+    else groups.set(k, [{ ...r, half }]);
   }
 
   const out: (OverUnderMinuteSnapshot & { half: MatchHalf })[] = [];
   for (const arr of groups.values()) {
-    const lastLine = arr[arr.length - 1].handicap;
-    const sameLine = arr.filter((r) => Math.abs(r.handicap - lastLine) < 1e-6);
-    let best = sameLine[0];
-    for (let i = 1; i < sameLine.length; i++) {
-      const r = sameLine[i];
+    let best = arr[0];
+    for (let i = 1; i < arr.length; i++) {
+      const r = arr[i];
       if (r.over < best.over - 1e-9) best = r;
       else if (Math.abs(r.over - best.over) < 1e-9) best = r; // cùng giá → tick sau
     }
@@ -139,8 +138,29 @@ export function dedupeOverUnderByLowestOver(
 }
 
 /**
+ * Gộp lịch sử cũ + fetch mới: mỗi (half, phút) giữ giá Tài thấp nhất từng thấy.
+ * Fetch sau có giá cao hơn ở cùng phút → không ghi đè nến.
+ */
+export function mergeOuSnapshotsKeepLowestOver(
+  previous: readonly OverUnderMinuteSnapshot[],
+  incoming: readonly OverUnderMinuteSnapshot[],
+): OverUnderMinuteSnapshot[] {
+  if (!previous.length) return [...incoming];
+  if (!incoming.length) return [...previous];
+
+  const tagged: (OverUnderMinuteSnapshot & { half: MatchHalf })[] = [];
+  for (const r of previous) {
+    tagged.push({ ...r, half: r.half === 2 ? 2 : 1 });
+  }
+  for (const r of incoming) {
+    tagged.push({ ...r, half: r.half === 2 ? 2 : 1 });
+  }
+  return dedupeOverUnderByLowestOver(tagged);
+}
+
+/**
  * Chuẩn hóa lịch sử Tài/Xỉu: gán hiệp (H1 vs H2 tách 45'), gộp trùng (half+phút).
- * Mỗi phút giữ **giá Tài thấp nhất** trên line (nến biểu đồ), không lấy tick cuối.
+ * Mỗi phút giữ **giá Tài thấp nhất** (mọi tick trong phút), không lấy tick cuối.
  * `matchTimer`: nếu API chỉ trả mốc H2 mà không có chuỗi phút lùi, gán cả dải sang hiệp 2.
  */
 export function normalizeOverUnderSnapshots(

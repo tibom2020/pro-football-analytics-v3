@@ -15,6 +15,12 @@ import type {
 /** Phút H2 tự chạy similar — trước đây là 55. */
 export const AUTO_SIMILAR_H2_MINUTE = 52;
 
+/**
+ * Tự chạy "Tương tự" theo đồng hồ (H1 10' / H2 52').
+ * `false` = tắt; vẫn dùng được nút thủ công + auto khi đổi line 1_3.
+ */
+export const AUTO_SIMILAR_CLOCK_ENABLED = false;
+
 /** Mốc lịch tự chạy similar — phút 10 H1, phút 52 H2. */
 export const AUTO_SIMILAR_MARKS = [
   { half: 1 as const, minute: 10 },
@@ -147,12 +153,15 @@ export function hasSimilarSnapshotAtMark(
  * Quyết định có nên chụp similar tự động không.
  * - Xem từ trước mốc → chụp đúng phút 10 / 52.
  * - Mở trận muộn (đã qua mốc) → chụp ngay tại phút mở.
+ * - Khi `AUTO_SIMILAR_CLOCK_ENABLED === false` → không lên lịch.
  */
 export function planAutoSimilarCaptures(
   clock: { half: 1 | 2; minute: number },
   join: SessionJoinClock | null,
   snapshots: SimilarMatchSnapshot[],
 ): AutoSimilarCapturePlan[] {
+  if (!AUTO_SIMILAR_CLOCK_ENABLED) return [];
+
   const plans: AutoSimilarCapturePlan[] = [];
 
   if (!hasAutoSimilarForSlot(snapshots, 'h1-10')) {
@@ -201,6 +210,8 @@ export function pendingAutoSimilarSlots(
   clock: { half: 1 | 2; minute: number },
   snapshots: SimilarMatchSnapshot[],
 ): AutoSimilarSlot[] {
+  if (!AUTO_SIMILAR_CLOCK_ENABLED) return [];
+
   const pending: AutoSimilarSlot[] = [];
   if (!hasAutoSimilarForSlot(snapshots, 'h1-10') && clock.half === 1 && clock.minute < 10) {
     pending.push('h1-10');
@@ -296,14 +307,14 @@ export function autoSimilarOnLineChangeKey(matchId: string): string {
   return `autoSimilarOnLineChange_${matchId}`;
 }
 
-/** Mặc định bật; tắt theo trận để giảm snapshot lưu localStorage. */
+/** Mặc định tắt; user bật theo trận nếu muốn auto khi đổi line 1_3. */
 export function loadAutoSimilarOnLineChangeEnabled(matchId: string): boolean {
   try {
     const v = localStorage.getItem(autoSimilarOnLineChangeKey(matchId));
-    if (v === null) return true;
+    if (v === null) return false;
     return v === '1';
   } catch {
-    return true;
+    return false;
   }
 }
 
