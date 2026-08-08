@@ -8,7 +8,6 @@ import type {
 import {
   assignHalfByChronologicalMinutes,
   dedupeSnapshotsByHalfAndMinute,
-  H1_STOPPAGE_CLOCK_END,
   isSecondHalfTimer,
   type MatchHalf,
 } from './matchTimeline';
@@ -28,9 +27,8 @@ type HalfMinuteDedupeFn<T extends { minute: number; half: MatchHalf }> = (rows: 
 
 /**
  * `tt` báo hiệp 2: tách phút &lt;45 (H1) vs ≥45 (H2).
- * Trước đây điều kiện `every(minute >= 45)` khiến không relabel khi lịch sử vẫn có mốc hiệp 1 (&lt;45).
- * Khi đã có hiệp 1 thường (&lt;45) và bù H1 (half=1, phút≥45) theo chronological — không remap sang H2
- * để tránh nhầm bù H1 với hiệp 2 khi feed gửi `tt>=2` sớm.
+ * Khi đang H2 (tt≥2): phút ≥45 → H2 (đồng hồ liên tục đầu hiệp 2), không giữ 45–49 trên H1.
+ * Chỉ khi tt vẫn =1 mới coi 45–49 là bù H1.
  */
 function splitHalfByMinuteWhenSecondHalfTimer<
   T extends { minute: number; half: MatchHalf },
@@ -40,33 +38,8 @@ function splitHalfByMinuteWhenSecondHalfTimer<
   dedupeFn: HalfMinuteDedupeFn<T> = dedupeSnapshotsByHalfAndMinute,
 ): T[] {
   if (!matchTimer || !isSecondHalfTimer(matchTimer) || rows.length === 0) return rows;
-  const tm =
-    typeof matchTimer.tm === 'number' && Number.isFinite(matchTimer.tm) ? matchTimer.tm : null;
-  const seenFirstHalfPlay = rows.some((r) => r.minute < 45);
-  const hasH1Stoppage = rows.some((r) => r.half === 1 && r.minute >= 45);
-  const inH1StoppageClock =
-    tm != null && tm >= 45 && tm < H1_STOPPAGE_CLOCK_END;
-  const isH1StoppageMinute = (m: number) => m >= 45 && m < H1_STOPPAGE_CLOCK_END;
 
-  if (seenFirstHalfPlay && (hasH1Stoppage || inH1StoppageClock)) {
-    return dedupeFn(
-      rows.map((r) => {
-        if (r.half === 1 && isH1StoppageMinute(r.minute)) {
-          return { ...r, half: 1 as MatchHalf };
-        }
-        if (inH1StoppageClock && isH1StoppageMinute(r.minute)) {
-          return { ...r, half: 1 as MatchHalf };
-        }
-        if (r.minute >= H1_STOPPAGE_CLOCK_END) {
-          return { ...r, half: 2 as MatchHalf };
-        }
-        if (!inH1StoppageClock && r.minute >= 45) {
-          return { ...r, half: 2 as MatchHalf };
-        }
-        return r;
-      }),
-    );
-  }
+  // Đã vào H2 theo timer → phút ≥45 thuộc H2 (kể cả 45–49).
   return dedupeFn(
     rows.map((r) => ({
       ...r,
@@ -103,14 +76,9 @@ function keepAllHalfMinuteSnapshots<T extends { minute: number; half: MatchHalf 
   return rows;
 }
 
-/**
- * Mỗi (hiệp, phút) giữ snapshot có **giá Tài (`over`) thấp nhất** trong phút đó
- * (mọi tick / mọi line trong phút — nến biểu đồ dùng giá này).
- * Cùng over → giữ tick sau (handicap/under mới hơn).
- */
-export function dedupeOverUnderByLowestOver(
+function groupOuByHalfMinute(
   rows: (OverUnderMinuteSnapshot & { half: MatchHalf })[],
-): (OverUnderMinuteSnapshot & { half: MatchHalf })[] {
+): Map<string, (OverUnderMinuteSnapshot & { half: MatchHalf })[]> {
   const groups = new Map<string, (OverUnderMinuteSnapshot & { half: MatchHalf })[]>();
   for (const r of rows) {
     const half = r.half === 2 ? 2 : 1;
@@ -119,9 +87,39 @@ export function dedupeOverUnderByLowestOver(
     if (arr) arr.push(r);
     else groups.set(k, [{ ...r, half }]);
   }
+  return groups;
+}
 
+function sortOuByHalfMinute(
+  rows: (OverUnderMinuteSnapshot & { half: MatchHalf })[],
+): (OverUnderMinuteSnapshot & { half: MatchHalf })[] {
+  return rows.sort((a, b) => {
+    if (a.half !== b.half) return a.half - b.half;
+    return a.minute - b.minute;
+  });
+}
+
+/** Phút ≥45 có H2 → ưu tiên H2, loại H1 cùng phút (stale từ lúc nhầm bù H1). */
+function preferH2OverStaleH1OnSharedMinutes(
+  merged: (OverUnderMinuteSnapshot & { half: MatchHalf })[],
+): (OverUnderMinuteSnapshot & { half: MatchHalf })[] {
+  const h2Mins = new Set(
+    merged.filter((r) => r.half === 2 && r.minute >= 45).map((r) => r.minute),
+  );
+  if (h2Mins.size === 0) return merged;
+  return merged.filter((r) => !(r.half === 1 && r.minute >= 45 && h2Mins.has(r.minute)));
+}
+
+/**
+ * Mỗi (hiệp, phút) giữ snapshot có **giá Tài (`over`) thấp nhất** trong phút đó
+ * (mọi tick / mọi line trong phút — nến biểu đồ dùng giá này).
+ * Cùng over → giữ tick sau (handicap/under mới hơn).
+ */
+export function dedupeOverUnderByLowestOver(
+  rows: (OverUnderMinuteSnapshot & { half: MatchHalf })[],
+): (OverUnderMinuteSnapshot & { half: MatchHalf })[] {
   const out: (OverUnderMinuteSnapshot & { half: MatchHalf })[] = [];
-  for (const arr of groups.values()) {
+  for (const arr of groupOuByHalfMinute(rows).values()) {
     let best = arr[0];
     for (let i = 1; i < arr.length; i++) {
       const r = arr[i];
@@ -130,16 +128,33 @@ export function dedupeOverUnderByLowestOver(
     }
     out.push(best);
   }
+  return sortOuByHalfMinute(out);
+}
 
-  return out.sort((a, b) => {
-    if (a.half !== b.half) return a.half - b.half;
-    return a.minute - b.minute;
-  });
+/**
+ * Mỗi (hiệp, phút) giữ snapshot có **giá Xỉu (`under`) cao nhất** trong phút đó
+ * (nến biểu đồ Xỉu). Cùng under → giữ tick sau.
+ */
+export function dedupeOverUnderByHighestUnder(
+  rows: (OverUnderMinuteSnapshot & { half: MatchHalf })[],
+): (OverUnderMinuteSnapshot & { half: MatchHalf })[] {
+  const out: (OverUnderMinuteSnapshot & { half: MatchHalf })[] = [];
+  for (const arr of groupOuByHalfMinute(rows).values()) {
+    let best = arr[0];
+    for (let i = 1; i < arr.length; i++) {
+      const r = arr[i];
+      if (r.under > best.under + 1e-9) best = r;
+      else if (Math.abs(r.under - best.under) < 1e-9) best = r; // cùng giá → tick sau
+    }
+    out.push(best);
+  }
+  return sortOuByHalfMinute(out);
 }
 
 /**
  * Gộp lịch sử cũ + fetch mới: mỗi (half, phút) giữ giá Tài thấp nhất từng thấy.
  * Fetch sau có giá cao hơn ở cùng phút → không ghi đè nến.
+ * Khi phút ≥45 đã có bản H2: bỏ bản H1 trùng phút (tránh đầu H2 còn kẹt trên biểu đồ H1).
  */
 export function mergeOuSnapshotsKeepLowestOver(
   previous: readonly OverUnderMinuteSnapshot[],
@@ -155,18 +170,43 @@ export function mergeOuSnapshotsKeepLowestOver(
   for (const r of incoming) {
     tagged.push({ ...r, half: r.half === 2 ? 2 : 1 });
   }
-  return dedupeOverUnderByLowestOver(tagged);
+  return preferH2OverStaleH1OnSharedMinutes(dedupeOverUnderByLowestOver(tagged));
+}
+
+/**
+ * Gộp lịch sử cũ + fetch mới: mỗi (half, phút) giữ giá Xỉu cao nhất từng thấy.
+ * Fetch sau có giá thấp hơn ở cùng phút → không ghi đè nến Xỉu.
+ */
+export function mergeOuSnapshotsKeepHighestUnder(
+  previous: readonly OverUnderMinuteSnapshot[],
+  incoming: readonly OverUnderMinuteSnapshot[],
+): OverUnderMinuteSnapshot[] {
+  if (!previous.length) return [...incoming];
+  if (!incoming.length) return [...previous];
+
+  const tagged: (OverUnderMinuteSnapshot & { half: MatchHalf })[] = [];
+  for (const r of previous) {
+    tagged.push({ ...r, half: r.half === 2 ? 2 : 1 });
+  }
+  for (const r of incoming) {
+    tagged.push({ ...r, half: r.half === 2 ? 2 : 1 });
+  }
+  return preferH2OverStaleH1OnSharedMinutes(dedupeOverUnderByHighestUnder(tagged));
 }
 
 /**
  * Chuẩn hóa lịch sử Tài/Xỉu: gán hiệp (H1 vs H2 tách 45'), gộp trùng (half+phút).
- * Mỗi phút giữ **giá Tài thấp nhất** (mọi tick trong phút), không lấy tick cuối.
+ * Mặc định mỗi phút giữ **giá Tài thấp nhất**. `minutePick: 'highestUnder'` → giá Xỉu cao nhất.
  * `matchTimer`: nếu API chỉ trả mốc H2 mà không có chuỗi phút lùi, gán cả dải sang hiệp 2.
  */
 export function normalizeOverUnderSnapshots(
   items: OddsItem[] | undefined,
   marketId: '1_3' | '1_6',
-  options?: { matchTimer?: MatchInfo['timer'] },
+  options?: {
+    matchTimer?: MatchInfo['timer'];
+    /** `lowestOver` (mặc định) = nến Tài; `highestUnder` = nến Xỉu. */
+    minutePick?: 'lowestOver' | 'highestUnder';
+  },
 ): OverUnderMinuteSnapshot[] {
   if (!items?.length) return [];
 
@@ -196,7 +236,7 @@ export function normalizeOverUnderSnapshots(
   parsed.sort((a, b) => a._ord - b._ord || String(a.sourceId ?? '').localeCompare(String(b.sourceId ?? '')));
 
   const stripped = parsed.map(({ _ord, ...rest }) => rest);
-  // Giữ mọi tick qua bước gán hiệp; chỉ gộp 1 lần cuối theo giá Tài thấp nhất.
+  // Giữ mọi tick qua bước gán hiệp; chỉ gộp 1 lần cuối theo cực trị chọn.
   let rows = assignHalfByChronologicalMinutes(stripped) as (OverUnderMinuteSnapshot & {
     half: MatchHalf;
   })[];
@@ -211,7 +251,9 @@ export function normalizeOverUnderSnapshots(
   if (marketId === '1_6') {
     rows = rows.map((r) => ({ ...r, half: 1 as MatchHalf }));
   }
-  return dedupeOverUnderByLowestOver(rows);
+  return options?.minutePick === 'highestUnder'
+    ? dedupeOverUnderByHighestUnder(rows)
+    : dedupeOverUnderByLowestOver(rows);
 }
 
 /**

@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   dedupeOverUnderByLowestOver,
+  dedupeOverUnderByHighestUnder,
   mergeOuSnapshotsKeepLowestOver,
+  mergeOuSnapshotsKeepHighestUnder,
   normalizeOverUnderSnapshots,
 } from '../oddsNormalize';
 import type { OddsItem, OverUnderMinuteSnapshot } from '../../types';
@@ -42,6 +44,20 @@ describe('dedupeOverUnderByLowestOver', () => {
   });
 });
 
+describe('dedupeOverUnderByHighestUnder', () => {
+  it('cùng phút → giữ giá Xỉu cao nhất (kể cả khác line)', () => {
+    const out = dedupeOverUnderByHighestUnder([
+      ou(10, 2.5, 1.95, 1.85),
+      ou(10, 2.25, 1.7, 2.05), // Xỉu cao nhất
+      ou(10, 2.5, 1.88, 1.92),
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0].under).toBe(2.05);
+    expect(out[0].handicap).toBe(2.25);
+    expect(out[0].over).toBe(1.7);
+  });
+});
+
 describe('mergeOuSnapshotsKeepLowestOver', () => {
   it('fetch sau giá cao hơn → giữ đáy đã thấy', () => {
     const prev = [ou(30, 2.5, 1.72, 2.1)];
@@ -59,6 +75,24 @@ describe('mergeOuSnapshotsKeepLowestOver', () => {
   });
 });
 
+describe('mergeOuSnapshotsKeepHighestUnder', () => {
+  it('fetch sau under thấp hơn → giữ đỉnh đã thấy', () => {
+    const prev = [ou(30, 2.5, 1.9, 2.05)];
+    const next = [ou(30, 2.5, 1.85, 1.95), ou(31, 2.5, 1.9, 1.9)];
+    const out = mergeOuSnapshotsKeepHighestUnder(prev, next);
+    expect(out.find((r) => r.minute === 30)!.under).toBe(2.05);
+    expect(out.find((r) => r.minute === 31)!.under).toBe(1.9);
+  });
+
+  it('fetch sau under cao hơn → cập nhật đỉnh', () => {
+    const prev = [ou(30, 2.5, 1.9, 1.95)];
+    const next = [ou(30, 2.25, 1.75, 2.12)];
+    const out = mergeOuSnapshotsKeepHighestUnder(prev, next);
+    expect(out[0].under).toBe(2.12);
+    expect(out[0].handicap).toBe(2.25);
+  });
+});
+
 describe('normalizeOverUnderSnapshots (1_3 / 1_6)', () => {
   it('gộp theo phút lấy over thấp nhất', () => {
     const items: OddsItem[] = [
@@ -72,5 +106,17 @@ describe('normalizeOverUnderSnapshots (1_3 / 1_6)', () => {
     const m12 = out.find((r) => r.minute === 12)!;
     expect(m12.over).toBe(1.78);
     expect(m12.under).toBe(2.02);
+  });
+
+  it('minutePick highestUnder → gộp theo under cao nhất', () => {
+    const items: OddsItem[] = [
+      { id: 'a', time_str: '12', handicap: '2.5', over_od: '1.95', under_od: '1.85', add_time: '1' },
+      { id: 'b', time_str: '12', handicap: '2.25', over_od: '1.70', under_od: '2.15', add_time: '2' },
+      { id: 'c', time_str: '12', handicap: '2.5', over_od: '1.88', under_od: '1.92', add_time: '3' },
+    ];
+    const out = normalizeOverUnderSnapshots(items, '1_3', { minutePick: 'highestUnder' });
+    expect(out).toHaveLength(1);
+    expect(out[0].under).toBe(2.15);
+    expect(out[0].handicap).toBe(2.25);
   });
 });

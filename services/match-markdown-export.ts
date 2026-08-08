@@ -63,6 +63,10 @@ const OU_KEY = (id: string) => `ouSnapshots_${id}`;
 const AH_KEY = (id: string) => `ahSnapshots_${id}`;
 /** Tài/Xỉu hiệp 1 — API 1_6 */
 const OU_H1_KEY = (id: string) => `ouSnapshots1_6_${id}`;
+/** Nến Xỉu FT (1_3) — mỗi phút giữ under cao nhất */
+const OU_UNDER_KEY = (id: string) => `ouUnderSnapshots_${id}`;
+/** Nến Xỉu H1 (1_6) — mỗi phút giữ under cao nhất */
+const OU_UNDER_H1_KEY = (id: string) => `ouUnderSnapshots1_6_${id}`;
 /** Chấp hiệp 1 — API 1_5 */
 const AH_H1_KEY = (id: string) => `ahSnapshots1_5_${id}`;
 /** Money Line 1X2 (cả trận) — API 1_1 */
@@ -778,4 +782,4 @@ export function buildMatchMarkdownFromStorage(matchId: string): { markdown: stri
   return { markdown: lines.join('\n'), filename };
 }
 
-export { OU_KEY, AH_KEY, OU_H1_KEY, AH_H1_KEY, ML_KEY };
+export { OU_KEY, AH_KEY, OU_H1_KEY, OU_UNDER_KEY, OU_UNDER_H1_KEY, AH_H1_KEY, ML_KEY };

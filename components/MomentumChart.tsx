@@ -6,6 +6,29 @@ export type { ChartAlertMarker } from '../types';
 import { formatMinuteAxisTick } from './chartAxisFormat';
 import { OU_LINE_DROP_PRICE_MAX } from '../services/ou-line-drop-alert';
 
+/** Đoạn nối nến: tăng giá nến > ngưỡng → xanh; còn lại (giảm / đứng / tăng ≤ ngưỡng) → đỏ. */
+const CANDLE_LINK_RISE_TO_GREEN = 0.025;
+const CANDLE_LINK_RED = '#ef4444';
+const CANDLE_LINK_GREEN = '#10b981';
+
+function candleOddsForLink(point: {
+    over?: number;
+    under?: number;
+    home?: number;
+    __candleOddsValue?: number;
+}, underXiuMode: boolean): number | null {
+    if (underXiuMode) {
+        if (typeof point.under === 'number' && Number.isFinite(point.under)) return point.under;
+    } else if (typeof point.over === 'number' && Number.isFinite(point.over)) {
+        return point.over;
+    }
+    if (typeof point.__candleOddsValue === 'number' && Number.isFinite(point.__candleOddsValue)) {
+        return point.__candleOddsValue;
+    }
+    if (typeof point.home === 'number' && Number.isFinite(point.home)) return point.home;
+    return null;
+}
+
 /** Nến Tài ≤ ngưỡng — dễ tách khỏi đỏ/xanh áp lực. */
 const LOW_OVER_CANDLE_FILL = '#f59e0b';
 const LOW_OVER_CANDLE_STROKE = '#b45309';
@@ -667,6 +690,29 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
     const SECONDARY_TINT = '#3b82f6';
     const SECONDARY_CANDLE_FILL = '#60a5fa';
 
+    /** Đoạn đường nối handicap: màu theo biến động giá nến (Tài/Xỉu). */
+    const handicapLinkSegments = useMemo(() => {
+        const pts = sortedMarketData;
+        if (pts.length < 2) return [] as { key: string; color: string; data: typeof pts }[];
+        const segs: { key: string; color: string; data: typeof pts }[] = [];
+        for (let i = 1; i < pts.length; i++) {
+            const prev = pts[i - 1]!;
+            const curr = pts[i]!;
+            const prevOdds = candleOddsForLink(prev, underXiuMode);
+            const currOdds = candleOddsForLink(curr, underXiuMode);
+            const roseEnough =
+                prevOdds != null &&
+                currOdds != null &&
+                currOdds - prevOdds > CANDLE_LINK_RISE_TO_GREEN;
+            segs.push({
+                key: `hl-${prev.minute}-${curr.minute}-${i}`,
+                color: roseEnough ? CANDLE_LINK_GREEN : CANDLE_LINK_RED,
+                data: [prev, curr],
+            });
+        }
+        return segs;
+    }, [sortedMarketData, underXiuMode]);
+
     const selectedOu = useMemo(
         () => (selectedMinute != null ? nearestOddsPoint(sortedMarketData, selectedMinute) : null),
         [selectedMinute, sortedMarketData],
@@ -692,6 +738,18 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                         style={{ backgroundColor: LOW_OVER_CANDLE_FILL }}
                     />
                     Nến vàng = Tài ≤ {OU_LINE_DROP_PRICE_MAX} (có ghi giá phía trên)
+                </p>
+            ) : null}
+            {underXiuMode ? (
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1">
+                        <span className="inline-block w-2.5 h-2.5 rounded-sm shrink-0 bg-red-500" />
+                        Đỏ = Xỉu tăng
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                        <span className="inline-block w-2.5 h-2.5 rounded-sm shrink-0 bg-emerald-500" />
+                        Xanh = Xỉu giảm (cùng line)
+                    </span>
                 </p>
             ) : null}
             {halfSubtitle ? (
@@ -815,7 +873,23 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                                 );
                             })}
                         </Scatter>
-                        <Line xAxisId={0} yAxisId="left" type="monotone" data={sortedMarketData} dataKey="handicap" stroke="#ef4444" strokeWidth={2} dot={false} activeDot={{ r: 4 }} opacity={0.8} />
+                        {handicapLinkSegments.map((seg) => (
+                            <Line
+                                key={seg.key}
+                                xAxisId={0}
+                                yAxisId="left"
+                                type="linear"
+                                data={seg.data}
+                                dataKey="handicap"
+                                stroke={seg.color}
+                                strokeWidth={2}
+                                dot={false}
+                                activeDot={false}
+                                opacity={0.85}
+                                isAnimationActive={false}
+                                legendType="none"
+                            />
+                        ))}
                         {hasSecondary && (
                             <Scatter
                                 xAxisId={0}

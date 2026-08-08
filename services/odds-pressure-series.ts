@@ -399,7 +399,11 @@ export function calculateAhChapYAxisConfig(
   return { domain: [minDomain, maxDomain], ticks };
 }
 
-/** UI đã vào hiệp 2: gắn half cho kèo full trận — giữ bù H1 (half=1, phút≥45) trên biểu đồ H1. */
+/** UI đã vào hiệp 2: gắn half cho kèo full trận.
+ * Giữ bù H1 thật (đã tag half=1, phút 45–49 lúc còn H1) trên biểu đồ H1.
+ * Phút ≥45 đã tag H2 (hoặc chưa tag) → H2.
+ * Khi UI vẫn H1: không ghi đè điểm đã tag H2 (tránh đầu H2 bị ép sang chart H1).
+ */
 export function applyHalfFromMinuteForFullMatchOdds<T extends { minute: number; half?: MatchHalf }>(
   rows: T[],
   inSecondHalf: boolean,
@@ -407,11 +411,17 @@ export function applyHalfFromMinuteForFullMatchOdds<T extends { minute: number; 
   if (rows.length === 0) return rows;
 
   if (!inSecondHalf) {
-    return rows.map((p) => ({ ...p, half: 1 as MatchHalf }));
+    return rows.map((p) => {
+      if (p.half === 2) return { ...p, half: 2 as MatchHalf };
+      return { ...p, half: 1 as MatchHalf };
+    });
   }
 
   return rows.map((p) => {
     const tagged = p.half;
+    // Đã tag H2 → luôn H2 (đầu hiệp 2 phút 45–49).
+    if (tagged === 2) return { ...p, half: 2 as MatchHalf };
+    // Bù H1 đã gắn half=1 trước khi vào H2 — giữ trên chart H1.
     if (tagged === 1 && p.minute >= 45 && p.minute < 50) {
       return { ...p, half: 1 as MatchHalf };
     }
