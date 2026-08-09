@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { MatchInfo, ViewedMatchHistory, HistoryItem } from '../types';
-import { Clock, ChevronRight, Trash2, Download, Loader2, CheckCircle2 } from 'lucide-react';
+import { Clock, ChevronRight, Trash2, Download, Loader2, CheckCircle2, HardDrive } from 'lucide-react';
 import { VIEWED_MATCHES_HISTORY_UPDATED_EVENT, MATCH_MD_EXPORTED_EVENT, normalizeMatchIdForStorage } from '../services/match-markdown-export';
 import { saveMatchMarkdown } from '../services/save-match-history-md';
+import {
+  clearMatchCacheKeepingRecent,
+  estimateLocalStorageBytes,
+} from '../services/safe-storage';
 
 interface MatchHistoryProps {
   onSelectMatch: (match: MatchInfo) => void;
@@ -76,6 +80,29 @@ export const MatchHistory: React.FC<MatchHistoryProps> = ({ onSelectMatch }) => 
     }
   };
 
+  /** Giữ odds/stats ~20 trận mới nhất; danh sách "Đã xem" vẫn còn. */
+  const handleClearOldCache = () => {
+    const before = estimateLocalStorageBytes();
+    const beforeMb = (before.bytes / (1024 * 1024)).toFixed(1);
+    if (
+      !window.confirm(
+        `Dọn cache odds/stats của các trận cũ (giữ ~20 trận xem gần nhất)?\n\n` +
+          `Hiện ước lượng ~${beforeMb} MB / ${before.keys} key.\n` +
+          `Danh sách "Đã xem" vẫn giữ — chỉ xóa dữ liệu chart nặng.`,
+      )
+    ) {
+      return;
+    }
+    const cleared = clearMatchCacheKeepingRecent(20);
+    const after = estimateLocalStorageBytes();
+    const afterMb = (after.bytes / (1024 * 1024)).toFixed(1);
+    window.alert(
+      cleared > 0
+        ? `Đã dọn dữ liệu ${cleared} trận cũ.\nDung lượng còn ~${afterMb} MB (${after.keys} key).`
+        : `Không có trận cũ để dọn.\nDung lượng hiện ~${afterMb} MB.`,
+    );
+  };
+
   const handleExportMd = async (e: React.MouseEvent, matchId: string | number) => {
     e.stopPropagation();
     const id = normalizeMatchIdForStorage(matchId);
@@ -103,8 +130,20 @@ export const MatchHistory: React.FC<MatchHistoryProps> = ({ onSelectMatch }) => 
 
   return (
     <div className="space-y-3 pb-20">
-      <div className="flex justify-end mb-4">
-        <button onClick={handleClearHistory} className="flex items-center gap-1.5 text-xs text-red-500 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 px-3 py-1.5 rounded-md font-semibold">
+      <div className="flex flex-wrap justify-end gap-2 mb-4">
+        <button
+          type="button"
+          onClick={handleClearOldCache}
+          className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40 px-3 py-1.5 rounded-md font-semibold"
+          title="Giải phóng chỗ localStorage (~5–10MB/trình duyệt) khi mở nhiều trận"
+        >
+          <HardDrive className="w-3.5 h-3.5" /> Dọn cache trận cũ
+        </button>
+        <button
+          type="button"
+          onClick={handleClearHistory}
+          className="flex items-center gap-1.5 text-xs text-red-500 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 px-3 py-1.5 rounded-md font-semibold"
+        >
           <Trash2 className="w-3.5 h-3.5" /> Xóa lịch sử
         </button>
       </div>

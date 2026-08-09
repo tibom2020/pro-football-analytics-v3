@@ -4,3 +4,7 @@ buildCommand = "npm ci && npm run build"
 [deploy]
 startCommand = "npm start"
 restartPolicyType = "ON_FAILURE"
+
+# Cùng quy ước root railway.toml: tắt Telegram polling trên VPS khi ưu tiên local.
+[variables]
+FEATURE_TELEGRAM_BOT = "false"

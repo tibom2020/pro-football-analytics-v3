@@ -277,7 +277,7 @@ export const SimilarMatchTabPage: React.FC<{ params: SimilarMatchTabParams }> = 
         {/* Biểu đồ kèo cả trận H1 / H2 */}
         <div className="bg-white dark:bg-slate-900 rounded-xl shadow p-3 sm:p-4 space-y-5">
           <div className="text-sm font-bold text-gray-900 dark:text-white px-1">
-            Kèo Tài/Xỉu (1_3) + Đội nhà (1_2) &amp; Dòng thời gian API
+            Kèo Tài/Xỉu (1_3) + Đội chấp (1_2) — chart tách riêng
           </div>
           <Ou13ChartContent matchId={params.matchId} marker={marker} />
         </div>

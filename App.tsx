@@ -118,6 +118,13 @@ const App = () => {
           setAuthBootstrapping(false);
           return;
         }
+        // Lỗi tạm (mạng / AI server / B365 timeout): giữ token, vào app — tránh bị logout liên tục.
+        if (verified.reason !== 'invalid') {
+          setHasToken(true);
+          setLoginError(null);
+          setAuthBootstrapping(false);
+          return;
+        }
         clearStoredB365Token();
         setToken('');
         setLoginError(verified.error || 'Token đã lưu không còn hợp lệ. Vui lòng đăng nhập lại.');

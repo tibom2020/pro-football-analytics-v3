@@ -6,17 +6,33 @@ export type { ChartAlertMarker } from '../types';
 import { formatMinuteAxisTick } from './chartAxisFormat';
 import { OU_LINE_DROP_PRICE_MAX } from '../services/ou-line-drop-alert';
 
-/** Đoạn nối nến: tăng giá nến > ngưỡng → xanh; còn lại (giảm / đứng / tăng ≤ ngưỡng) → đỏ. */
+/**
+ * Đoạn nối nến: màu theo giá nến (Tài `over` / Xỉu `under`).
+ * Tăng > 0.025 → xanh; giảm / đứng / tăng ≤ 0.025 → đỏ.
+ * Làm tròn 3 chữ số để tránh float (1.725−1.700 = 0.025000000000000133 → vẫn ≤ 0.025).
+ */
 const CANDLE_LINK_RISE_TO_GREEN = 0.025;
 const CANDLE_LINK_RED = '#ef4444';
 const CANDLE_LINK_GREEN = '#10b981';
 
-function candleOddsForLink(point: {
-    over?: number;
-    under?: number;
-    home?: number;
-    __candleOddsValue?: number;
-}, underXiuMode: boolean): number | null {
+function candleOddsForLink(
+    point: {
+        over?: number;
+        under?: number;
+        home?: number;
+        chapOdds?: number;
+        __candleOddsValue?: number;
+    },
+    underXiuMode: boolean,
+    ahChapMode = false,
+): number | null {
+    if (ahChapMode) {
+        if (typeof point.chapOdds === 'number' && Number.isFinite(point.chapOdds)) return point.chapOdds;
+        if (typeof point.__candleOddsValue === 'number' && Number.isFinite(point.__candleOddsValue)) {
+            return point.__candleOddsValue;
+        }
+        return null;
+    }
     if (underXiuMode) {
         if (typeof point.under === 'number' && Number.isFinite(point.under)) return point.under;
     } else if (typeof point.over === 'number' && Number.isFinite(point.over)) {
@@ -29,6 +45,12 @@ function candleOddsForLink(point: {
     return null;
 }
 
+/** true khi tăng giá nến > 0.025 (sau làm tròn 3 chữ số). */
+function candleLinkRoseEnough(prev: number, curr: number): boolean {
+    const diff = Number((curr - prev).toFixed(3));
+    return diff > CANDLE_LINK_RISE_TO_GREEN;
+}
+
 /** Nến Tài ≤ ngưỡng — dễ tách khỏi đỏ/xanh áp lực. */
 const LOW_OVER_CANDLE_FILL = '#f59e0b';
 const LOW_OVER_CANDLE_STROKE = '#b45309';
@@ -36,19 +58,45 @@ const LOW_OVER_LABEL_FILL = '#b45309';
 
 // --- Shared Helper Components ---
 
-const CustomTooltip = ({ active, payload, label, underXiuMode, secondaryLabel }: any) => {
+const CustomTooltip = ({ active, payload, label, underXiuMode, ahChapMode, secondaryLabel }: any) => {
     if (active && payload && payload.length) {
         const minute = label;
+        const handicapEntries = payload.filter((p: any) => p.dataKey === 'handicap' && p.payload);
+        if (ahChapMode) {
+            const chap = handicapEntries[0]?.payload;
+            if (!chap) return null;
+            const oddsColor =
+                chap.colorName === 'red'
+                    ? 'text-red-400'
+                    : chap.colorName === 'green'
+                      ? 'text-green-400'
+                      : 'text-white';
+            const sideLabel = chap.chapSide === 'away' ? 'Đội khách' : 'Đội nhà';
+            return (
+                <div className="bg-slate-800 text-white text-xs p-2 rounded shadow-lg border border-slate-700 z-50">
+                    <p className="font-bold border-b border-slate-600 mb-1 pb-1">Phút: {minute}'</p>
+                    <p className="font-semibold text-sky-300">
+                        {secondaryLabel || 'Đội chấp'} · {sideLabel}
+                    </p>
+                    <p className="font-semibold text-yellow-400">
+                        HDP: {typeof chap.handicap === 'number' ? chap.handicap.toFixed(2) : '-'}
+                    </p>
+                    <p className="text-gray-300">
+                        Odds chấp:{' '}
+                        <span className={oddsColor}>
+                            {typeof chap.chapOdds === 'number' ? chap.chapOdds.toFixed(3) : '-'}
+                        </span>
+                    </p>
+                </div>
+            );
+        }
         // Khi gộp 2 kèo, có thể có 2 entry dataKey="handicap" → phân biệt bằng field:
         // OU luôn có over/under, AH luôn có home/away (không bao giờ trùng — xem types.ts).
-        const handicapEntries = payload.filter((p: any) => p.dataKey === 'handicap' && p.payload);
         const marketData = handicapEntries.find((p: any) => 'over' in p.payload || 'under' in p.payload)?.payload
             ?? handicapEntries.find((p: any) => !('home' in p.payload))?.payload;
         const secondaryData = handicapEntries.find(
             (p: any) => 'home' in p.payload && !('over' in p.payload) && !('under' in p.payload),
         )?.payload;
-        const homeApiData = payload.find((p: any) => p.dataKey === 'homeApi');
-        const awayApiData = payload.find((p: any) => p.dataKey === 'awayApi');
 
         return (
             <div className="bg-slate-800 text-white text-xs p-2 rounded shadow-lg border border-slate-700 z-50">
@@ -105,32 +153,21 @@ const CustomTooltip = ({ active, payload, label, underXiuMode, secondaryLabel }:
                         ) : null}
                     </>
                 )}
-                {homeApiData && homeApiData.value !== undefined && (
-                    <p style={{ color: homeApiData.stroke }}>API Đội nhà: {homeApiData.value.toFixed(1)}</p>
-                )}
-                {awayApiData && awayApiData.value !== undefined && (
-                    <p style={{ color: awayApiData.stroke }}>API Đội khách: {awayApiData.value.toFixed(1)}</p>
-                )}
             </div>
         );
     }
     return null;
 };
 
-const CustomApiDot = (props: any) => {
-    const { cx, cy, stroke, index, data } = props;
-    if (index !== data.length - 1) return null;
-    return (
-        <g>
-            <circle cx={cx} cy={cy} r={6} fill="white" stroke={stroke} strokeWidth={3} style={{ filter: 'drop-shadow(0px 0px 4px rgba(0,0,0,0.3))' }} />
-            <circle cx={cx} cy={cy} r={2} fill={stroke} />
-        </g>
-    );
-};
-
 const CustomCandle = (props: any) => {
-    const { cx, cy, fill, payload, secondary, underXiuMode } = props;
-    const oddsValue = payload.__candleOddsValue ?? payload.over ?? payload.home ?? payload.under ?? 1.9;
+    const { cx, cy, fill, payload, secondary, underXiuMode, ahChapMode } = props;
+    const oddsValue =
+        payload.__candleOddsValue ??
+        payload.chapOdds ??
+        payload.over ??
+        payload.home ??
+        payload.under ??
+        1.9;
 
     let height = 12;
     if (oddsValue > 1.4) {
@@ -144,8 +181,7 @@ const CustomCandle = (props: any) => {
     }
     height = Math.max(10, Math.min(height, 55));
 
-    // Kèo phụ (Đội nhà): dạng bong bóng — màu vẫn theo quy tắc áp lực (fill = e.color).
-    // Bán kính vừa đủ để dễ quan sát mà không che nến chính.
+    // Legacy overlay (bubble) — Dashboard/Modal Phase 1 không còn dùng secondary.
     if (secondary) {
         const r = 5.5;
         return (
@@ -158,12 +194,21 @@ const CustomCandle = (props: any) => {
 
     const over =
         typeof payload.over === 'number' && Number.isFinite(payload.over) ? payload.over : null;
-    const isLowOver =
-        !underXiuMode && over != null && over <= OU_LINE_DROP_PRICE_MAX;
+    const chapOdds =
+        typeof payload.chapOdds === 'number' && Number.isFinite(payload.chapOdds)
+            ? payload.chapOdds
+            : typeof payload.__candleOddsValue === 'number' && Number.isFinite(payload.__candleOddsValue)
+              ? payload.__candleOddsValue
+              : null;
+    const isLowHot =
+        ahChapMode
+            ? chapOdds != null && chapOdds <= OU_LINE_DROP_PRICE_MAX
+            : !underXiuMode && over != null && over <= OU_LINE_DROP_PRICE_MAX;
+    const hotLabel = ahChapMode ? chapOdds : over;
 
-    const candleFill = isLowOver ? LOW_OVER_CANDLE_FILL : fill;
-    const wickStroke = isLowOver ? LOW_OVER_CANDLE_STROKE : fill;
-    const width = payload.highlight ? 7 : isLowOver ? 6 : 4;
+    const candleFill = isLowHot ? LOW_OVER_CANDLE_FILL : fill;
+    const wickStroke = isLowHot ? LOW_OVER_CANDLE_STROKE : fill;
+    const width = payload.highlight ? 7 : isLowHot ? 6 : 4;
     const topY = cy - height / 2;
 
     return (
@@ -174,7 +219,7 @@ const CustomCandle = (props: any) => {
                 x2={cx}
                 y2={cy + height / 2 + 4}
                 stroke={wickStroke}
-                strokeWidth={isLowOver ? 2 : 1.5}
+                strokeWidth={isLowHot ? 2 : 1.5}
                 opacity={0.75}
             />
             <rect
@@ -183,16 +228,16 @@ const CustomCandle = (props: any) => {
                 width={width}
                 height={height}
                 fill={candleFill}
-                stroke={payload.highlight ? '#fff' : isLowOver ? LOW_OVER_CANDLE_STROKE : 'none'}
-                strokeWidth={payload.highlight || isLowOver ? 1.5 : 0}
+                stroke={payload.highlight ? '#fff' : isLowHot ? LOW_OVER_CANDLE_STROKE : 'none'}
+                strokeWidth={payload.highlight || isLowHot ? 1.5 : 0}
                 rx={1}
                 style={{
-                    filter: payload.highlight || isLowOver
+                    filter: payload.highlight || isLowHot
                         ? 'drop-shadow(0px 0px 3px rgba(245,158,11,0.55))'
                         : 'none',
                 }}
             />
-            {isLowOver && over != null && (
+            {isLowHot && hotLabel != null && (
                 <text
                     x={cx}
                     y={topY - 8}
@@ -202,7 +247,7 @@ const CustomCandle = (props: any) => {
                     fontWeight={700}
                     style={{ pointerEvents: 'none' }}
                 >
-                    {over.toFixed(3)}
+                    {hotLabel.toFixed(3)}
                 </text>
             )}
         </g>
@@ -218,8 +263,13 @@ type OddsSnap = {
     under?: number;
     home?: number;
     away?: number;
+    chapOdds?: number;
+    chapSide?: 'home' | 'away';
+    homeLine?: number;
     colorName?: string;
 };
+
+const AH_CHAP_LOOKBACK_MINUTES = 5;
 
 const CHART_RIGHT_GUTTER = 35;
 const CHART_TOP_GUTTER = 10;
@@ -262,8 +312,20 @@ const MinuteCrosshairHud: React.FC<{
     ou: OddsSnap | null;
     ah: OddsSnap | null;
     underXiuMode?: boolean;
+    ahChapMode?: boolean;
     secondaryLabel?: string;
-}> = ({ minute, ou, ah, underXiuMode, secondaryLabel }) => {
+    chapDelta?: number | null;
+    chapLookbackMinute?: number | null;
+}> = ({
+    minute,
+    ou,
+    ah,
+    underXiuMode,
+    ahChapMode,
+    secondaryLabel,
+    chapDelta,
+    chapLookbackMinute,
+}) => {
     const overColor =
         ou?.colorName === 'red'
             ? 'text-red-400'
@@ -272,6 +334,60 @@ const MinuteCrosshairHud: React.FC<{
               : 'text-slate-100';
     const fmtH = (v?: number) => (typeof v === 'number' && Number.isFinite(v) ? v.toFixed(2) : '—');
     const fmtO = (v?: number) => (typeof v === 'number' && Number.isFinite(v) ? v.toFixed(3) : '—');
+    const fmtDelta = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(3)}`;
+
+    if (ahChapMode) {
+        const chap = ou;
+        const oddsColor =
+            chap?.colorName === 'red'
+                ? 'text-red-400'
+                : chap?.colorName === 'green'
+                  ? 'text-green-400'
+                  : 'text-sky-300';
+        const sideLabel = chap?.chapSide === 'away' ? 'Đội khách' : 'Đội nhà';
+        return (
+            <div className="w-full">
+                <div className="bg-slate-900/95 text-white text-[11px] px-2.5 py-1.5 rounded-md shadow-lg border border-sky-400/60 backdrop-blur-sm">
+                    <p className="font-bold text-sky-300 border-b border-slate-600 mb-1 pb-0.5">
+                        Phút {minute}&apos; · {secondaryLabel || 'Đội chấp'}
+                    </p>
+                    {chap ? (
+                        <div className="space-y-0.5">
+                            <p className="text-slate-300">
+                                Đang chấp: <span className="text-white font-semibold">{sideLabel}</span>
+                            </p>
+                            <p>
+                                <span className="text-yellow-400 font-semibold">HDP:</span>{' '}
+                                {fmtH(chap.handicap)}
+                            </p>
+                            <p className="text-gray-300">
+                                Odds chấp: <span className={oddsColor}>{fmtO(chap.chapOdds)}</span>
+                            </p>
+                            {typeof chapDelta === 'number' && Number.isFinite(chapDelta) ? (
+                                <p className="text-gray-400">
+                                    Δ {AH_CHAP_LOOKBACK_MINUTES}′
+                                    {chapLookbackMinute != null ? ` (từ ${chapLookbackMinute}')` : ''}:{' '}
+                                    <span
+                                        className={
+                                            chapDelta > 0.001
+                                                ? 'text-emerald-400'
+                                                : chapDelta < -0.001
+                                                  ? 'text-red-400'
+                                                  : 'text-slate-300'
+                                        }
+                                    >
+                                        {fmtDelta(chapDelta)}
+                                    </span>
+                                </p>
+                            ) : null}
+                        </div>
+                    ) : (
+                        <p className="text-slate-400 italic">Chưa có kèo chấp tại phút này</p>
+                    )}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="w-full">
@@ -311,8 +427,7 @@ const MinuteCrosshairHud: React.FC<{
                         <p className="text-sky-400 font-semibold">
                             {secondaryLabel || 'Đội chấp'} HDP: {fmtH(ah.handicap)}
                         </p>
-                        {typeof (ah as { chapOdds?: number }).chapOdds === 'number' &&
-                        Number.isFinite((ah as { chapOdds?: number }).chapOdds) ? (
+                        {typeof ah.chapOdds === 'number' && Number.isFinite(ah.chapOdds) ? (
                             <p className="text-gray-300">
                                 Odds chấp:{' '}
                                 <span
@@ -324,7 +439,7 @@ const MinuteCrosshairHud: React.FC<{
                                               : 'text-sky-300'
                                     }
                                 >
-                                    {fmtO((ah as { chapOdds?: number }).chapOdds)}
+                                    {fmtO(ah.chapOdds)}
                                 </span>
                             </p>
                         ) : typeof ah.home === 'number' && Number.isFinite(ah.home) ? (
@@ -342,8 +457,9 @@ const MinuteCrosshairHud: React.FC<{
 export type { OddsSnap };
 export { nearestOddsPoint, crosshairLeftPx, CHART_RIGHT_GUTTER };
 
-export function getChartLeftGutter(hasSecondary: boolean): number {
-    return hasSecondary ? 45 + 40 + 15 : 45;
+/** Cùng trục Y OU+AH → chỉ một cột tick trái. */
+export function getChartLeftGutter(_hasSecondary?: boolean): number {
+    return 45;
 }
 
 /** Danh sách phút có nến — dùng cho ← / →. */
@@ -486,7 +602,6 @@ interface MomentumChartProps {
     iconColor: string;
     marketData: any[];
     sortedMarketData: any[];
-    apiChartData: any[];
     yAxisConfig: { domain: number[]; ticks: number[] };
     shotEvents: any[];
     gameEvents: any[];
@@ -501,14 +616,16 @@ interface MomentumChartProps {
     alertMarkers?: ChartAlertMarker[];
     /** Biểu đồ giá Xỉu: nến/tooltip/chú thích theo `under`, màu đỏ = tăng Xỉu. */
     underXiuMode?: boolean;
-    // ---- Kèo phụ gộp chung (Đội nhà 1_2/1_5) — vẽ trên trục trái thứ hai ----
+    /** Biểu đồ kèo chấp riêng (1_2 / 1_5): nến ∝ chapOdds, marker đổi line, chip đội chấp. */
+    ahChapMode?: boolean;
+    // ---- Legacy: kèo phụ gộp chung trên OU (Phase 1 không còn dùng trên Dashboard) ----
     /** Nến kèo phụ (homeMarketChartData*). Khi không truyền → chart như cũ. */
     secondaryMarketData?: any[];
     /** Bản đã sort theo phút cho đường xu hướng kèo phụ. */
     secondarySortedData?: any[];
-    /** Trục Y riêng cho kèo phụ (thang HDP khác OU). */
+    /** Thang HDP kèo phụ — gộp vào domain trục trái chung với OU. */
     secondaryYAxisConfig?: { domain: number[]; ticks: number[] };
-    /** Nhãn legend/tooltip cho kèo phụ, vd "Đội nhà (1_2)". */
+    /** Nhãn legend/tooltip cho kèo phụ / chart chấp, vd "Đội chấp (1_2)". */
     secondaryLabel?: string;
     /** Trường odds dùng cho chiều cao nến phụ — mặc định 'home'. */
     secondaryOddsField?: 'home' | 'away' | 'chapOdds';
@@ -533,7 +650,6 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
     iconColor,
     marketData,
     sortedMarketData,
-    apiChartData,
     yAxisConfig,
     shotEvents,
     gameEvents,
@@ -543,6 +659,7 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
     halfSubtitle,
     alertMarkers = [],
     underXiuMode = false,
+    ahChapMode = false,
     secondaryMarketData,
     secondarySortedData,
     secondaryYAxisConfig,
@@ -577,8 +694,6 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
         [plotAreaRef],
     );
 
-    const gid = (base: string) => `${base}-${chartIdSuffix.replace(/[^a-zA-Z0-9_-]/g, '') || 'main'}`;
-
     const handleCandleClick = useCallback(
         (payload: { minute?: number } | undefined) => {
             if (!minuteCrosshair || !payload || typeof payload.minute !== 'number') return;
@@ -594,7 +709,21 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
 
     const hasSecondary =
         Array.isArray(secondaryMarketData) && secondaryMarketData.length > 0 && !!secondaryYAxisConfig;
-    const leftGutterPx = hasSecondary ? 45 + 40 + 15 : 45;
+    /** Gộp domain OU + AH trên một trục — tránh hai thang độc lập kéo giãn trùng đường nến. */
+    const plotYAxisConfig = useMemo(() => {
+        if (!hasSecondary || !secondaryYAxisConfig) return yAxisConfig;
+        const lo = Math.min(yAxisConfig.domain[0] ?? 0, secondaryYAxisConfig.domain[0] ?? 0);
+        const hi = Math.max(yAxisConfig.domain[1] ?? 2, secondaryYAxisConfig.domain[1] ?? 0);
+        if (!(Number.isFinite(lo) && Number.isFinite(hi)) || lo >= hi) return yAxisConfig;
+        const ticks: number[] = [];
+        for (let i = lo; i <= hi + 1e-9; i = parseFloat((i + 0.25).toFixed(2))) {
+            if (ticks.length > 120) break;
+            ticks.push(i);
+        }
+        return { domain: [lo, hi], ticks: ticks.length > 1 ? ticks : yAxisConfig.ticks };
+    }, [hasSecondary, yAxisConfig, secondaryYAxisConfig]);
+
+    const leftGutterPx = 45;
 
     const scrubbingRef = useRef(false);
 
@@ -674,12 +803,17 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                   ...e,
                   __candleOddsValue: typeof e.under === 'number' ? e.under : undefined,
               }))
-            : marketData;
+            : ahChapMode
+              ? marketData.map((e: any) => ({
+                    ...e,
+                    __candleOddsValue: typeof e.chapOdds === 'number' ? e.chapOdds : undefined,
+                }))
+              : marketData;
         return base.map((e: any) => ({
             ...e,
-            highlight: compareActive && selectedMinute === e.minute,
+            highlight: (compareActive && selectedMinute === e.minute) || !!e.highlight,
         }));
-    }, [underXiuMode, marketData, compareActive, selectedMinute]);
+    }, [underXiuMode, ahChapMode, marketData, compareActive, selectedMinute]);
 
     const secondaryDataForChart = hasSecondary
         ? secondaryMarketData!.map((e: any) => ({
@@ -690,20 +824,34 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
     const SECONDARY_TINT = '#3b82f6';
     const SECONDARY_CANDLE_FILL = '#60a5fa';
 
-    /** Đoạn đường nối handicap: màu theo biến động giá nến (Tài/Xỉu). */
+    /** Đoạn đường nối: màu theo giá nến (Tài/Xỉu/chapOdds). */
     const handicapLinkSegments = useMemo(() => {
-        const pts = sortedMarketData;
+        const pts = [...sortedMarketData].sort(
+            (a, b) => (a.minute ?? 0) - (b.minute ?? 0) || (a.half ?? 1) - (b.half ?? 1),
+        );
         if (pts.length < 2) return [] as { key: string; color: string; data: typeof pts }[];
         const segs: { key: string; color: string; data: typeof pts }[] = [];
         for (let i = 1; i < pts.length; i++) {
             const prev = pts[i - 1]!;
             const curr = pts[i]!;
-            const prevOdds = candleOddsForLink(prev, underXiuMode);
-            const currOdds = candleOddsForLink(curr, underXiuMode);
+            const prevOdds = candleOddsForLink(prev, underXiuMode, ahChapMode);
+            const currOdds = candleOddsForLink(curr, underXiuMode, ahChapMode);
+            const lineKey = (p: any) =>
+                typeof p.homeLine === 'number' && Number.isFinite(p.homeLine)
+                    ? p.homeLine
+                    : typeof p.handicap === 'number'
+                      ? p.handicap
+                      : null;
+            const prevH = lineKey(prev);
+            const currH = lineKey(curr);
+            // Đổi line → không so giá giữa hai line khác nhau (giữ đỏ).
+            const lineChanged =
+                prevH != null && currH != null && Math.abs(currH - prevH) > 0.001;
             const roseEnough =
+                !lineChanged &&
                 prevOdds != null &&
                 currOdds != null &&
-                currOdds - prevOdds > CANDLE_LINK_RISE_TO_GREEN;
+                candleLinkRoseEnough(prevOdds, currOdds);
             segs.push({
                 key: `hl-${prev.minute}-${curr.minute}-${i}`,
                 color: roseEnough ? CANDLE_LINK_GREEN : CANDLE_LINK_RED,
@@ -711,7 +859,49 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
             });
         }
         return segs;
-    }, [sortedMarketData, underXiuMode]);
+    }, [sortedMarketData, underXiuMode, ahChapMode]);
+
+    /** Phase 2: vạch dọc khi đổi line chấp (homeLine). */
+    const ahLineChangeMarkers = useMemo(() => {
+        if (!ahChapMode) return [] as Array<{ minute: number; label: string; color: string }>;
+        const pts = [...sortedMarketData].sort(
+            (a, b) => (a.minute ?? 0) - (b.minute ?? 0) || (a.half ?? 1) - (b.half ?? 1),
+        );
+        const out: Array<{ minute: number; label: string; color: string }> = [];
+        for (let i = 1; i < pts.length; i++) {
+            const prev = pts[i - 1]!;
+            const curr = pts[i]!;
+            const prevLine =
+                typeof prev.homeLine === 'number'
+                    ? prev.homeLine
+                    : typeof prev.handicap === 'number'
+                      ? prev.handicap
+                      : null;
+            const currLine =
+                typeof curr.homeLine === 'number'
+                    ? curr.homeLine
+                    : typeof curr.handicap === 'number'
+                      ? curr.handicap
+                      : null;
+            if (prevLine == null || currLine == null) continue;
+            if (Math.abs(currLine - prevLine) <= 0.001) continue;
+            const prevChap =
+                typeof prev.handicap === 'number' ? prev.handicap.toFixed(2) : prevLine.toFixed(2);
+            const currChap =
+                typeof curr.handicap === 'number' ? curr.handicap.toFixed(2) : currLine.toFixed(2);
+            out.push({
+                minute: curr.minute,
+                label: `${prevChap}→${currChap}`,
+                color: '#a855f7',
+            });
+        }
+        return out;
+    }, [ahChapMode, sortedMarketData]);
+
+    const latestChapPoint = useMemo(() => {
+        if (!ahChapMode || sortedMarketData.length === 0) return null;
+        return sortedMarketData[sortedMarketData.length - 1] as OddsSnap;
+    }, [ahChapMode, sortedMarketData]);
 
     const selectedOu = useMemo(
         () => (selectedMinute != null ? nearestOddsPoint(sortedMarketData, selectedMinute) : null),
@@ -725,19 +915,97 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
         [selectedMinute, secondarySortedData],
     );
 
+    const chapHudDelta = useMemo(() => {
+        if (!ahChapMode || selectedMinute == null || !selectedOu) {
+            return { delta: null as number | null, lookbackMinute: null as number | null };
+        }
+        const target = selectedMinute - AH_CHAP_LOOKBACK_MINUTES;
+        const earlier = [...sortedMarketData]
+            .filter((p) => p.minute <= target)
+            .sort((a, b) => b.minute - a.minute)[0];
+        if (
+            !earlier ||
+            typeof selectedOu.chapOdds !== 'number' ||
+            typeof earlier.chapOdds !== 'number'
+        ) {
+            return { delta: null, lookbackMinute: null };
+        }
+        return {
+            delta: selectedOu.chapOdds - earlier.chapOdds,
+            lookbackMinute: earlier.minute,
+        };
+    }, [ahChapMode, selectedMinute, selectedOu, sortedMarketData]);
+
     return (
         <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
             <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
                 <TrendingUp className={`w-4 h-4 ${iconColor}`} />
                 {title}
             </h3>
-            {!underXiuMode && marketData.some((e: any) => typeof e.over === 'number' && e.over <= OU_LINE_DROP_PRICE_MAX) ? (
+            {ahChapMode && latestChapPoint ? (
+                <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-md border border-sky-300 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 px-2 py-1 text-[10px] font-semibold text-sky-800 dark:text-sky-200">
+                        Đang chấp:{' '}
+                        {latestChapPoint.chapSide === 'away'
+                            ? awayTeamName || 'Đội khách'
+                            : homeTeamName || 'Đội nhà'}
+                        <span className="font-mono text-sky-600 dark:text-sky-300">
+                            {typeof latestChapPoint.handicap === 'number'
+                                ? latestChapPoint.handicap.toFixed(2)
+                                : '—'}
+                        </span>
+                        <span className="text-sky-500">@</span>
+                        <span className="font-mono">
+                            {typeof latestChapPoint.chapOdds === 'number'
+                                ? latestChapPoint.chapOdds.toFixed(3)
+                                : '—'}
+                        </span>
+                    </span>
+                </div>
+            ) : null}
+            {!ahChapMode &&
+            !underXiuMode &&
+            marketData.some((e: any) => typeof e.over === 'number' && e.over <= OU_LINE_DROP_PRICE_MAX) ? (
                 <p className="text-[10px] text-amber-700 dark:text-amber-400 mb-1 flex items-center gap-1.5">
                     <span
                         className="inline-block w-2.5 h-2.5 rounded-sm shrink-0"
                         style={{ backgroundColor: LOW_OVER_CANDLE_FILL }}
                     />
                     Nến vàng = Tài ≤ {OU_LINE_DROP_PRICE_MAX} (có ghi giá phía trên)
+                </p>
+            ) : null}
+            {ahChapMode ? (
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1">
+                        <span className="inline-block w-2.5 h-2.5 rounded-sm shrink-0 bg-emerald-500" />
+                        Xanh = giá chấp tăng
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                        <span className="inline-block w-2.5 h-2.5 rounded-sm shrink-0 bg-red-500" />
+                        Đỏ = giảm
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                        <span className="inline-block w-2.5 h-2.5 rounded-sm shrink-0 bg-slate-400" />
+                        Xám = đổi line
+                    </span>
+                    <span className="text-slate-400">· HDP≈0 đảo màu</span>
+                    {marketData.some(
+                        (e: any) => typeof e.chapOdds === 'number' && e.chapOdds <= OU_LINE_DROP_PRICE_MAX,
+                    ) ? (
+                        <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400">
+                            <span
+                                className="inline-block w-2.5 h-2.5 rounded-sm shrink-0"
+                                style={{ backgroundColor: LOW_OVER_CANDLE_FILL }}
+                            />
+                            Vàng = chấp ≤ {OU_LINE_DROP_PRICE_MAX}
+                        </span>
+                    ) : null}
+                    {ahLineChangeMarkers.length > 0 ? (
+                        <span className="inline-flex items-center gap-1 text-violet-600 dark:text-violet-400">
+                            <span className="inline-block w-2.5 h-0.5 shrink-0 bg-violet-500" />
+                            Vạch tím = đổi line
+                        </span>
+                    ) : null}
                 </p>
             ) : null}
             {underXiuMode ? (
@@ -765,25 +1033,7 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                 onPointerCancel={minuteCrosshair ? onPlotPointerUp : undefined}
             >
                 <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart margin={{ top: 36, right: 10, bottom: 36, left: hasSecondary ? 0 : -15 }}>
-                        <defs>
-                            <filter id={gid('glowHome')} x="-40%" y="-40%" width="180%" height="180%">
-                                <feGaussianBlur stdDeviation="6" result="blur" />
-                                <feMerge>
-                                    <feMergeNode in="blur" />
-                                    <feMergeNode in="blur" />
-                                    <feMergeNode in="SourceGraphic" />
-                                </feMerge>
-                            </filter>
-                            <filter id={gid('glowAway')} x="-40%" y="-40%" width="180%" height="180%">
-                                <feGaussianBlur stdDeviation="6" result="blur" />
-                                <feMerge>
-                                    <feMergeNode in="blur" />
-                                    <feMergeNode in="blur" />
-                                    <feMergeNode in="SourceGraphic" />
-                                </feMerge>
-                            </filter>
-                        </defs>
+                    <ComposedChart margin={{ top: 36, right: 10, bottom: 36, left: -15 }}>
                         <CartesianGrid stroke="#f1f5f9" strokeOpacity={0.1} strokeDasharray="3 3" vertical={false} />
                         <XAxis
                             xAxisId={0}
@@ -813,43 +1063,24 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                             dataKey="handicap"
                             name="HDP"
                             width={45}
-                            domain={yAxisConfig.domain}
-                            ticks={yAxisConfig.ticks}
+                            domain={plotYAxisConfig.domain}
+                            ticks={plotYAxisConfig.ticks}
                             tickFormatter={(tick) => tick.toFixed(2)}
                             tick={{ fontSize: 10, fill: '#9ca3af' }}
                             tickLine={false}
                             axisLine={{ stroke: '#334155' }}
                             allowDecimals={true}
                         />
-                        {hasSecondary && (
-                            <YAxis
-                                yAxisId="leftSecondary"
-                                orientation="left"
-                                dataKey="handicap"
-                                name={secondaryLabel || 'Đội nhà HDP'}
-                                width={40}
-                                domain={secondaryYAxisConfig!.domain}
-                                ticks={secondaryYAxisConfig!.ticks}
-                                tickFormatter={(tick) => tick.toFixed(2)}
-                                tick={{ fontSize: 10, fill: SECONDARY_TINT }}
-                                tickLine={false}
-                                axisLine={{ stroke: SECONDARY_TINT }}
-                                allowDecimals={true}
-                            />
-                        )}
-                        <YAxis
-                            yAxisId="right"
-                            orientation="right"
-                            tick={{ fontSize: 10, fill: '#9ca3af' }}
-                            tickLine={false}
-                            axisLine={{ stroke: '#334155' }}
-                            width={35}
-                            domain={['dataMin - 5', 'dataMax + 10']}
-                        />
                         {!minuteCrosshair && (
                             <Tooltip
                                 cursor={{ strokeDasharray: '3 3' }}
-                                content={<CustomTooltip underXiuMode={underXiuMode} secondaryLabel={secondaryLabel} />}
+                                content={
+                                    <CustomTooltip
+                                        underXiuMode={underXiuMode}
+                                        ahChapMode={ahChapMode}
+                                        secondaryLabel={secondaryLabel}
+                                    />
+                                }
                             />
                         )}
                         <Scatter
@@ -858,16 +1089,17 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                             name="Thị trường"
                             data={marketDataForChart}
                             shape={(p: Record<string, unknown>) => (
-                                <CustomCandle {...p} underXiuMode={underXiuMode} />
+                                <CustomCandle {...p} underXiuMode={underXiuMode} ahChapMode={ahChapMode} />
                             )}
                             cursor={minuteCrosshair ? 'pointer' : undefined}
                             onClick={(pt: { payload?: { minute?: number } }) => handleCandleClick(pt?.payload)}
                         >
                             {marketDataForChart.map((e: any, i: number) => {
-                                const low =
-                                    !underXiuMode &&
-                                    typeof e.over === 'number' &&
-                                    e.over <= OU_LINE_DROP_PRICE_MAX;
+                                const low = ahChapMode
+                                    ? typeof e.chapOdds === 'number' && e.chapOdds <= OU_LINE_DROP_PRICE_MAX
+                                    : !underXiuMode &&
+                                      typeof e.over === 'number' &&
+                                      e.over <= OU_LINE_DROP_PRICE_MAX;
                                 return (
                                     <Cell key={`c-${i}`} fill={low ? LOW_OVER_CANDLE_FILL : e.color} />
                                 );
@@ -893,7 +1125,7 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                         {hasSecondary && (
                             <Scatter
                                 xAxisId={0}
-                                yAxisId="leftSecondary"
+                                yAxisId="left"
                                 name={secondaryLabel || 'Đội nhà'}
                                 data={secondaryDataForChart}
                                 shape={<CustomCandle secondary />}
@@ -909,7 +1141,7 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                         {hasSecondary && (
                             <Line
                                 xAxisId={0}
-                                yAxisId="leftSecondary"
+                                yAxisId="left"
                                 type="monotone"
                                 data={secondarySortedData}
                                 dataKey="handicap"
@@ -919,35 +1151,10 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                                 strokeDasharray="5 3"
                                 dot={false}
                                 activeDot={{ r: 4 }}
-                                opacity={0.85}
+                                opacity={0.9}
+                                isAnimationActive={false}
                             />
                         )}
-                        <Line
-                            xAxisId={0}
-                            yAxisId="right"
-                            type="monotone"
-                            data={apiChartData}
-                            dataKey="homeApi"
-                            name="API Đội nhà"
-                            stroke="#2dd4bf"
-                            strokeWidth={4}
-                            dot={<CustomApiDot data={apiChartData} />}
-                            style={{ filter: `url(#${gid('glowHome')})` }}
-                            activeDot={{ r: 6, strokeWidth: 0 }}
-                        />
-                        <Line
-                            xAxisId={0}
-                            yAxisId="right"
-                            type="monotone"
-                            data={apiChartData}
-                            dataKey="awayApi"
-                            name="API Đội khách"
-                            stroke="#8b5cf6"
-                            strokeWidth={4}
-                            dot={<CustomApiDot data={apiChartData} />}
-                            style={{ filter: `url(#${gid('glowAway')})` }}
-                            activeDot={{ r: 6, strokeWidth: 0 }}
-                        />
                         {alertMarkers
                             .filter((a) => typeof a.minute === 'number' && Number.isFinite(a.minute))
                             .map((a) => {
@@ -993,22 +1200,27 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                             />
                                 );
                             })}
-                        {extraMarkers
+                        {[...ahLineChangeMarkers, ...extraMarkers]
                             .filter((m) => typeof m.minute === 'number' && Number.isFinite(m.minute))
                             .map((m, i) => (
                                 <ReferenceLine
-                                    key={`extra-${m.minute}-${i}`}
+                                    key={`extra-${m.minute}-${i}-${m.label ?? ''}`}
                                     xAxisId={0}
                                     yAxisId="left"
                                     x={m.minute}
                                     stroke={m.color ?? '#f97316'}
-                                    strokeWidth={2}
+                                    strokeWidth={ahLineChangeMarkers.some((a) => a.minute === m.minute && a.label === m.label) ? 1.5 : 2}
+                                    strokeDasharray={
+                                        ahLineChangeMarkers.some((a) => a.minute === m.minute && a.label === m.label)
+                                            ? '3 3'
+                                            : undefined
+                                    }
                                     strokeOpacity={0.9}
                                     label={{
                                         value: m.label ?? '📍',
                                         position: 'insideTopRight',
                                         fill: m.color ?? '#f97316',
-                                        fontSize: 12,
+                                        fontSize: 10,
                                     }}
                                 />
                             ))}
@@ -1045,14 +1257,19 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                             ou={selectedOu}
                             ah={selectedAh}
                             underXiuMode={underXiuMode}
+                            ahChapMode={ahChapMode}
                             secondaryLabel={secondaryLabel}
+                            chapDelta={chapHudDelta.delta}
+                            chapLookbackMinute={chapHudDelta.lookbackMinute}
                         />
                     )}
                     {minuteCrosshair && !suppressCrosshairHud && (
                         <p className="text-[10px] text-indigo-600/90 dark:text-indigo-400/90 px-1 text-center">
                             {compareActive
                                 ? '← → đổi phút · Esc thoát so sánh'
-                                : 'Bấm/kéo trên biểu đồ hoặc nến T/X để bám vạch kèo so sánh theo phút'}
+                                : ahChapMode
+                                  ? 'Bấm/kéo trên biểu đồ hoặc nến chấp để so sánh theo phút'
+                                  : 'Bấm/kéo trên biểu đồ hoặc nến T/X để bám vạch kèo so sánh theo phút'}
                         </p>
                     )}
                 </div>

@@ -6,24 +6,36 @@ const B365_INPLAY = 'https://api.b365api.com/v3/events/inplay?sport_id=1';
 
 export const B365_SERVER_TOKEN = '__SERVER__';
 
+export type B365ProbeReason = 'invalid' | 'transient';
+
 /** Gọi thẳng B365 từ server Node — không qua Cloudflare Worker. */
 export async function probeB365Token(token: string): Promise<{
   ok: boolean;
   error?: string;
   matchCount?: number;
+  /** invalid = chắc token sai (được phép xóa local); transient = lỗi tạm, giữ token. */
+  reason?: B365ProbeReason;
 }> {
   const trimmed = token.trim();
   if (!trimmed || trimmed.length < 5) {
-    return { ok: false, error: 'Token quá ngắn hoặc trống.' };
+    return { ok: false, error: 'Token quá ngắn hoặc trống.', reason: 'invalid' };
   }
   try {
     const url = `${B365_INPLAY}&token=${encodeURIComponent(trimmed)}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(12_000) });
     if (res.status === 403) {
-      return { ok: false, error: 'Token bị từ chối (403). Kiểm tra lại token trên b365api.com.' };
+      return {
+        ok: false,
+        error: 'Token bị từ chối (403). Kiểm tra lại token trên b365api.com.',
+        reason: 'invalid',
+      };
     }
     if (!res.ok) {
-      return { ok: false, error: `B365 trả lỗi HTTP ${res.status}. Thử lại sau.` };
+      return {
+        ok: false,
+        error: `B365 trả lỗi HTTP ${res.status}. Thử lại sau.`,
+        reason: 'transient',
+      };
     }
     const text = await res.text();
     if (!text.trim()) {
@@ -33,16 +45,28 @@ export async function probeB365Token(token: string): Promise<{
     try {
       data = JSON.parse(text) as typeof data;
     } catch {
-      return { ok: false, error: 'Phản hồi B365 không hợp lệ (không phải JSON).' };
+      return {
+        ok: false,
+        error: 'Phản hồi B365 không hợp lệ (không phải JSON).',
+        reason: 'transient',
+      };
     }
     if (data.success !== 1 && data.success !== '1') {
-      return { ok: false, error: data.error || 'Token không hợp lệ hoặc hết hạn.' };
+      return {
+        ok: false,
+        error: data.error || 'Token không hợp lệ hoặc hết hạn.',
+        reason: 'invalid',
+      };
     }
     return { ok: true, matchCount: Array.isArray(data.results) ? data.results.length : 0 };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     logger.warn(`B365 token probe failed: ${msg}`);
-    return { ok: false, error: 'Không kết nối được B365 API. Kiểm tra mạng server.' };
+    return {
+      ok: false,
+      error: 'Không kết nối được B365 API. Kiểm tra mạng server.',
+      reason: 'transient',
+    };
   }
 }
 

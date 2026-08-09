@@ -4,3 +4,9 @@ buildCommand = "cd server && npm ci && npm run build"
 [deploy]
 startCommand = "cd server && npm start"
 restartPolicyType = "ON_FAILURE"
+
+# Bot Telegram ưu tiên máy local — VPS không poll getUpdates (tránh 409 Conflict).
+# Gửi cảnh báo khi dùng local: frontend trỏ VITE_AI_SERVER_URL → localhost.
+# Nếu muốn bot trên VPS: đổi thành "true" trên Railway Variables.
+[variables]
+FEATURE_TELEGRAM_BOT = "false"

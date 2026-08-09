@@ -22,10 +22,14 @@ export async function fetchB365AuthStatus(): Promise<{ serverTokenConfigured: bo
   }
 }
 
+export type B365VerifyReason = 'invalid' | 'transient';
+
 export async function verifyB365Token(token: string): Promise<{
   ok: boolean;
   error?: string;
   matchCount?: number;
+  /** invalid = xóa token đã lưu; transient = giữ token (mạng/server tạm lỗi). */
+  reason?: B365VerifyReason;
 }> {
   try {
     const res = await fetch(`${AI_SERVER_URL}/api/auth/b365-verify`, {
@@ -38,24 +42,42 @@ export async function verifyB365Token(token: string): Promise<{
     if (!text.trim()) {
       return {
         ok: false,
+        reason: 'transient',
         error: `Server trả phản hồi trống (HTTP ${res.status}). Kiểm tra VITE_AI_SERVER_URL phải có dạng https://... và CORS_ORIGIN trên Railway khớp URL frontend.`,
       };
     }
-    let data: { ok?: boolean; error?: string; matchCount?: number };
+    let data: {
+      ok?: boolean;
+      error?: string;
+      matchCount?: number;
+      reason?: B365VerifyReason;
+    };
     try {
       data = JSON.parse(text) as typeof data;
     } catch {
       return {
         ok: false,
+        reason: 'transient',
         error: `Server trả không phải JSON (HTTP ${res.status}): ${text.slice(0, 160)}`,
       };
     }
     if (data.ok) return { ok: true, matchCount: data.matchCount };
-    return { ok: false, error: data.error || `Xác thực thất bại (${res.status}).` };
+    const reason: B365VerifyReason =
+      data.reason === 'invalid' || data.reason === 'transient'
+        ? data.reason
+        : res.status === 401
+          ? 'invalid'
+          : 'transient';
+    return {
+      ok: false,
+      reason,
+      error: data.error || `Xác thực thất bại (${res.status}).`,
+    };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return {
       ok: false,
+      reason: 'transient',
       error: `Không kết nối server AI (${AI_SERVER_URL}). ${msg}`,
     };
   }

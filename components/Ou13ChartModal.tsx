@@ -11,7 +11,6 @@ import type {
     AsianHandicapMinuteSnapshot,
     ChartAlertMarker,
     OverUnderMinuteSnapshot,
-    ProcessedStats,
 } from '../types';
 import {
     fetchOddsHistory13,
@@ -28,7 +27,6 @@ import {
     halfChartDomainMax,
     minuteTicks,
 } from '../services/odds-pressure-series';
-import { calculateAPIScore } from '../services/traditionalFactors';
 import {
     MomentumChart,
     nearestOddsPoint,
@@ -58,19 +56,6 @@ export interface Ou13ChartBundle {
     userNotes?: UserNoteLite[];
 }
 
-/** Counter lũy kế theo phút → ProcessedStats để tái dùng calculateAPIScore của Dashboard. */
-function rowToProcessed(r: MinuteStatRow): ProcessedStats {
-    return {
-        attacks: r.attacks,
-        dangerous_attacks: r.dangerous,
-        on_target: r.onTarget,
-        off_target: r.offTarget,
-        corners: r.corners,
-        yellowcards: [0, 0],
-        redcards: [0, 0],
-    };
-}
-
 /** Suy ra shot events (⚽ trên/lệch đích) từ delta counter lũy kế giữa 2 phút liền nhau cùng hiệp. */
 function deriveShotEvents(stats: MinuteStatRow[]): ShotEventLite[] {
     const out: ShotEventLite[] = [];
@@ -92,7 +77,7 @@ function deriveShotEvents(stats: MinuteStatRow[]): ShotEventLite[] {
     return out;
 }
 
-/** Props panel kèo riêng H1 (1_6 + 1_5) — giống Dashboard panel violet. */
+/** Props panel kèo riêng H1: OU 1_6 + AH 1_5 (chart tách riêng). */
 function buildH1MarketsChartProps(bundle: Ou13ChartBundle) {
     const ou16Snaps: OverUnderMinuteSnapshot[] = (bundle.odds16 ?? []).map((o) => ({
         marketId: '1_6',
@@ -113,16 +98,8 @@ function buildH1MarketsChartProps(bundle: Ou13ChartBundle) {
 
     const marketData = colorOddsSeriesForPressure(ou16Snaps);
     const sortedMarketData = [...marketData].sort((a, b) => a.minute - b.minute);
-    const secondaryMarketData = colorOddsSeriesForAsianHandicapHome(ah15Snaps);
-    const secondarySortedData = [...secondaryMarketData].sort((a, b) => a.minute - b.minute);
-
-    const apiChartData = bundle.stats
-        .filter((r) => r.half === 1)
-        .sort((a, b) => a.minute - b.minute)
-        .map((r) => {
-            const ps = rowToProcessed(r);
-            return { minute: r.minute, homeApi: calculateAPIScore(ps, 0), awayApi: calculateAPIScore(ps, 1) };
-        });
+    const ahMarketData = colorOddsSeriesForAsianHandicapHome(ah15Snaps);
+    const ahSortedData = [...ahMarketData].sort((a, b) => a.minute - b.minute);
 
     const shotEvents = deriveShotEvents(bundle.stats).filter((s) => s.half === 1);
     const gameEvents = bundle.events
@@ -133,8 +110,7 @@ function buildH1MarketsChartProps(bundle: Ou13ChartBundle) {
     const maxMinute = Math.max(
         45,
         ...marketData.map((p) => p.minute),
-        ...secondaryMarketData.map((p) => p.minute),
-        ...apiChartData.map((p) => p.minute),
+        ...ahMarketData.map((p) => p.minute),
     );
     const domainMax = halfChartDomainMax(1, maxMinute);
     const xDomain: [number, number] = [0, domainMax];
@@ -143,24 +119,24 @@ function buildH1MarketsChartProps(bundle: Ou13ChartBundle) {
     return {
         marketData,
         sortedMarketData,
-        secondaryMarketData,
-        secondarySortedData,
-        apiChartData,
+        ahMarketData,
+        ahSortedData,
         shotEvents,
         gameEvents,
         alertMarkers,
         xDomain,
         xTicks,
         yAxisConfig: calculateOddsYAxisConfig(marketData, 0.5),
-        secondaryYAxisConfig: calculateAhChapYAxisConfig(secondaryMarketData, secondaryMarketData),
-        secondaryOddsField: 'chapOdds' as const,
-        isEmpty: marketData.length === 0 && secondaryMarketData.length === 0,
+        ahYAxisConfig: calculateAhChapYAxisConfig(ahMarketData, ahMarketData),
+        isEmpty: marketData.length === 0 && ahMarketData.length === 0,
+        isOuEmpty: marketData.length === 0,
+        isAhEmpty: ahMarketData.length === 0,
         homeTeamName: bundle.homeName,
         awayTeamName: bundle.awayName,
     };
 }
 
-/** Props 1 panel MomentumChart cho 1 hiệp — dựng giống Dashboard (nến + kèo phụ 1_2 + API timeline). */
+/** Props 1 hiệp: OU 1_3 + AH 1_2 (chart tách riêng, cùng trục phút). */
 function buildHalfChartProps(bundle: Ou13ChartBundle, half: 1 | 2) {
     const ou13Snaps: OverUnderMinuteSnapshot[] = bundle.odds13.map((o) => ({
         marketId: '1_3',
@@ -184,16 +160,8 @@ function buildHalfChartProps(bundle: Ou13ChartBundle, half: 1 | 2) {
 
     const marketData = coloredOu.filter((p) => (p.half ?? 1) === half);
     const sortedMarketData = [...marketData].sort((a, b) => a.minute - b.minute);
-    const secondaryMarketData = coloredAh.filter((p) => (p.half ?? 1) === half);
-    const secondarySortedData = [...secondaryMarketData].sort((a, b) => a.minute - b.minute);
-
-    const apiChartData = bundle.stats
-        .filter((r) => r.half === half)
-        .sort((a, b) => a.minute - b.minute)
-        .map((r) => {
-            const ps = rowToProcessed(r);
-            return { minute: r.minute, homeApi: calculateAPIScore(ps, 0), awayApi: calculateAPIScore(ps, 1) };
-        });
+    const ahMarketData = coloredAh.filter((p) => (p.half ?? 1) === half);
+    const ahSortedData = [...ahMarketData].sort((a, b) => a.minute - b.minute);
 
     const shotEvents = deriveShotEvents(bundle.stats).filter((s) => s.half === half);
     const gameEvents = bundle.events
@@ -201,12 +169,10 @@ function buildHalfChartProps(bundle: Ou13ChartBundle, half: 1 | 2) {
         .map((e) => ({ minute: e.minute, type: e.type, team: e.team }));
     const alertMarkers = bundle.alertMarkers.filter((m) => (m.half ?? 1) === half);
 
-    // Trục X — H1 tối đa CHART_H1_MINUTE_MAX, H2 tối đa CHART_H2_MINUTE_MAX (bù giờ WC 2026).
     const maxMinute = Math.max(
         half === 1 ? 45 : 90,
         ...marketData.map((p) => p.minute),
-        ...secondaryMarketData.map((p) => p.minute),
-        ...apiChartData.map((p) => p.minute),
+        ...ahMarketData.map((p) => p.minute),
     );
     const domainMax = halfChartDomainMax(half, maxMinute);
     const xDomain: [number, number] = half === 1 ? [0, domainMax] : [45, domainMax];
@@ -215,18 +181,18 @@ function buildHalfChartProps(bundle: Ou13ChartBundle, half: 1 | 2) {
     return {
         marketData,
         sortedMarketData,
-        secondaryMarketData,
-        secondarySortedData,
-        apiChartData,
+        ahMarketData,
+        ahSortedData,
         shotEvents,
         gameEvents,
         alertMarkers,
         xDomain,
         xTicks,
         yAxisConfig: calculateOddsYAxisConfig(marketData, 0.5),
-        secondaryYAxisConfig: calculateAhChapYAxisConfig(secondaryMarketData, coloredAh),
-        secondaryOddsField: 'chapOdds' as const,
-        isEmpty: marketData.length === 0 && apiChartData.length === 0,
+        ahYAxisConfig: calculateAhChapYAxisConfig(ahMarketData, coloredAh),
+        isEmpty: marketData.length === 0 && ahMarketData.length === 0,
+        isOuEmpty: marketData.length === 0,
+        isAhEmpty: ahMarketData.length === 0,
         homeTeamName: bundle.homeName,
         awayTeamName: bundle.awayName,
     };
@@ -298,22 +264,72 @@ const H1MarketsPanel: React.FC<{
 }> = ({ props, idSuffix, labelPrefix, marker, minuteCrosshair }) => {
     const prefix = labelPrefix ? `${labelPrefix} · ` : '';
     if (props.isEmpty) return null;
-    const { isEmpty: _omit, ...chartProps } = props;
+    const {
+        isEmpty: _e,
+        isOuEmpty,
+        isAhEmpty,
+        ahMarketData,
+        ahSortedData,
+        ahYAxisConfig,
+        marketData,
+        sortedMarketData,
+        yAxisConfig,
+        shotEvents,
+        gameEvents,
+        alertMarkers,
+        xDomain,
+        xTicks,
+        homeTeamName,
+        awayTeamName,
+    } = props;
+    const extra = marker && marker.half === 1 ? [{ minute: marker.minute }] : [];
     return (
-        <div>
-            <p className="text-[11px] font-bold text-violet-700/90 dark:text-violet-400/90 uppercase tracking-wide mb-2 px-1">
+        <div className="space-y-3">
+            <p className="text-[11px] font-bold text-violet-700/90 dark:text-violet-400/90 uppercase tracking-wide px-1">
                 {prefix}Kèo Hiệp 1 (1_6 + 1_5)
             </p>
-            <MomentumChart
-                title="Tài/Xỉu H1 (1_6) + Đội chấp H1 (1_5) & Dòng thời gian API"
-                halfSubtitle={`${prefix}Kèo riêng hiệp 1 — không phải slice 1_3/1_2`}
-                iconColor="text-violet-500"
-                chartIdSuffix={idSuffix}
-                secondaryLabel="Đội chấp H1 (1_5)"
-                {...chartProps}
-                minuteCrosshair={minuteCrosshair}
-                extraMarkers={marker && marker.half === 1 ? [{ minute: marker.minute }] : []}
-            />
+            {!isOuEmpty ? (
+                <MomentumChart
+                    title="Tài/Xỉu H1 (1_6)"
+                    halfSubtitle={`${prefix}Kèo riêng hiệp 1 — không phải slice 1_3`}
+                    iconColor="text-violet-500"
+                    chartIdSuffix={`${idSuffix}-ou`}
+                    marketData={marketData}
+                    sortedMarketData={sortedMarketData}
+                    yAxisConfig={yAxisConfig}
+                    shotEvents={shotEvents}
+                    gameEvents={gameEvents}
+                    alertMarkers={alertMarkers}
+                    xDomain={xDomain}
+                    xTicks={xTicks}
+                    homeTeamName={homeTeamName}
+                    awayTeamName={awayTeamName}
+                    minuteCrosshair={minuteCrosshair}
+                    extraMarkers={extra}
+                />
+            ) : null}
+            {!isAhEmpty ? (
+                <MomentumChart
+                    title="Đội chấp H1 (1_5)"
+                    halfSubtitle={`${prefix}HDP đội chấp · nến = giá chấp`}
+                    iconColor="text-violet-500"
+                    chartIdSuffix={`${idSuffix}-ah`}
+                    ahChapMode
+                    secondaryLabel="Đội chấp H1 (1_5)"
+                    marketData={ahMarketData}
+                    sortedMarketData={ahSortedData}
+                    yAxisConfig={ahYAxisConfig}
+                    shotEvents={shotEvents}
+                    gameEvents={gameEvents}
+                    alertMarkers={alertMarkers}
+                    xDomain={xDomain}
+                    xTicks={xTicks}
+                    homeTeamName={homeTeamName}
+                    awayTeamName={awayTeamName}
+                    minuteCrosshair={minuteCrosshair}
+                    extraMarkers={extra}
+                />
+            ) : null}
         </div>
     );
 };
@@ -321,9 +337,7 @@ const H1MarketsPanel: React.FC<{
 function oddsAtMinute(props: HalfChartProps, minute: number): { ou: OddsSnap | null; ah: OddsSnap | null } {
     return {
         ou: nearestOddsPoint(props.sortedMarketData, minute),
-        ah: props.secondarySortedData?.length
-            ? nearestOddsPoint(props.secondarySortedData, minute)
-            : null,
+        ah: props.ahSortedData?.length ? nearestOddsPoint(props.ahSortedData, minute) : null,
     };
 }
 
@@ -551,23 +565,78 @@ const OuHalfPanel: React.FC<{
             </p>
         );
     }
-    const { isEmpty: _omit, ...chartProps } = props;
+    const {
+        isEmpty: _e,
+        isOuEmpty,
+        isAhEmpty,
+        ahMarketData,
+        ahSortedData,
+        ahYAxisConfig,
+        marketData,
+        sortedMarketData,
+        yAxisConfig,
+        shotEvents,
+        gameEvents,
+        alertMarkers,
+        xDomain,
+        xTicks,
+        homeTeamName,
+        awayTeamName,
+    } = props;
     const overtimeNote = half === 1 ? 'gồm bù giờ (trục có thể >45\')' : 'gồm bù giờ (trục có thể >90\')';
+    const extra = marker && marker.half === half ? [{ minute: marker.minute }] : [];
     return (
-        <MomentumChart
-            title="Tài/Xỉu (1_3) + Đội chấp (1_2) & Dòng thời gian API"
-            halfSubtitle={`${prefix}Hiệp ${half} — ${overtimeNote}`}
-            iconColor="text-emerald-500"
-            chartIdSuffix={idSuffix}
-            secondaryLabel="Đội chấp (1_2)"
-            {...chartProps}
-            minuteCrosshair={minuteCrosshair}
-            syncedCrosshairMinute={syncedCrosshairMinute}
-            onSyncedCrosshairChange={onSyncedCrosshairChange}
-            plotAreaRef={plotAreaRef}
-            suppressCrosshairHud={suppressCrosshairHud}
-            extraMarkers={marker && marker.half === half ? [{ minute: marker.minute }] : []}
-        />
+        <div className="space-y-3">
+            {!isOuEmpty ? (
+                <MomentumChart
+                    title="Tài/Xỉu (1_3)"
+                    halfSubtitle={`${prefix}Hiệp ${half} — ${overtimeNote}`}
+                    iconColor="text-emerald-500"
+                    chartIdSuffix={`${idSuffix}-ou`}
+                    marketData={marketData}
+                    sortedMarketData={sortedMarketData}
+                    yAxisConfig={yAxisConfig}
+                    shotEvents={shotEvents}
+                    gameEvents={gameEvents}
+                    alertMarkers={alertMarkers}
+                    xDomain={xDomain}
+                    xTicks={xTicks}
+                    homeTeamName={homeTeamName}
+                    awayTeamName={awayTeamName}
+                    minuteCrosshair={minuteCrosshair}
+                    syncedCrosshairMinute={syncedCrosshairMinute}
+                    onSyncedCrosshairChange={onSyncedCrosshairChange}
+                    plotAreaRef={plotAreaRef}
+                    suppressCrosshairHud={suppressCrosshairHud}
+                    extraMarkers={extra}
+                />
+            ) : null}
+            {!isAhEmpty ? (
+                <MomentumChart
+                    title="Đội chấp (1_2)"
+                    halfSubtitle={`${prefix}Hiệp ${half} — HDP đội chấp · nến = giá chấp`}
+                    iconColor="text-sky-500"
+                    chartIdSuffix={`${idSuffix}-ah`}
+                    ahChapMode
+                    secondaryLabel="Đội chấp (1_2)"
+                    marketData={ahMarketData}
+                    sortedMarketData={ahSortedData}
+                    yAxisConfig={ahYAxisConfig}
+                    shotEvents={shotEvents}
+                    gameEvents={gameEvents}
+                    alertMarkers={alertMarkers}
+                    xDomain={xDomain}
+                    xTicks={xTicks}
+                    homeTeamName={homeTeamName}
+                    awayTeamName={awayTeamName}
+                    minuteCrosshair={minuteCrosshair}
+                    syncedCrosshairMinute={syncedCrosshairMinute}
+                    onSyncedCrosshairChange={onSyncedCrosshairChange}
+                    suppressCrosshairHud={suppressCrosshairHud}
+                    extraMarkers={extra}
+                />
+            ) : null}
+        </div>
     );
 };
 
@@ -762,7 +831,12 @@ export const Ou13ChartContent: React.FC<Ou13ChartContentProps> = ({
         const sim = comparePick.half === 1 ? h1 : h2;
         const cur = comparePick.half === 1 ? c1 : c2;
         if (!cur) return [];
-        return uniqueSortedMinutes(sim?.sortedMarketData ?? [], cur.sortedMarketData);
+        return uniqueSortedMinutes(
+            sim?.sortedMarketData ?? [],
+            sim?.ahSortedData ?? [],
+            cur.sortedMarketData,
+            cur.ahSortedData ?? [],
+        );
     }, [comparePick, h1, h2, c1, c2]);
 
     useEffect(() => {

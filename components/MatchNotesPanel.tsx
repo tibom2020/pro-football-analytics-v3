@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { StickyNote, Trash2, Plus } from 'lucide-react';
-import { loadMatchNotes, saveMatchNotes, type MatchNote, type NoteVerdict } from '../services/match-notes';
+import {
+  loadMatchNotes,
+  saveMatchNotes,
+  MATCH_NOTES_UPDATED_EVENT,
+  type MatchNote,
+  type NoteVerdict,
+} from '../services/match-notes';
 
 /** Ô ghi chú nhận định riêng cho từng trận (lưu localStorage + xuất .md, kèm mốc phút/hiệp + YES/NO). */
 export const MatchNotesPanel: React.FC<{
@@ -16,6 +22,16 @@ export const MatchNotesPanel: React.FC<{
   useEffect(() => {
     setNotes(loadMatchNotes(matchId));
     setDraft('');
+  }, [matchId]);
+
+  useEffect(() => {
+    const reload = (e: Event) => {
+      const detail = (e as CustomEvent<{ matchId?: string }>).detail;
+      if (detail?.matchId && detail.matchId !== matchId) return;
+      setNotes(loadMatchNotes(matchId));
+    };
+    window.addEventListener(MATCH_NOTES_UPDATED_EVENT, reload);
+    return () => window.removeEventListener(MATCH_NOTES_UPDATED_EVENT, reload);
   }, [matchId]);
 
   const persist = (next: MatchNote[]) => {

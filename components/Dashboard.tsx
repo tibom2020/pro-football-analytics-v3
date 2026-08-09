@@ -23,7 +23,7 @@ import {
     halfChartDomainMax,
     minuteTicks,
 } from '../services/odds-pressure-series';
-import { ArrowLeft, RefreshCw, Moon, Sun } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Moon, Sun, Eye, EyeOff } from 'lucide-react';
 import { LiveStatsTable } from './LiveStatsTable';
 import { OuLowPriceTable } from './OuLowPriceTable';
 import { Ou13ChartModal } from './Ou13ChartModal';
@@ -77,6 +77,20 @@ import {
     VIEWED_MATCHES_HISTORY_UPDATED_EVENT,
 } from '../services/match-markdown-export';
 import { safeSetItem } from '../services/safe-storage';
+
+/** Preference UI: hiện/ẩn toàn bộ biểu đồ Giá Xỉu trên Dashboard. */
+const SHOW_UNDER_XIU_CHARTS_KEY = 'pfa_show_under_xiu_charts';
+
+function readShowUnderXiuCharts(): boolean {
+    try {
+        const raw = localStorage.getItem(SHOW_UNDER_XIU_CHARTS_KEY);
+        if (raw === '0' || raw === 'false') return false;
+        if (raw === '1' || raw === 'true') return true;
+    } catch {
+        /* ignore */
+    }
+    return true;
+}
 
 function buildOuAlertStatsExtras(match: MatchInfo): {
   statsLines: string[];
@@ -179,6 +193,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
     /** Nến Xỉu 1_6 — mỗi phút giữ giá under cao nhất. */
     const [h1UnderOddsHistory, setH1UnderOddsHistory] = useState<OverUnderMinuteSnapshot[]>([]);
     const [h1HomeOddsHistory, setH1HomeOddsHistory] = useState<AsianHandicapMinuteSnapshot[]>([]);
+    /** Hiện biểu đồ Giá Xỉu (1_3 / 1_6) — lưu localStorage, mặc định hiện. */
+    const [showUnderXiuCharts, setShowUnderXiuCharts] = useState(readShowUnderXiuCharts);
     /** Toast trong app khi có bàn thắng ở trận đang mở. */
     const [goalToast, setGoalToast] = useState<
         { home: string; away: string; score: string; half: 1 | 2; minute: number; scorer?: string } | null
@@ -417,7 +433,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
             minuteRaw !== undefined && minuteRaw !== null && String(minuteRaw) !== ''
                 ? String(minuteRaw)
                 : '—';
-        document.title = `${home} vs ${away} (${minuteLabel}') ${score}`;
+        document.title = `${minuteLabel}' ${home} vs ${away} ${score}`;
         return () => {
             document.title = 'Pro Football Analytics';
         };
@@ -1225,27 +1241,63 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                 />
 
                 {(() => {
-                    const showH1Chart = marketChartDataH1.length > 0 || apiChartDataH1.length > 0;
-                    const showH2Chart =
-                        inSecondHalf && (marketChartDataH2.length > 0 || apiChartDataH2.length > 0);
-                    const showH1UnderChart =
-                        underMarketChartDataH1.length > 0 || apiChartDataH1.length > 0;
+                    const showH1Chart = marketChartDataH1.length > 0;
+                    const showH2Chart = inSecondHalf && marketChartDataH2.length > 0;
+                    const showH1AhChart = homeMarketChartDataH1.length > 0;
+                    const showH2AhChart = inSecondHalf && homeMarketChartDataH2.length > 0;
+                    const showH1UnderChart = showUnderXiuCharts && underMarketChartDataH1.length > 0;
                     const showH2UnderChart =
-                        inSecondHalf && (underMarketChartDataH2.length > 0 || apiChartDataH2.length > 0);
-                    const showH1MarketsChart =
-                        h1MarketsOuChartData.length > 0 || h1MarketsAhChartData.length > 0;
+                        showUnderXiuCharts && inSecondHalf && underMarketChartDataH2.length > 0;
+                    const showH1MarketsChart = h1MarketsOuChartData.length > 0;
+                    const showH1MarketsAhChart = h1MarketsAhChartData.length > 0;
                     const showH1MarketsUnderChart =
-                        h1MarketsUnderChartData.length > 0 || h1MarketsAhChartData.length > 0;
+                        showUnderXiuCharts && h1MarketsUnderChartData.length > 0;
                     return (
                         <div className="space-y-4">
+                            <div className="flex items-center justify-end px-1">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowUnderXiuCharts((prev) => {
+                                            const next = !prev;
+                                            try {
+                                                localStorage.setItem(
+                                                    SHOW_UNDER_XIU_CHARTS_KEY,
+                                                    next ? '1' : '0',
+                                                );
+                                            } catch {
+                                                /* ignore */
+                                            }
+                                            return next;
+                                        });
+                                    }}
+                                    className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${
+                                        showUnderXiuCharts
+                                            ? 'border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300'
+                                            : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300'
+                                    }`}
+                                    title={
+                                        showUnderXiuCharts
+                                            ? 'Ẩn biểu đồ Giá Xỉu'
+                                            : 'Hiện biểu đồ Giá Xỉu'
+                                    }
+                                >
+                                    {showUnderXiuCharts ? (
+                                        <EyeOff className="w-3.5 h-3.5" />
+                                    ) : (
+                                        <Eye className="w-3.5 h-3.5" />
+                                    )}
+                                    {showUnderXiuCharts ? 'Ẩn biểu đồ Xỉu' : 'Hiện biểu đồ Xỉu'}
+                                </button>
+                            </div>
                             <div className="grid gap-4 lg:grid-cols-2">
                                 <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/30 p-1">
                                     <p className="text-[11px] font-bold text-amber-700/90 dark:text-amber-400/90 uppercase tracking-wide px-3 pt-2 pb-1">
-                                        Biểu đồ Hiệp 1 · cả trận (1_3 + 1_2)
+                                        Biểu đồ Hiệp 1 · Tài/Xỉu (1_3)
                                     </p>
                                     {showH1Chart ? (
                                         <MomentumChart
-                                            title="Tài/Xỉu (1_3) + Đội chấp (1_2) & Dòng thời gian API"
+                                            title="Tài/Xỉu (1_3)"
                                             halfSubtitle="Hiệp 1 — gồm bù giờ (trục có thể >45')"
                                             iconColor="text-emerald-500"
                                             chartIdSuffix="ou-h1"
@@ -1253,13 +1305,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                                             xTicks={ticksH1Memo}
                                             marketData={marketChartDataH1}
                                             sortedMarketData={sortedMarketChartDataH1}
-                                            apiChartData={apiChartDataH1}
                                             yAxisConfig={overUnderYAxisConfigH1}
-                                            secondaryMarketData={homeMarketChartDataH1}
-                                            secondarySortedData={sortedHomeMarketChartDataH1}
-                                            secondaryYAxisConfig={homeAwayYAxisConfigH1}
-                                            secondaryLabel="Đội chấp (1_2)"
-                                            secondaryOddsField="chapOdds"
                                             shotEvents={shotEventsH1}
                                             gameEvents={gameEventsH1}
                                             homeTeamName={liveMatch.home.name}
@@ -1273,11 +1319,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                                 </section>
                                 <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/30 p-1">
                                     <p className="text-[11px] font-bold text-sky-700/90 dark:text-sky-400/90 uppercase tracking-wide px-3 pt-2 pb-1">
-                                        Biểu đồ Hiệp 2 · cả trận (1_3 + 1_2)
+                                        Biểu đồ Hiệp 2 · Tài/Xỉu (1_3)
                                     </p>
                                     {showH2Chart ? (
                                         <MomentumChart
-                                            title="Tài/Xỉu (1_3) + Đội chấp (1_2) & Dòng thời gian API"
+                                            title="Tài/Xỉu (1_3)"
                                             halfSubtitle="Hiệp 2 — đồng hồ từ 45'"
                                             iconColor="text-emerald-500"
                                             chartIdSuffix="ou-h2"
@@ -1285,13 +1331,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                                             xTicks={ticksH2Memo}
                                             marketData={marketChartDataH2}
                                             sortedMarketData={sortedMarketChartDataH2}
-                                            apiChartData={apiChartDataH2}
                                             yAxisConfig={overUnderYAxisConfigH2}
-                                            secondaryMarketData={homeMarketChartDataH2}
-                                            secondarySortedData={sortedHomeMarketChartDataH2}
-                                            secondaryYAxisConfig={homeAwayYAxisConfigH2}
-                                            secondaryLabel="Đội chấp (1_2)"
-                                            secondaryOddsField="chapOdds"
                                             shotEvents={shotEventsH2}
                                             gameEvents={gameEventsH2}
                                             homeTeamName={liveMatch.home.name}
@@ -1305,28 +1345,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                                 </section>
                             </div>
                             <div className="grid gap-4 lg:grid-cols-2">
-                                <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/30 p-1">
-                                    <p className="text-[11px] font-bold text-amber-700/90 dark:text-amber-400/90 uppercase tracking-wide px-3 pt-2 pb-1">
-                                        Giá Xỉu Hiệp 1 · cả trận (1_3 + 1_2)
+                                <section className="rounded-xl border border-sky-200 dark:border-sky-900/50 bg-white/50 dark:bg-slate-900/30 p-1">
+                                    <p className="text-[11px] font-bold text-sky-700/90 dark:text-sky-400/90 uppercase tracking-wide px-3 pt-2 pb-1">
+                                        Đội chấp Hiệp 1 · cả trận (1_2)
                                     </p>
-                                    {showH1UnderChart ? (
+                                    {showH1AhChart ? (
                                         <MomentumChart
-                                            title="Giá Xỉu (1_3) + Đội chấp (1_2) & Dòng thời gian API"
-                                            halfSubtitle="Hiệp 1 — gồm bù giờ (trục có thể >45')"
-                                            iconColor="text-rose-500"
-                                            chartIdSuffix="ou-under-h1"
-                                            underXiuMode
+                                            title="Đội chấp (1_2)"
+                                            halfSubtitle="Hiệp 1 — HDP đội chấp · nến = giá chấp"
+                                            iconColor="text-sky-500"
+                                            chartIdSuffix="ah-h1"
+                                            ahChapMode
                                             xDomain={xDomainH1}
                                             xTicks={ticksH1Memo}
-                                            marketData={underMarketChartDataH1}
-                                            sortedMarketData={sortedUnderMarketChartDataH1}
-                                            apiChartData={apiChartDataH1}
-                                            yAxisConfig={overUnderYAxisConfigH1}
-                                            secondaryMarketData={homeMarketChartDataH1}
-                                            secondarySortedData={sortedHomeMarketChartDataH1}
-                                            secondaryYAxisConfig={homeAwayYAxisConfigH1}
+                                            marketData={homeMarketChartDataH1}
+                                            sortedMarketData={sortedHomeMarketChartDataH1}
+                                            yAxisConfig={homeAwayYAxisConfigH1}
                                             secondaryLabel="Đội chấp (1_2)"
-                                            secondaryOddsField="chapOdds"
                                             shotEvents={shotEventsH1}
                                             gameEvents={gameEventsH1}
                                             homeTeamName={liveMatch.home.name}
@@ -1334,32 +1369,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                                         />
                                     ) : (
                                         <div className="flex items-center justify-center h-56 text-xs text-slate-400 dark:text-slate-500">
-                                            Chưa có dữ liệu Xỉu Hiệp 1
+                                            Chưa có dữ liệu chấp Hiệp 1
                                         </div>
                                     )}
                                 </section>
-                                <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/30 p-1">
+                                <section className="rounded-xl border border-sky-200 dark:border-sky-900/50 bg-white/50 dark:bg-slate-900/30 p-1">
                                     <p className="text-[11px] font-bold text-sky-700/90 dark:text-sky-400/90 uppercase tracking-wide px-3 pt-2 pb-1">
-                                        Giá Xỉu Hiệp 2 · cả trận (1_3 + 1_2)
+                                        Đội chấp Hiệp 2 · cả trận (1_2)
                                     </p>
-                                    {showH2UnderChart ? (
+                                    {showH2AhChart ? (
                                         <MomentumChart
-                                            title="Giá Xỉu (1_3) + Đội chấp (1_2) & Dòng thời gian API"
-                                            halfSubtitle="Hiệp 2 — đồng hồ từ 45'"
-                                            iconColor="text-rose-500"
-                                            chartIdSuffix="ou-under-h2"
-                                            underXiuMode
+                                            title="Đội chấp (1_2)"
+                                            halfSubtitle="Hiệp 2 — HDP đội chấp · nến = giá chấp"
+                                            iconColor="text-sky-500"
+                                            chartIdSuffix="ah-h2"
+                                            ahChapMode
                                             xDomain={xDomainH2}
                                             xTicks={ticksH2Memo}
-                                            marketData={underMarketChartDataH2}
-                                            sortedMarketData={sortedUnderMarketChartDataH2}
-                                            apiChartData={apiChartDataH2}
-                                            yAxisConfig={overUnderYAxisConfigH2}
-                                            secondaryMarketData={homeMarketChartDataH2}
-                                            secondarySortedData={sortedHomeMarketChartDataH2}
-                                            secondaryYAxisConfig={homeAwayYAxisConfigH2}
+                                            marketData={homeMarketChartDataH2}
+                                            sortedMarketData={sortedHomeMarketChartDataH2}
+                                            yAxisConfig={homeAwayYAxisConfigH2}
                                             secondaryLabel="Đội chấp (1_2)"
-                                            secondaryOddsField="chapOdds"
                                             shotEvents={shotEventsH2}
                                             gameEvents={gameEventsH2}
                                             homeTeamName={liveMatch.home.name}
@@ -1367,33 +1397,89 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                                         />
                                     ) : (
                                         <div className="flex items-center justify-center h-56 text-xs text-slate-400 dark:text-slate-500">
-                                            {inSecondHalf ? 'Chưa có dữ liệu Xỉu Hiệp 2' : 'Hiệp 2 chưa bắt đầu'}
+                                            {inSecondHalf
+                                                ? 'Chưa có dữ liệu chấp Hiệp 2'
+                                                : 'Hiệp 2 chưa bắt đầu'}
                                         </div>
                                     )}
                                 </section>
                             </div>
+                            {showUnderXiuCharts ? (
+                                <div className="grid gap-4 lg:grid-cols-2">
+                                    <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/30 p-1">
+                                        <p className="text-[11px] font-bold text-amber-700/90 dark:text-amber-400/90 uppercase tracking-wide px-3 pt-2 pb-1">
+                                            Giá Xỉu Hiệp 1 · cả trận (1_3)
+                                        </p>
+                                        {showH1UnderChart ? (
+                                            <MomentumChart
+                                                title="Giá Xỉu (1_3)"
+                                                halfSubtitle="Hiệp 1 — gồm bù giờ (trục có thể >45')"
+                                                iconColor="text-rose-500"
+                                                chartIdSuffix="ou-under-h1"
+                                                underXiuMode
+                                                xDomain={xDomainH1}
+                                                xTicks={ticksH1Memo}
+                                                marketData={underMarketChartDataH1}
+                                                sortedMarketData={sortedUnderMarketChartDataH1}
+                                                yAxisConfig={overUnderYAxisConfigH1}
+                                                shotEvents={shotEventsH1}
+                                                gameEvents={gameEventsH1}
+                                                homeTeamName={liveMatch.home.name}
+                                                awayTeamName={liveMatch.away.name}
+                                            />
+                                        ) : (
+                                            <div className="flex items-center justify-center h-56 text-xs text-slate-400 dark:text-slate-500">
+                                                Chưa có dữ liệu Xỉu Hiệp 1
+                                            </div>
+                                        )}
+                                    </section>
+                                    <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/30 p-1">
+                                        <p className="text-[11px] font-bold text-sky-700/90 dark:text-sky-400/90 uppercase tracking-wide px-3 pt-2 pb-1">
+                                            Giá Xỉu Hiệp 2 · cả trận (1_3)
+                                        </p>
+                                        {showH2UnderChart ? (
+                                            <MomentumChart
+                                                title="Giá Xỉu (1_3)"
+                                                halfSubtitle="Hiệp 2 — đồng hồ từ 45'"
+                                                iconColor="text-rose-500"
+                                                chartIdSuffix="ou-under-h2"
+                                                underXiuMode
+                                                xDomain={xDomainH2}
+                                                xTicks={ticksH2Memo}
+                                                marketData={underMarketChartDataH2}
+                                                sortedMarketData={sortedUnderMarketChartDataH2}
+                                                yAxisConfig={overUnderYAxisConfigH2}
+                                                shotEvents={shotEventsH2}
+                                                gameEvents={gameEventsH2}
+                                                homeTeamName={liveMatch.home.name}
+                                                awayTeamName={liveMatch.away.name}
+                                            />
+                                        ) : (
+                                            <div className="flex items-center justify-center h-56 text-xs text-slate-400 dark:text-slate-500">
+                                                {inSecondHalf
+                                                    ? 'Chưa có dữ liệu Xỉu Hiệp 2'
+                                                    : 'Hiệp 2 chưa bắt đầu'}
+                                            </div>
+                                        )}
+                                    </section>
+                                </div>
+                            ) : null}
                             <div className="grid gap-4 lg:grid-cols-2">
                                 <section className="rounded-xl border border-violet-200 dark:border-violet-900/50 bg-white/50 dark:bg-slate-900/30 p-1">
                                     <p className="text-[11px] font-bold text-violet-700/90 dark:text-violet-400/90 uppercase tracking-wide px-3 pt-2 pb-1">
-                                        Biểu đồ kèo Hiệp 1 (1_6 + 1_5)
+                                        Biểu đồ kèo Hiệp 1 · Tài/Xỉu (1_6)
                                     </p>
                                     {showH1MarketsChart ? (
                                         <MomentumChart
-                                            title="Tài/Xỉu H1 (1_6) + Đội chấp H1 (1_5) & Dòng thời gian API"
-                                            halfSubtitle="Kèo riêng hiệp 1 — không phải slice 1_3/1_2"
+                                            title="Tài/Xỉu H1 (1_6)"
+                                            halfSubtitle="Kèo riêng hiệp 1 — không phải slice 1_3"
                                             iconColor="text-violet-500"
                                             chartIdSuffix="ou-h1-markets"
                                             xDomain={xDomainH1}
                                             xTicks={ticksH1Memo}
                                             marketData={h1MarketsOuChartData}
                                             sortedMarketData={sortedH1MarketsOuChartData}
-                                            apiChartData={apiChartDataH1}
                                             yAxisConfig={h1MarketsOuYAxisConfig}
-                                            secondaryMarketData={h1MarketsAhChartData}
-                                            secondarySortedData={sortedH1MarketsAhChartData}
-                                            secondaryYAxisConfig={h1MarketsAhYAxisConfig}
-                                            secondaryLabel="Đội chấp H1 (1_5)"
-                                            secondaryOddsField="chapOdds"
                                             shotEvents={shotEventsH1}
                                             gameEvents={gameEventsH1}
                                             homeTeamName={liveMatch.home.name}
@@ -1401,32 +1487,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                                         />
                                     ) : (
                                         <div className="flex items-center justify-center h-56 text-xs text-slate-400 dark:text-slate-500">
-                                            Chưa có dữ liệu kèo H1 (1_6 / 1_5)
+                                            Chưa có dữ liệu kèo H1 (1_6)
                                         </div>
                                     )}
                                 </section>
                                 <section className="rounded-xl border border-violet-200 dark:border-violet-900/50 bg-white/50 dark:bg-slate-900/30 p-1">
                                     <p className="text-[11px] font-bold text-violet-700/90 dark:text-violet-400/90 uppercase tracking-wide px-3 pt-2 pb-1">
-                                        Giá Xỉu kèo Hiệp 1 (1_6 + 1_5)
+                                        Đội chấp Hiệp 1 (1_5)
                                     </p>
-                                    {showH1MarketsUnderChart ? (
+                                    {showH1MarketsAhChart ? (
                                         <MomentumChart
-                                            title="Giá Xỉu H1 (1_6) + Đội chấp H1 (1_5) & Dòng thời gian API"
-                                            halfSubtitle="Kèo riêng hiệp 1 — không phải slice 1_3/1_2"
-                                            iconColor="text-rose-500"
-                                            chartIdSuffix="ou-under-h1-markets"
-                                            underXiuMode
+                                            title="Đội chấp H1 (1_5)"
+                                            halfSubtitle="Kèo riêng hiệp 1 — HDP đội chấp · nến = giá chấp"
+                                            iconColor="text-violet-500"
+                                            chartIdSuffix="ah-h1-markets"
+                                            ahChapMode
                                             xDomain={xDomainH1}
                                             xTicks={ticksH1Memo}
-                                            marketData={h1MarketsUnderChartData}
-                                            sortedMarketData={sortedH1MarketsUnderChartData}
-                                            apiChartData={apiChartDataH1}
-                                            yAxisConfig={h1MarketsOuYAxisConfig}
-                                            secondaryMarketData={h1MarketsAhChartData}
-                                            secondarySortedData={sortedH1MarketsAhChartData}
-                                            secondaryYAxisConfig={h1MarketsAhYAxisConfig}
+                                            marketData={h1MarketsAhChartData}
+                                            sortedMarketData={sortedH1MarketsAhChartData}
+                                            yAxisConfig={h1MarketsAhYAxisConfig}
                                             secondaryLabel="Đội chấp H1 (1_5)"
-                                            secondaryOddsField="chapOdds"
                                             shotEvents={shotEventsH1}
                                             gameEvents={gameEventsH1}
                                             homeTeamName={liveMatch.home.name}
@@ -1434,11 +1515,42 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                                         />
                                     ) : (
                                         <div className="flex items-center justify-center h-56 text-xs text-slate-400 dark:text-slate-500">
-                                            Chưa có dữ liệu Xỉu H1 (1_6 / 1_5)
+                                            Chưa có dữ liệu chấp H1 (1_5)
                                         </div>
                                     )}
                                 </section>
                             </div>
+                            {showUnderXiuCharts ? (
+                                <div className="grid gap-4 lg:grid-cols-2">
+                                    <section className="rounded-xl border border-violet-200 dark:border-violet-900/50 bg-white/50 dark:bg-slate-900/30 p-1">
+                                        <p className="text-[11px] font-bold text-violet-700/90 dark:text-violet-400/90 uppercase tracking-wide px-3 pt-2 pb-1">
+                                            Giá Xỉu kèo Hiệp 1 (1_6)
+                                        </p>
+                                        {showH1MarketsUnderChart ? (
+                                            <MomentumChart
+                                                title="Giá Xỉu H1 (1_6)"
+                                                halfSubtitle="Kèo riêng hiệp 1 — không phải slice 1_3"
+                                                iconColor="text-rose-500"
+                                                chartIdSuffix="ou-under-h1-markets"
+                                                underXiuMode
+                                                xDomain={xDomainH1}
+                                                xTicks={ticksH1Memo}
+                                                marketData={h1MarketsUnderChartData}
+                                                sortedMarketData={sortedH1MarketsUnderChartData}
+                                                yAxisConfig={h1MarketsOuYAxisConfig}
+                                                shotEvents={shotEventsH1}
+                                                gameEvents={gameEventsH1}
+                                                homeTeamName={liveMatch.home.name}
+                                                awayTeamName={liveMatch.away.name}
+                                            />
+                                        ) : (
+                                            <div className="flex items-center justify-center h-56 text-xs text-slate-400 dark:text-slate-500">
+                                                Chưa có dữ liệu Xỉu H1 (1_6)
+                                            </div>
+                                        )}
+                                    </section>
+                                </div>
+                            ) : null}
                         </div>
                     );
                 })()}
