@@ -184,3 +184,55 @@ export function dedupeSnapshotsByHalfAndMinute<
     return a.minute - b.minute;
   });
 }
+
+type HalfMinuteDedupeFn<T extends { minute: number; half: MatchHalf }> = (rows: T[]) => T[];
+
+/** Giữ mọi dòng (không gộp) — dùng cho tick series / trước khi chọn cực trị theo phút. */
+export function keepAllHalfMinuteRows<T extends { minute: number; half: MatchHalf }>(rows: T[]): T[] {
+  return rows;
+}
+
+/**
+ * `tt` báo hiệp 2: tách phút &lt;45 (H1) vs ≥45 (H2).
+ * Khi đang H2 (tt≥2): phút ≥45 → H2 (đồng hồ liên tục đầu hiệp 2), không giữ 45–49 trên H1.
+ * Chỉ khi tt vẫn =1 mới coi 45–49 là bù H1.
+ */
+export function splitHalfByMinuteWhenSecondHalfTimer<
+  T extends { minute: number; half: MatchHalf },
+>(
+  rows: T[],
+  matchTimer: MatchInfo['timer'] | undefined,
+  dedupeFn: HalfMinuteDedupeFn<T> = dedupeSnapshotsByHalfAndMinute,
+): T[] {
+  if (!matchTimer || !isSecondHalfTimer(matchTimer) || rows.length === 0) return rows;
+
+  return dedupeFn(
+    rows.map((r) => ({
+      ...r,
+      half: (r.minute < 45 ? 1 : 2) as MatchHalf,
+    })),
+  );
+}
+
+/**
+ * Feed giữ `tt=1` trong H2 + đồng hồ liên tục không lùi: gán half theo phút khi `tm` đã &gt; mốc bù H1 thông thường.
+ */
+export function splitHalfByMinuteWhenClockInSecondHalfButTTWrong<
+  T extends { minute: number; half: MatchHalf },
+>(
+  rows: T[],
+  matchTimer: MatchInfo['timer'] | undefined,
+  dedupeFn: HalfMinuteDedupeFn<T> = dedupeSnapshotsByHalfAndMinute,
+): T[] {
+  if (!matchTimer || rows.length === 0) return rows;
+  const tm = matchTimer.tm;
+  if (typeof tm !== 'number' || !Number.isFinite(tm) || tm < H1_STOPPAGE_CLOCK_END) return rows;
+  if (isSecondHalfTimer(matchTimer)) return rows;
+  if (!rows.some((r) => r.half === 1 && r.minute >= 46)) return rows;
+  return dedupeFn(
+    rows.map((r) => ({
+      ...r,
+      half: (r.minute < 45 ? 1 : 2) as MatchHalf,
+    })),
+  );
+}

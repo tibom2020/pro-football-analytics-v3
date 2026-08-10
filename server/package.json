@@ -9,7 +9,8 @@
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
-    "extract-goal-data": "tsx src/scripts/extract-goal-dataset.ts"
+    "extract-goal-data": "tsx src/scripts/extract-goal-dataset.ts",
+    "report": "tsx src/scripts/report-match-v2.ts"
   },
   "dependencies": {
     "@copilotkit/runtime": "^1.57.1",

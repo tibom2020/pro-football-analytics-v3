@@ -120,6 +120,18 @@ export const config = {
         (!!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && !!process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY)),
   },
 
+  /**
+   * Thu thập trận v2 — nguồn sự thật dưới `data/v2/<UTC-day>/<matchId>/`.
+   * Bước 1: chỉ odds.jsonl + poll_log.jsonl (chu kỳ 60s).
+   */
+  matchV2: {
+    /** Absolute hoặc relative tới REPO_ROOT. Mặc định `data/v2`. */
+    dataDir: process.env.MATCH_V2_DATA_DIR || 'data/v2',
+    /** Chu kỳ gọi lịch sử odds. Không tự giảm khi truncation — chỉ báo. */
+    pollIntervalMs: parseInt(process.env.MATCH_V2_POLL_INTERVAL_MS || '60000', 10),
+    enabled: process.env.FEATURE_MATCH_V2 !== 'false',
+  },
+
   features: {
     aiEvaluation: process.env.FEATURE_AI_EVALUATION !== 'false',
     oddsMonitor: process.env.FEATURE_ODDS_MONITOR !== 'false',

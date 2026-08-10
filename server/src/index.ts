@@ -10,12 +10,14 @@ import { similarMatchesRouter } from './routes/similar-matches.js';
 import { createHistorySaveRouter } from './routes/history-save.js';
 import { createHermesBridgeRouter } from './routes/hermes-bridge.js';
 import { createOuLineDropAlertRouter } from './routes/ou-line-drop-alert.js';
+import { createMatchV2Router } from './routes/match-v2.js';
 import { createTelegramRouter } from './routes/telegram.js';
 import { TelegramSender } from './notification-service/telegram-sender.js';
 import { restoreTelegramBindings } from './data/telegram-persistence.js';
 import { initLiteTelegramBot } from './telegram/lite-bot.js';
 import { rateLimit } from './middleware/rate-limit.js';
 import { loadRagStore, ragStats } from './goal-predict/rag-store.js';
+import { matchV2Registry } from './match-v2/registry.js';
 
 export { logger } from './logger.js';
 
@@ -72,11 +74,19 @@ app.use('/api/history', createHistorySaveRouter());
 app.use('/api/hermes', createHermesBridgeRouter());
 app.use('/api/telegram', createTelegramRouter(telegramSender));
 app.use('/api/alerts', createOuLineDropAlertRouter(telegramSender));
+if (config.matchV2.enabled) {
+  app.use('/api/match-v2', createMatchV2Router());
+}
 
 app.listen(config.port, () => {
   logger.info(`Pro Football AI server v3 (lite) on port ${config.port}`);
   logger.info(`RAG dataset: ${config.goalPredict.datasetPath}`);
   logger.info(`RAG History: ${config.goalPredict.historyDir}`);
+  if (config.matchV2.enabled) {
+    logger.info(
+      `Match v2 capture: ${matchV2Registry.root} (poll ${config.matchV2.pollIntervalMs}ms)`,
+    );
+  }
   logger.info(
     `OU line-drop alert: Tài ≤ ${config.alerts.ouLineDropPriceMax} (1_3/1_6 hạ line)`,
   );
@@ -90,7 +100,7 @@ app.listen(config.port, () => {
 
 function shutdown(signal: string): void {
   logger.info(`${signal} received. Shutting down...`);
-  process.exit(0);
+  void matchV2Registry.stopAll().finally(() => process.exit(0));
 }
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));

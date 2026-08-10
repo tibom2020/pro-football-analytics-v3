@@ -1,10 +1,20 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { MatchInfo, ProcessedStats, OverUnderMinuteSnapshot, AsianHandicapMinuteSnapshot } from '../types';
 import { parseStats, getMatchDetails, getMatchOdds } from '../services/api';
+import { normalizeRawTicks, type Tick } from '../services/odds-tick-series';
+import {
+    oddsItemsToRawTicks,
+    mergeRawTicksById,
+    buildMinuteAggs,
+    filterTicksByHalf,
+} from '../services/odds-tick-chart-data';
+import { fetchMatchV2OddsTicks } from '../services/match-v2-odds-api';
+import { useMatchV2AutoCapture } from '../hooks/useMatchV2AutoCapture';
 import {
     normalizeOverUnderSnapshots,
     normalizeAsianHandicapSnapshots,
     mergeOuSnapshotsKeepLowestOver,
+    mergeOuSnapshotsKeepHighestOver,
     mergeOuSnapshotsKeepHighestUnder,
 } from '../services/oddsNormalize';
 import {
@@ -54,6 +64,7 @@ import {
 } from '../services/pinned-ai-analysis-store';
 import { calculateAPIScore } from '../services/traditionalFactors';
 import { MomentumChart } from './MomentumChart';
+import { OddsTickVolatilityChart } from './OddsTickVolatilityChart';
 import { MatchNotesPanel } from './MatchNotesPanel';
 import { ensureGoalNotifyPermission, notifyGoal } from '../services/goal-notify';
 import {
@@ -73,6 +84,8 @@ import {
     OU_H1_KEY,
     OU_UNDER_KEY,
     OU_UNDER_H1_KEY,
+    OU_HIGH_OVER_KEY,
+    OU_HIGH_OVER_H1_KEY,
     AH_H1_KEY,
     VIEWED_MATCHES_HISTORY_UPDATED_EVENT,
 } from '../services/match-markdown-export';
@@ -80,10 +93,23 @@ import { safeSetItem } from '../services/safe-storage';
 
 /** Preference UI: hiện/ẩn toàn bộ biểu đồ Giá Xỉu trên Dashboard. */
 const SHOW_UNDER_XIU_CHARTS_KEY = 'pfa_show_under_xiu_charts';
+/** Preference UI: hiện/ẩn biểu đồ biến động tick (Phase 3) — không thay chart cũ. */
+const SHOW_TICK_VOLATILITY_KEY = 'pfa_show_tick_volatility_chart';
 
 function readShowUnderXiuCharts(): boolean {
     try {
         const raw = localStorage.getItem(SHOW_UNDER_XIU_CHARTS_KEY);
+        if (raw === '0' || raw === 'false') return false;
+        if (raw === '1' || raw === 'true') return true;
+    } catch {
+        /* ignore */
+    }
+    return true;
+}
+
+function readShowTickVolatility(): boolean {
+    try {
+        const raw = localStorage.getItem(SHOW_TICK_VOLATILITY_KEY);
         if (raw === '0' || raw === 'false') return false;
         if (raw === '1' || raw === 'true') return true;
     } catch {
@@ -183,18 +209,46 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, theme = 'dark', onToggleTheme }) => {
     const AUTO_REFRESH_INTERVAL_MS = 15_000;
     const [liveMatch, setLiveMatch] = useState<MatchInfo>(() => ({ ...match, id: String(match.id) }));
+
+    /** Mở tab trận → server tự thu data/v2; đóng tab → stop. */
+    const matchV2Capture = useMatchV2AutoCapture({
+        matchId: String(match.id),
+        home: match.home?.name,
+        away: match.away?.name,
+        league: match.league?.name,
+        b365Token: token,
+    });
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [oddsHistory, setOddsHistory] = useState<OverUnderMinuteSnapshot[]>([]);
+    /** Nến Tài 1_3 — mỗi phút giữ giá over cao nhất (tách khỏi lịch sử Tài đáy). */
+    const [highOverOddsHistory, setHighOverOddsHistory] = useState<OverUnderMinuteSnapshot[]>([]);
     /** Nến Xỉu 1_3 — mỗi phút giữ giá under cao nhất (tách khỏi lịch sử Tài). */
     const [underOddsHistory, setUnderOddsHistory] = useState<OverUnderMinuteSnapshot[]>([]);
     const [homeOddsHistory, setHomeOddsHistory] = useState<AsianHandicapMinuteSnapshot[]>([]);
     /** Kèo hiệp 1: T/X H1 (1_6) + chấp Đội nhà H1 (1_5) — thường ngừng cập nhật sau giờ nghỉ. */
     const [h1OuOddsHistory, setH1OuOddsHistory] = useState<OverUnderMinuteSnapshot[]>([]);
+    /** Nến Tài 1_6 — mỗi phút giữ giá over cao nhất. */
+    const [h1HighOverOddsHistory, setH1HighOverOddsHistory] = useState<OverUnderMinuteSnapshot[]>([]);
     /** Nến Xỉu 1_6 — mỗi phút giữ giá under cao nhất. */
     const [h1UnderOddsHistory, setH1UnderOddsHistory] = useState<OverUnderMinuteSnapshot[]>([]);
     const [h1HomeOddsHistory, setH1HomeOddsHistory] = useState<AsianHandicapMinuteSnapshot[]>([]);
     /** Hiện biểu đồ Giá Xỉu (1_3 / 1_6) — lưu localStorage, mặc định hiện. */
     const [showUnderXiuCharts, setShowUnderXiuCharts] = useState(readShowUnderXiuCharts);
+    /** Biểu đồ biến động tick (thêm mới) — mặc định hiện. */
+    const [showTickVolatility, setShowTickVolatility] = useState(readShowTickVolatility);
+    const [tickVolMarket, setTickVolMarket] = useState<'ou' | 'ah'>('ou');
+    const [ouTickSeries, setOuTickSeries] = useState<{ inPlay: Tick[]; prematch: Tick[] }>({
+        inPlay: [],
+        prematch: [],
+    });
+    const [h1OuTickSeries, setH1OuTickSeries] = useState<{ inPlay: Tick[]; prematch: Tick[] }>({
+        inPlay: [],
+        prematch: [],
+    });
+    const [ahTickSeries, setAhTickSeries] = useState<{ inPlay: Tick[]; prematch: Tick[] }>({
+        inPlay: [],
+        prematch: [],
+    });
     /** Toast trong app khi có bàn thắng ở trận đang mở. */
     const [goalToast, setGoalToast] = useState<
         { home: string; away: string; score: string; half: 1 | 2; minute: number; scorer?: string } | null
@@ -496,9 +550,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
         });
         setGameEvents(dedupeGoalMarkersByHalfMinute(hydratedGe));
         setH1OuOddsHistory(safeParse<OverUnderMinuteSnapshot[]>(localStorage.getItem(OU_H1_KEY(match.id)), []));
+        setH1HighOverOddsHistory(
+            safeParse<OverUnderMinuteSnapshot[]>(localStorage.getItem(OU_HIGH_OVER_H1_KEY(match.id)), []),
+        );
         setH1UnderOddsHistory(safeParse<OverUnderMinuteSnapshot[]>(localStorage.getItem(OU_UNDER_H1_KEY(match.id)), []));
         setH1HomeOddsHistory(safeParse<AsianHandicapMinuteSnapshot[]>(localStorage.getItem(AH_H1_KEY(match.id)), []));
         setOddsHistory(safeParse<OverUnderMinuteSnapshot[]>(localStorage.getItem(OU_KEY(match.id)), []));
+        setHighOverOddsHistory(
+            safeParse<OverUnderMinuteSnapshot[]>(localStorage.getItem(OU_HIGH_OVER_KEY(match.id)), []),
+        );
         setUnderOddsHistory(safeParse<OverUnderMinuteSnapshot[]>(localStorage.getItem(OU_UNDER_KEY(match.id)), []));
         setHomeOddsHistory(safeParse<AsianHandicapMinuteSnapshot[]>(localStorage.getItem(AH_KEY(match.id)), []));
         setGoalToast(null);
@@ -506,6 +566,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
         maxCornersSeen.current = null;
         prevHomeScore.current = null;
         prevAwayScore.current = null;
+        setOuTickSeries({ inPlay: [], prematch: [] });
+        setH1OuTickSeries({ inPlay: [], prematch: [] });
+        setAhTickSeries({ inPlay: [], prematch: [] });
     }, [match.id]);
 
     useEffect(() => {
@@ -543,6 +606,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
     }, [oddsHistory, match.id]);
 
     useEffect(() => {
+        if (highOverOddsHistory.length > 0) {
+            safeSetItem(OU_HIGH_OVER_KEY(match.id), JSON.stringify(highOverOddsHistory), {
+                keepMatchId: match.id,
+            });
+        }
+    }, [highOverOddsHistory, match.id]);
+
+    useEffect(() => {
         if (underOddsHistory.length > 0) {
             safeSetItem(OU_UNDER_KEY(match.id), JSON.stringify(underOddsHistory), { keepMatchId: match.id });
         }
@@ -559,6 +630,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
             safeSetItem(OU_H1_KEY(match.id), JSON.stringify(h1OuOddsHistory), { keepMatchId: match.id });
         }
     }, [h1OuOddsHistory, match.id]);
+
+    useEffect(() => {
+        if (h1HighOverOddsHistory.length > 0) {
+            safeSetItem(OU_HIGH_OVER_H1_KEY(match.id), JSON.stringify(h1HighOverOddsHistory), {
+                keepMatchId: match.id,
+            });
+        }
+    }, [h1HighOverOddsHistory, match.id]);
 
     useEffect(() => {
         if (h1UnderOddsHistory.length > 0) {
@@ -586,6 +665,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
         [marketChartData],
     );
     const marketChartDataH2 = useMemo(() => marketChartData.filter((p) => p.half === 2), [marketChartData]);
+
+    /** Biên độ + số đổi giá / phút — gắn dưới nến Tài thấp nhất 1_3 / 1_6.
+     * Gán lại half giống nến (applyHalfFromMinute) để H2 đồng hồ liên tục không mất strip. */
+    const ouTicksForHalfCharts = useMemo(
+        () => applyHalfFromMinuteForFullMatchOdds(ouTickSeries.inPlay, inSecondHalf),
+        [ouTickSeries.inPlay, inSecondHalf],
+    );
+    const ahTicksForHalfCharts = useMemo(
+        () => applyHalfFromMinuteForFullMatchOdds(ahTickSeries.inPlay, inSecondHalf),
+        [ahTickSeries.inPlay, inSecondHalf],
+    );
+    const ouMinuteAggsH1 = useMemo(
+        () => buildMinuteAggs(filterTicksByHalf(ouTicksForHalfCharts, 1)),
+        [ouTicksForHalfCharts],
+    );
+    const ouMinuteAggsH2 = useMemo(
+        () => buildMinuteAggs(filterTicksByHalf(ouTicksForHalfCharts, 2)),
+        [ouTicksForHalfCharts],
+    );
+    const h1OuMinuteAggs = useMemo(
+        () => buildMinuteAggs(filterTicksByHalf(h1OuTickSeries.inPlay, 1)),
+        [h1OuTickSeries.inPlay],
+    );
+
     const homeMarketChartDataH1 = useMemo(
         () => homeMarketChartData.filter((p) => (p.half ?? 1) === 1),
         [homeMarketChartData],
@@ -603,6 +706,33 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
         () => [...marketChartDataH2].sort((a, b) => a.minute - b.minute),
         [marketChartDataH2],
     );
+
+    /** Giá Tài 1_3 — mỗi phút over cao nhất; cùng half-split với Tài đáy. */
+    const highOverMarketChartData = useMemo(
+        () =>
+            applyHalfFromMinuteForFullMatchOdds(
+                colorOddsSeriesForPressure(highOverOddsHistory),
+                inSecondHalf,
+            ),
+        [highOverOddsHistory, inSecondHalf],
+    );
+    const highOverMarketChartDataH1 = useMemo(
+        () => highOverMarketChartData.filter((p) => (p.half ?? 1) === 1),
+        [highOverMarketChartData],
+    );
+    const highOverMarketChartDataH2 = useMemo(
+        () => highOverMarketChartData.filter((p) => p.half === 2),
+        [highOverMarketChartData],
+    );
+    const sortedHighOverMarketChartDataH1 = useMemo(
+        () => [...highOverMarketChartDataH1].sort((a, b) => a.minute - b.minute),
+        [highOverMarketChartDataH1],
+    );
+    const sortedHighOverMarketChartDataH2 = useMemo(
+        () => [...highOverMarketChartDataH2].sort((a, b) => a.minute - b.minute),
+        [highOverMarketChartDataH2],
+    );
+
     const sortedHomeMarketChartDataH1 = useMemo(
         () => [...homeMarketChartDataH1].sort((a, b) => a.minute - b.minute),
         [homeMarketChartDataH1],
@@ -639,6 +769,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
         () => colorOddsSeriesForPressure(h1OuOddsHistory),
         [h1OuOddsHistory],
     );
+    const h1MarketsHighOverChartData = useMemo(
+        () => colorOddsSeriesForPressure(h1HighOverOddsHistory),
+        [h1HighOverOddsHistory],
+    );
     const h1MarketsUnderChartData = useMemo(
         () => colorOddsSeriesForUnderXiu(h1UnderOddsHistory),
         [h1UnderOddsHistory],
@@ -650,6 +784,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
     const sortedH1MarketsOuChartData = useMemo(
         () => [...h1MarketsOuChartData].sort((a, b) => a.minute - b.minute),
         [h1MarketsOuChartData],
+    );
+    const sortedH1MarketsHighOverChartData = useMemo(
+        () => [...h1MarketsHighOverChartData].sort((a, b) => a.minute - b.minute),
+        [h1MarketsHighOverChartData],
     );
     const sortedH1MarketsUnderChartData = useMemo(
         () => [...h1MarketsUnderChartData].sort((a, b) => a.minute - b.minute),
@@ -823,6 +961,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
         () => calculateYAxisConfig(marketChartDataH2, 0.5),
         [marketChartDataH2, calculateYAxisConfig],
     );
+    const highOverYAxisConfigH1 = useMemo(
+        () => calculateYAxisConfig(highOverMarketChartDataH1, 0.5),
+        [highOverMarketChartDataH1, calculateYAxisConfig],
+    );
+    const highOverYAxisConfigH2 = useMemo(
+        () => calculateYAxisConfig(highOverMarketChartDataH2, 0.5),
+        [highOverMarketChartDataH2, calculateYAxisConfig],
+    );
     const homeAwayYAxisConfigH1 = useMemo(
         () => calculateAhChapYAxisConfig(homeMarketChartDataH1, homeMarketChartData),
         [homeMarketChartDataH1, homeMarketChartData],
@@ -834,6 +980,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
     const h1MarketsOuYAxisConfig = useMemo(
         () => calculateYAxisConfig(h1MarketsOuChartData, 0.5),
         [h1MarketsOuChartData, calculateYAxisConfig],
+    );
+    const h1MarketsHighOverYAxisConfig = useMemo(
+        () => calculateYAxisConfig(h1MarketsHighOverChartData, 0.5),
+        [h1MarketsHighOverChartData, calculateYAxisConfig],
     );
     const h1MarketsAhYAxisConfig = useMemo(
         () => calculateAhChapYAxisConfig(h1MarketsAhChartData, h1MarketsAhChartData),
@@ -854,6 +1004,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
             if (odds?.results?.odds) {
                 const o = odds.results.odds;
                 normalizedOu = normalizeOverUnderSnapshots(o['1_3'], '1_3', { matchTimer: timerForOdds });
+                const normalizedOuHighOver = normalizeOverUnderSnapshots(o['1_3'], '1_3', {
+                    matchTimer: timerForOdds,
+                    minutePick: 'highestOver',
+                });
                 const normalizedOuUnder = normalizeOverUnderSnapshots(o['1_3'], '1_3', {
                     matchTimer: timerForOdds,
                     minutePick: 'highestUnder',
@@ -861,12 +1015,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                 normalizedAh = normalizeAsianHandicapSnapshots(o['1_2'], '1_2', { matchTimer: timerForOdds });
                 // Giữ giá Tài thấp nhất từng thấy theo phút — fetch sau không ghi đè nến bằng giá cao hơn.
                 setOddsHistory((prev) => mergeOuSnapshotsKeepLowestOver(prev, normalizedOu));
+                // Nến Tài peak: mỗi phút giữ giá over cao nhất từng thấy.
+                setHighOverOddsHistory((prev) => mergeOuSnapshotsKeepHighestOver(prev, normalizedOuHighOver));
                 // Nến Xỉu: mỗi phút giữ giá under cao nhất từng thấy.
                 setUnderOddsHistory((prev) => mergeOuSnapshotsKeepHighestUnder(prev, normalizedOuUnder));
                 setHomeOddsHistory(normalizedAh);
                 // Kèo hiệp 1 (1_6 T/X H1, 1_5 chấp H1): feed thường ngừng trả sau giờ nghỉ →
                 // chỉ ghi đè khi có dữ liệu mới, giữ giá trị H1 cuối cùng xuyên suốt H2.
                 normalizedH1Ou = normalizeOverUnderSnapshots(o['1_6'], '1_6', { matchTimer: timerForOdds });
+                const normalizedH1OuHighOver = normalizeOverUnderSnapshots(o['1_6'], '1_6', {
+                    matchTimer: timerForOdds,
+                    minutePick: 'highestOver',
+                });
                 const normalizedH1OuUnder = normalizeOverUnderSnapshots(o['1_6'], '1_6', {
                     matchTimer: timerForOdds,
                     minutePick: 'highestUnder',
@@ -875,10 +1035,44 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                 if (normalizedH1Ou.length > 0) {
                     setH1OuOddsHistory((prev) => mergeOuSnapshotsKeepLowestOver(prev, normalizedH1Ou));
                 }
+                if (normalizedH1OuHighOver.length > 0) {
+                    setH1HighOverOddsHistory((prev) =>
+                        mergeOuSnapshotsKeepHighestOver(prev, normalizedH1OuHighOver),
+                    );
+                }
                 if (normalizedH1OuUnder.length > 0) {
                     setH1UnderOddsHistory((prev) => mergeOuSnapshotsKeepHighestUnder(prev, normalizedH1OuUnder));
                 }
                 if (normalizedH1Ah.length > 0) setH1HomeOddsHistory(normalizedH1Ah);
+
+                // Tick volatility + biên độ/phút: gộp live OddsItem + odds.jsonl match-v2 nếu có.
+                const ss = details?.ss ?? liveMatchRef.current.ss ?? null;
+                const liveOu = oddsItemsToRawTicks(o['1_3'], '1_3', ss);
+                const liveH1Ou = oddsItemsToRawTicks(o['1_6'], '1_6', ss);
+                const liveAh = oddsItemsToRawTicks(o['1_2'], '1_2', ss);
+                const [v2Ou, v2H1Ou, v2Ah] = await Promise.all([
+                    fetchMatchV2OddsTicks(liveMatch.id, '1_3'),
+                    fetchMatchV2OddsTicks(liveMatch.id, '1_6'),
+                    fetchMatchV2OddsTicks(liveMatch.id, '1_2'),
+                ]);
+                setOuTickSeries(
+                    normalizeRawTicks(mergeRawTicksById(v2Ou, liveOu), 'ou', {
+                        matchTimer: timerForOdds,
+                        market: '1_3',
+                    }),
+                );
+                setH1OuTickSeries(
+                    normalizeRawTicks(mergeRawTicksById(v2H1Ou, liveH1Ou), 'ou', {
+                        matchTimer: timerForOdds,
+                        market: '1_6',
+                    }),
+                );
+                setAhTickSeries(
+                    normalizeRawTicks(mergeRawTicksById(v2Ah, liveAh), 'ah', {
+                        matchTimer: timerForOdds,
+                        market: '1_2',
+                    }),
+                );
 
                 // Cảnh báo hạ line 1_3 / 1_6 + Tài ≤ ngưỡng (tab đang mở).
                 const hits: OuLineDropHit[] = [];
@@ -1135,6 +1329,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                             <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                             {liveMatch.timer?.tm || liveMatch.time}'
                         </span>
+                        {matchV2Capture.status === 'saving' && (
+                            <span
+                                className="mt-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400"
+                                title="Server đang ghi odds/stats vào data/v2 mỗi 60s"
+                            >
+                                Đang lưu v2
+                            </span>
+                        )}
+                        {matchV2Capture.status === 'starting' && (
+                            <span className="mt-0.5 text-[10px] font-medium text-slate-400">Đang bật lưu v2…</span>
+                        )}
+                        {matchV2Capture.status === 'error' && (
+                            <span
+                                className="mt-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400 truncate max-w-[10rem]"
+                                title={matchV2Capture.error || 'Không kết nối được server AI'}
+                            >
+                                Lưu v2 lỗi
+                            </span>
+                        )}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                         {onToggleTheme && (
@@ -1243,18 +1456,57 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                 {(() => {
                     const showH1Chart = marketChartDataH1.length > 0;
                     const showH2Chart = inSecondHalf && marketChartDataH2.length > 0;
+                    const showH1HighOverChart = highOverMarketChartDataH1.length > 0;
+                    const showH2HighOverChart = inSecondHalf && highOverMarketChartDataH2.length > 0;
                     const showH1AhChart = homeMarketChartDataH1.length > 0;
                     const showH2AhChart = inSecondHalf && homeMarketChartDataH2.length > 0;
                     const showH1UnderChart = showUnderXiuCharts && underMarketChartDataH1.length > 0;
                     const showH2UnderChart =
                         showUnderXiuCharts && inSecondHalf && underMarketChartDataH2.length > 0;
                     const showH1MarketsChart = h1MarketsOuChartData.length > 0;
+                    const showH1MarketsHighOverChart = h1MarketsHighOverChartData.length > 0;
                     const showH1MarketsAhChart = h1MarketsAhChartData.length > 0;
                     const showH1MarketsUnderChart =
                         showUnderXiuCharts && h1MarketsUnderChartData.length > 0;
                     return (
                         <div className="space-y-4">
-                            <div className="flex items-center justify-end px-1">
+                            <div className="flex items-center justify-end gap-2 px-1 flex-wrap">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowTickVolatility((prev) => {
+                                            const next = !prev;
+                                            try {
+                                                localStorage.setItem(
+                                                    SHOW_TICK_VOLATILITY_KEY,
+                                                    next ? '1' : '0',
+                                                );
+                                            } catch {
+                                                /* ignore */
+                                            }
+                                            return next;
+                                        });
+                                    }}
+                                    className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${
+                                        showTickVolatility
+                                            ? 'border-indigo-300 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300'
+                                            : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300'
+                                    }`}
+                                    title={
+                                        showTickVolatility
+                                            ? 'Ẩn biểu đồ biến động tick'
+                                            : 'Hiện biểu đồ biến động tick'
+                                    }
+                                >
+                                    {showTickVolatility ? (
+                                        <EyeOff className="w-3.5 h-3.5" />
+                                    ) : (
+                                        <Eye className="w-3.5 h-3.5" />
+                                    )}
+                                    {showTickVolatility
+                                        ? 'Ẩn biến động tick'
+                                        : 'Hiện biến động tick'}
+                                </button>
                                 <button
                                     type="button"
                                     onClick={() => {
@@ -1293,11 +1545,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                             <div className="grid gap-4 lg:grid-cols-2">
                                 <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/30 p-1">
                                     <p className="text-[11px] font-bold text-amber-700/90 dark:text-amber-400/90 uppercase tracking-wide px-3 pt-2 pb-1">
-                                        Biểu đồ Hiệp 1 · Tài/Xỉu (1_3)
+                                        Hiệp 1 · Tài (1_3) · giá thấp nhất/phút
                                     </p>
                                     {showH1Chart ? (
                                         <MomentumChart
-                                            title="Tài/Xỉu (1_3)"
+                                            title="Tài (1_3) · giá thấp nhất/phút"
                                             halfSubtitle="Hiệp 1 — gồm bù giờ (trục có thể >45')"
                                             iconColor="text-emerald-500"
                                             chartIdSuffix="ou-h1"
@@ -1310,6 +1562,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                                             gameEvents={gameEventsH1}
                                             homeTeamName={liveMatch.home.name}
                                             awayTeamName={liveMatch.away.name}
+                                            minuteAggs={ouMinuteAggsH1}
                                         />
                                     ) : (
                                         <div className="flex items-center justify-center h-56 text-xs text-slate-400 dark:text-slate-500">
@@ -1317,13 +1570,41 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                                         </div>
                                     )}
                                 </section>
+                                <section className="rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-white/50 dark:bg-slate-900/30 p-1">
+                                    <p className="text-[11px] font-bold text-emerald-700/90 dark:text-emerald-400/90 uppercase tracking-wide px-3 pt-2 pb-1">
+                                        Hiệp 1 · Tài (1_3) · giá cao nhất/phút
+                                    </p>
+                                    {showH1HighOverChart ? (
+                                        <MomentumChart
+                                            title="Tài (1_3) · giá cao nhất/phút"
+                                            halfSubtitle="Hiệp 1 — peak over mỗi phút"
+                                            iconColor="text-emerald-600"
+                                            chartIdSuffix="ou-high-h1"
+                                            xDomain={xDomainH1}
+                                            xTicks={ticksH1Memo}
+                                            marketData={highOverMarketChartDataH1}
+                                            sortedMarketData={sortedHighOverMarketChartDataH1}
+                                            yAxisConfig={highOverYAxisConfigH1}
+                                            shotEvents={shotEventsH1}
+                                            gameEvents={gameEventsH1}
+                                            homeTeamName={liveMatch.home.name}
+                                            awayTeamName={liveMatch.away.name}
+                                        />
+                                    ) : (
+                                        <div className="flex items-center justify-center h-56 text-xs text-slate-400 dark:text-slate-500">
+                                            Chưa có dữ liệu Tài cao nhất Hiệp 1
+                                        </div>
+                                    )}
+                                </section>
+                            </div>
+                            <div className="grid gap-4 lg:grid-cols-2">
                                 <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/30 p-1">
                                     <p className="text-[11px] font-bold text-sky-700/90 dark:text-sky-400/90 uppercase tracking-wide px-3 pt-2 pb-1">
-                                        Biểu đồ Hiệp 2 · Tài/Xỉu (1_3)
+                                        Hiệp 2 · Tài (1_3) · giá thấp nhất/phút
                                     </p>
                                     {showH2Chart ? (
                                         <MomentumChart
-                                            title="Tài/Xỉu (1_3)"
+                                            title="Tài (1_3) · giá thấp nhất/phút"
                                             halfSubtitle="Hiệp 2 — đồng hồ từ 45'"
                                             iconColor="text-emerald-500"
                                             chartIdSuffix="ou-h2"
@@ -1336,10 +1617,39 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                                             gameEvents={gameEventsH2}
                                             homeTeamName={liveMatch.home.name}
                                             awayTeamName={liveMatch.away.name}
+                                            minuteAggs={ouMinuteAggsH2}
                                         />
                                     ) : (
                                         <div className="flex items-center justify-center h-56 text-xs text-slate-400 dark:text-slate-500">
                                             {inSecondHalf ? 'Chưa có dữ liệu Hiệp 2' : 'Hiệp 2 chưa bắt đầu'}
+                                        </div>
+                                    )}
+                                </section>
+                                <section className="rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-white/50 dark:bg-slate-900/30 p-1">
+                                    <p className="text-[11px] font-bold text-emerald-700/90 dark:text-emerald-400/90 uppercase tracking-wide px-3 pt-2 pb-1">
+                                        Hiệp 2 · Tài (1_3) · giá cao nhất/phút
+                                    </p>
+                                    {showH2HighOverChart ? (
+                                        <MomentumChart
+                                            title="Tài (1_3) · giá cao nhất/phút"
+                                            halfSubtitle="Hiệp 2 — peak over mỗi phút"
+                                            iconColor="text-emerald-600"
+                                            chartIdSuffix="ou-high-h2"
+                                            xDomain={xDomainH2}
+                                            xTicks={ticksH2Memo}
+                                            marketData={highOverMarketChartDataH2}
+                                            sortedMarketData={sortedHighOverMarketChartDataH2}
+                                            yAxisConfig={highOverYAxisConfigH2}
+                                            shotEvents={shotEventsH2}
+                                            gameEvents={gameEventsH2}
+                                            homeTeamName={liveMatch.home.name}
+                                            awayTeamName={liveMatch.away.name}
+                                        />
+                                    ) : (
+                                        <div className="flex items-center justify-center h-56 text-xs text-slate-400 dark:text-slate-500">
+                                            {inSecondHalf
+                                                ? 'Chưa có dữ liệu Tài cao nhất Hiệp 2'
+                                                : 'Hiệp 2 chưa bắt đầu'}
                                         </div>
                                     )}
                                 </section>
@@ -1467,11 +1777,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                             <div className="grid gap-4 lg:grid-cols-2">
                                 <section className="rounded-xl border border-violet-200 dark:border-violet-900/50 bg-white/50 dark:bg-slate-900/30 p-1">
                                     <p className="text-[11px] font-bold text-violet-700/90 dark:text-violet-400/90 uppercase tracking-wide px-3 pt-2 pb-1">
-                                        Biểu đồ kèo Hiệp 1 · Tài/Xỉu (1_6)
+                                        Tài H1 (1_6) · giá thấp nhất/phút
                                     </p>
                                     {showH1MarketsChart ? (
                                         <MomentumChart
-                                            title="Tài/Xỉu H1 (1_6)"
+                                            title="Tài H1 (1_6) · giá thấp nhất/phút"
                                             halfSubtitle="Kèo riêng hiệp 1 — không phải slice 1_3"
                                             iconColor="text-violet-500"
                                             chartIdSuffix="ou-h1-markets"
@@ -1484,6 +1794,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                                             gameEvents={gameEventsH1}
                                             homeTeamName={liveMatch.home.name}
                                             awayTeamName={liveMatch.away.name}
+                                            minuteAggs={h1OuMinuteAggs}
                                         />
                                     ) : (
                                         <div className="flex items-center justify-center h-56 text-xs text-slate-400 dark:text-slate-500">
@@ -1491,6 +1802,34 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                                         </div>
                                     )}
                                 </section>
+                                <section className="rounded-xl border border-violet-200 dark:border-violet-900/50 bg-white/50 dark:bg-slate-900/30 p-1">
+                                    <p className="text-[11px] font-bold text-violet-700/90 dark:text-violet-400/90 uppercase tracking-wide px-3 pt-2 pb-1">
+                                        Tài H1 (1_6) · giá cao nhất/phút
+                                    </p>
+                                    {showH1MarketsHighOverChart ? (
+                                        <MomentumChart
+                                            title="Tài H1 (1_6) · giá cao nhất/phút"
+                                            halfSubtitle="Kèo riêng hiệp 1 — peak over mỗi phút"
+                                            iconColor="text-violet-600"
+                                            chartIdSuffix="ou-high-h1-markets"
+                                            xDomain={xDomainH1}
+                                            xTicks={ticksH1Memo}
+                                            marketData={h1MarketsHighOverChartData}
+                                            sortedMarketData={sortedH1MarketsHighOverChartData}
+                                            yAxisConfig={h1MarketsHighOverYAxisConfig}
+                                            shotEvents={shotEventsH1}
+                                            gameEvents={gameEventsH1}
+                                            homeTeamName={liveMatch.home.name}
+                                            awayTeamName={liveMatch.away.name}
+                                        />
+                                    ) : (
+                                        <div className="flex items-center justify-center h-56 text-xs text-slate-400 dark:text-slate-500">
+                                            Chưa có dữ liệu Tài cao nhất H1 (1_6)
+                                        </div>
+                                    )}
+                                </section>
+                            </div>
+                            <div className="grid gap-4 lg:grid-cols-2">
                                 <section className="rounded-xl border border-violet-200 dark:border-violet-900/50 bg-white/50 dark:bg-slate-900/30 p-1">
                                     <p className="text-[11px] font-bold text-violet-700/90 dark:text-violet-400/90 uppercase tracking-wide px-3 pt-2 pb-1">
                                         Đội chấp Hiệp 1 (1_5)
@@ -1554,6 +1893,51 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                         </div>
                     );
                 })()}
+
+                {showTickVolatility ? (
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2 px-1 flex-wrap">
+                            <p className="text-[11px] font-bold text-indigo-700/90 dark:text-indigo-300/90 uppercase tracking-wide">
+                                Biến động odds theo tick (thêm mới — không thay chart nến trên)
+                            </p>
+                            <div className="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden text-[11px]">
+                                <button
+                                    type="button"
+                                    onClick={() => setTickVolMarket('ou')}
+                                    className={`px-2.5 py-1 font-semibold ${
+                                        tickVolMarket === 'ou'
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300'
+                                    }`}
+                                >
+                                    Tài/Xỉu 1_3
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setTickVolMarket('ah')}
+                                    className={`px-2.5 py-1 font-semibold ${
+                                        tickVolMarket === 'ah'
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300'
+                                    }`}
+                                >
+                                    Chấp 1_2
+                                </button>
+                            </div>
+                        </div>
+                        <OddsTickVolatilityChart
+                            mode={tickVolMarket}
+                            ticks={
+                                tickVolMarket === 'ou' ? ouTicksForHalfCharts : ahTicksForHalfCharts
+                            }
+                            prematch={
+                                tickVolMarket === 'ou'
+                                    ? ouTickSeries.prematch
+                                    : ahTickSeries.prematch
+                            }
+                        />
+                    </div>
+                ) : null}
 
                 <div className="grid gap-4 lg:grid-cols-2 items-start">
                     <div>

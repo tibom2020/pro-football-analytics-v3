@@ -16,6 +16,8 @@ const PER_MATCH_KEY_PREFIXES: ReadonlyArray<string> = [
   'ouSnapshots1_6_',
   'ouUnderSnapshots_',
   'ouUnderSnapshots1_6_',
+  'ouHighOverSnapshots_',
+  'ouHighOverSnapshots1_6_',
   'ahSnapshots1_5_',
   'mlSnapshots1_1_',
   'goalPredictionSnapshots_',

@@ -5,6 +5,10 @@ import type { ChartAlertMarker } from '../types';
 export type { ChartAlertMarker } from '../types';
 import { formatMinuteAxisTick } from './chartAxisFormat';
 import { OU_LINE_DROP_PRICE_MAX } from '../services/ou-line-drop-alert';
+import {
+    TYPICAL_MINUTE_RANGE,
+    type MinuteAgg,
+} from '../services/odds-tick-chart-data';
 
 /**
  * Đoạn nối nến: màu theo giá nến (Tài `over` / Xỉu `under`).
@@ -595,7 +599,395 @@ const GameEventMarkers = ({
     })}</>;
 };
 
+const AVG_BAR_ABOVE = '#f59e0b';
+const AVG_BAR_BELOW = '#34d399';
+const AVG_BAR_EQUAL = '#a78bfa';
+const AVG_BAR_HALF_STROKE = '#38bdf8';
+
+type VsAvg = 'above' | 'below' | 'equal';
+
+function vsAvgRange(range: number, avg: number): VsAvg {
+    if (Math.abs(range - avg) <= 1e-4) return 'equal';
+    return range > avg ? 'above' : 'below';
+}
+
+function vsAvgCount(count: number, avg: number): VsAvg {
+    if (Math.abs(count - avg) <= 0.05) return 'equal';
+    return count > avg ? 'above' : 'below';
+}
+
+function fillForVsAvg(vs: VsAvg): string {
+    if (vs === 'above') return AVG_BAR_ABOVE;
+    if (vs === 'below') return AVG_BAR_BELOW;
+    return AVG_BAR_EQUAL;
+}
+
+function mean(nums: number[]): number | null {
+    if (nums.length === 0) return null;
+    let s = 0;
+    for (const n of nums) s += n;
+    return s / nums.length;
+}
+
+function makeMinuteAggBarShape(opts: {
+    valueKey: 'rangePlot' | 'tickCount';
+    halfWidth: number;
+    minBarPx: number;
+    getFill: (payload: MinuteAgg & { rangePlot?: number }) => string;
+}) {
+    const { valueKey, halfWidth, minBarPx, getFill } = opts;
+    return function Shape(props: {
+        cx?: number;
+        payload?: MinuteAgg & { rangePlot?: number };
+        yAxis?: { scale?: (v: number) => number };
+    }): React.ReactElement | null {
+        const { cx, payload, yAxis } = props;
+        const scale = yAxis?.scale;
+        if (cx == null || !payload || !scale) return null;
+        if (payload.hasGoal) return null;
+        const value = Number(payload[valueKey] ?? 0);
+        if (!Number.isFinite(value)) return null;
+        const y0 = scale(0);
+        const y1 = scale(value);
+        if (!Number.isFinite(y0) || !Number.isFinite(y1)) return null;
+        let top = Math.min(y0, y1);
+        let h = Math.abs(y1 - y0);
+        const floor = value > 0 ? minBarPx : 2;
+        if (h < floor) {
+            h = floor;
+            top = y0 - h;
+        }
+        return (
+            <rect
+                x={cx - halfWidth}
+                y={top}
+                width={halfWidth * 2}
+                height={h}
+                fill={getFill(payload)}
+                stroke={payload.isHalfBoundary ? AVG_BAR_HALF_STROKE : undefined}
+                strokeWidth={payload.isHalfBoundary ? 1.25 : 0}
+                rx={1.5}
+            />
+        );
+    };
+}
+
+/** Đánh dấu phút bàn — không dùng cột cao (làm nhiễu thang biên độ). */
+function GoalMinuteMark(props: {
+    cx?: number;
+    yAxis?: { scale?: (v: number) => number; domain?: [number, number] };
+    payload?: MinuteAgg & { markY?: number };
+}): React.ReactElement | null {
+    const { cx, yAxis, payload } = props;
+    if (cx == null || !payload?.hasGoal) return null;
+    const scale = yAxis?.scale;
+    const markY = payload.markY;
+    const y =
+        scale && markY != null && Number.isFinite(markY) ? scale(markY) : 14;
+    if (!Number.isFinite(y)) return null;
+    return (
+        <g>
+            <polygon
+                points={`${cx},${y} ${cx - 5},${y + 9} ${cx + 5},${y + 9}`}
+                fill="#f97316"
+                stroke="#ea580c"
+                strokeWidth={1}
+            />
+            <text x={cx} y={y - 3} textAnchor="middle" fontSize={10} fill="#fdba74">
+                ⚽
+            </text>
+        </g>
+    );
+}
+
+function MinuteAggTooltip({
+    active,
+    payload,
+    avgRange,
+    avgCount,
+    mode,
+}: {
+    active?: boolean;
+    payload?: Array<{ payload?: MinuteAgg }>;
+    avgRange: number | null;
+    avgCount: number | null;
+    mode: 'range' | 'count';
+}) {
+    if (!active || !payload?.length) return null;
+    const a = payload[0]?.payload;
+    if (!a) return null;
+    const avg = mode === 'range' ? avgRange : avgCount;
+    const vs =
+        a.hasGoal || avg == null
+            ? null
+            : mode === 'range'
+              ? vsAvgRange(a.range || 0, avg)
+              : vsAvgCount(a.tickCount || 0, avg);
+    const vsLabel =
+        vs === 'above' ? 'vượt' : vs === 'below' ? 'dưới' : vs === 'equal' ? 'bằng' : null;
+    return (
+        <div className="bg-slate-800 text-white text-[11px] p-2 rounded shadow-lg border border-slate-700 z-50">
+            <p className="font-bold border-b border-slate-600 mb-1 pb-1">
+                Phút {a.minute}&apos; · H{a.half}
+            </p>
+            <p>Biên độ: {Number(a.range ?? 0).toFixed(3)}</p>
+            <p>Số lần đổi giá: {a.tickCount ?? 0}</p>
+            {avg != null ? (
+                <p className="text-slate-300">
+                    TB live: {mode === 'range' ? avg.toFixed(3) : avg.toFixed(1)}
+                    {vsLabel ? (
+                        <span
+                            className={
+                                vs === 'above'
+                                    ? ' text-amber-300'
+                                    : vs === 'below'
+                                      ? ' text-emerald-300'
+                                      : ' text-violet-300'
+                            }
+                        >
+                            {' '}
+                            · so với TB: {vsLabel}
+                        </span>
+                    ) : null}
+                </p>
+            ) : null}
+            {a.hasGoal ? (
+                <p className="text-amber-300 mt-1">Chứa bàn thắng — không phải tín hiệu dự báo</p>
+            ) : null}
+            {a.isHalfBoundary ? (
+                <p className="text-sky-300 mt-1">Mốc nghỉ / cuối hiệp — kèo viết lại</p>
+            ) : null}
+        </div>
+    );
+}
+
+function MinuteVolatilityStrips({
+    aggs,
+    xDomain,
+    xTicks,
+    chartIdSuffix,
+}: {
+    aggs: MinuteAgg[];
+    xDomain: [number, number];
+    xTicks: number[];
+    chartIdSuffix: string;
+}) {
+    // TB live: tính lại mỗi lần aggs đổi (poll / thêm phút) — bỏ phút bàn.
+    const sample = aggs.filter((a) => !a.hasGoal);
+    const avgRange = mean(sample.map((a) => a.range || 0));
+    const avgCount = mean(sample.map((a) => a.tickCount || 0));
+
+    const normalRanges = sample.map((a) => a.range || 0);
+    const peakNormal = normalRanges.length > 0 ? Math.max(...normalRanges) : 0;
+    const rangeCap = Math.max(
+        0.2,
+        peakNormal * 1.4,
+        (avgRange ?? TYPICAL_MINUTE_RANGE) * 8,
+        TYPICAL_MINUTE_RANGE * 8,
+    );
+    const rangePlotMax = Math.sqrt(rangeCap);
+    const avgRangePlot = avgRange != null ? Math.sqrt(Math.max(0, avgRange)) : null;
+    const markY = rangePlotMax * 0.92;
+    const maxCount = Math.max(
+        2,
+        ...(avgCount != null ? [avgCount] : []),
+        ...sample.map((a) => a.tickCount || 0),
+        2,
+    );
+
+    const RangeShape = makeMinuteAggBarShape({
+        valueKey: 'rangePlot',
+        halfWidth: 6,
+        minBarPx: 5,
+        getFill: (p) => {
+            if (avgRange == null) return AVG_BAR_BELOW;
+            return fillForVsAvg(vsAvgRange(p.range || 0, avgRange));
+        },
+    });
+    const CountShape = makeMinuteAggBarShape({
+        valueKey: 'tickCount',
+        halfWidth: 5.5,
+        minBarPx: 3,
+        getFill: (p) => {
+            if (avgCount == null) return AVG_BAR_BELOW;
+            return fillForVsAvg(vsAvgCount(p.tickCount || 0, avgCount));
+        },
+    });
+
+    const rangeData = aggs.map((a) => ({
+        ...a,
+        rangePlot: a.hasGoal
+            ? 0
+            : Math.min(Math.sqrt(Math.max(0, a.range || 0)), rangePlotMax),
+        markY,
+    }));
+    const goalMarks = rangeData.filter((a) => a.hasGoal);
+    const countData = aggs.map((a) => ({
+        ...a,
+        markY: maxCount * 0.92,
+    }));
+    const syncId = `ou-minute-vol-${chartIdSuffix}`;
+
+    return (
+        <div className="mt-3 space-y-2 border-t border-slate-200/80 dark:border-slate-700/80 pt-3">
+            <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300 px-1 leading-snug flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span>
+                    Biên độ / phút
+                    {avgRange != null ? (
+                        <>
+                            {' '}
+                            · TB live <span className="font-mono text-slate-200">{avgRange.toFixed(3)}</span>{' '}
+                            (đổi theo trận)
+                        </>
+                    ) : null}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                    <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: AVG_BAR_ABOVE }} /> vượt
+                </span>
+                <span className="inline-flex items-center gap-1">
+                    <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: AVG_BAR_BELOW }} /> dưới
+                </span>
+                <span className="inline-flex items-center gap-1">
+                    <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: AVG_BAR_EQUAL }} /> bằng
+                </span>
+                <span className="inline-flex items-center gap-1">
+                    <span className="text-[12px]">⚽</span> bàn
+                </span>
+                <span className="inline-flex items-center gap-1">
+                    <span className="inline-block w-2.5 h-2.5 rounded-sm border border-sky-400" /> nghỉ
+                </span>
+            </p>
+            <div className="h-36 sm:h-40 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart syncId={syncId} data={rangeData} margin={{ top: 14, right: 10, bottom: 4, left: -10 }}>
+                        <CartesianGrid stroke="#f1f5f9" strokeOpacity={0.08} strokeDasharray="3 3" vertical={false} />
+                        <XAxis
+                            type="number"
+                            dataKey="minute"
+                            domain={xDomain}
+                            ticks={xTicks}
+                            tickFormatter={formatMinuteAxisTick}
+                            tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }}
+                            tickLine={{ stroke: '#64748b' }}
+                            axisLine={{ stroke: '#475569' }}
+                            height={28}
+                        />
+                        <YAxis
+                            domain={[0, rangePlotMax * 1.05]}
+                            width={48}
+                            tick={{ fontSize: 11, fill: '#9ca3af' }}
+                            tickFormatter={(v) => {
+                                const real = Number(v) * Number(v);
+                                return real < 0.1 ? real.toFixed(2) : real.toFixed(1);
+                            }}
+                            tickLine={false}
+                            axisLine={{ stroke: '#334155' }}
+                        />
+                        <Tooltip
+                            content={
+                                <MinuteAggTooltip avgRange={avgRange} avgCount={avgCount} mode="range" />
+                            }
+                        />
+                        {avgRangePlot != null ? (
+                            <ReferenceLine
+                                y={avgRangePlot}
+                                stroke="#e2e8f0"
+                                strokeDasharray="5 3"
+                                strokeWidth={1.75}
+                                label={{
+                                    value: `TB ${avgRange!.toFixed(3)}`,
+                                    position: 'insideTopRight',
+                                    fill: '#e2e8f0',
+                                    fontSize: 10,
+                                    fontWeight: 600,
+                                }}
+                            />
+                        ) : null}
+                        <Scatter dataKey="rangePlot" shape={RangeShape} isAnimationActive={false} />
+                        {goalMarks.length > 0 ? (
+                            <Scatter
+                                data={goalMarks}
+                                dataKey="markY"
+                                shape={GoalMinuteMark}
+                                isAnimationActive={false}
+                            />
+                        ) : null}
+                    </ComposedChart>
+                </ResponsiveContainer>
+            </div>
+            <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300 px-1">
+                Số lần đổi giá / phút
+                {avgCount != null ? (
+                    <>
+                        {' '}
+                        · TB live <span className="font-mono text-slate-200">{avgCount.toFixed(1)}</span>{' '}
+                        (đổi theo trận) · gộp theo id
+                    </>
+                ) : (
+                    ' — gộp theo id'
+                )}
+            </p>
+            <div className="h-32 sm:h-36 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart syncId={syncId} data={countData} margin={{ top: 14, right: 10, bottom: 8, left: -10 }}>
+                        <CartesianGrid stroke="#f1f5f9" strokeOpacity={0.08} strokeDasharray="3 3" vertical={false} />
+                        <XAxis
+                            type="number"
+                            dataKey="minute"
+                            domain={xDomain}
+                            ticks={xTicks}
+                            tickFormatter={formatMinuteAxisTick}
+                            tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }}
+                            tickLine={{ stroke: '#64748b' }}
+                            axisLine={{ stroke: '#475569' }}
+                            height={28}
+                        />
+                        <YAxis
+                            domain={[0, maxCount + 1]}
+                            allowDecimals={false}
+                            width={48}
+                            tick={{ fontSize: 11, fill: '#9ca3af' }}
+                            tickLine={false}
+                            axisLine={{ stroke: '#334155' }}
+                        />
+                        <Tooltip
+                            content={
+                                <MinuteAggTooltip avgRange={avgRange} avgCount={avgCount} mode="count" />
+                            }
+                        />
+                        {avgCount != null ? (
+                            <ReferenceLine
+                                y={avgCount}
+                                stroke="#e2e8f0"
+                                strokeDasharray="5 3"
+                                strokeWidth={1.75}
+                                label={{
+                                    value: `TB ${avgCount.toFixed(1)}`,
+                                    position: 'insideTopRight',
+                                    fill: '#e2e8f0',
+                                    fontSize: 10,
+                                    fontWeight: 600,
+                                }}
+                            />
+                        ) : null}
+                        <Scatter dataKey="tickCount" shape={CountShape} isAnimationActive={false} />
+                        {goalMarks.length > 0 ? (
+                            <Scatter
+                                data={goalMarks.map((g) => ({ ...g, markY: maxCount * 0.92 }))}
+                                dataKey="markY"
+                                shape={GoalMinuteMark}
+                                isAnimationActive={false}
+                            />
+                        ) : null}
+                    </ComposedChart>
+                </ResponsiveContainer>
+            </div>
+        </div>
+    );
+}
+
 // --- Main MomentumChart Component ---
+
 
 interface MomentumChartProps {
     title: string;
@@ -643,6 +1035,9 @@ interface MomentumChartProps {
     /** Tên đội — hiển thị phía trên bóng đỏ khi ghi bàn. */
     homeTeamName?: string;
     awayTeamName?: string;
+    /** Biên độ + số lần đổi giá / phút (từ tick) — strip dưới nến OU. */
+    minuteAggs?: MinuteAgg[];
+    showMinuteVolatility?: boolean;
 }
 
 export const MomentumChart: React.FC<MomentumChartProps> = ({
@@ -673,6 +1068,8 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
     suppressCrosshairHud = false,
     homeTeamName,
     awayTeamName,
+    minuteAggs,
+    showMinuteVolatility = true,
 }) => {
     const chartAreaRef = useRef<HTMLDivElement>(null);
     const [localSelectedMinute, setLocalSelectedMinute] = useState<number | null>(null);
@@ -1249,6 +1646,14 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                     />
                 </OverlayContainer>
             </div>
+            {showMinuteVolatility && minuteAggs && minuteAggs.length > 0 ? (
+                <MinuteVolatilityStrips
+                    aggs={minuteAggs}
+                    xDomain={xDomain}
+                    xTicks={xTicks}
+                    chartIdSuffix={chartIdSuffix}
+                />
+            ) : null}
             {(showCrosshairHud || (minuteCrosshair && !suppressCrosshairHud)) && (
                 <div className="mt-2 space-y-2">
                     {showCrosshairHud && (

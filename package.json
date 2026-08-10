@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "report": "npm run report --prefix server --"
   },
   "dependencies": {
     "lucide-react": "^0.378.0",

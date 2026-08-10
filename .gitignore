@@ -24,6 +24,10 @@ server/.env
 History_live/
 server/data/
 
+# Match capture v2 (nguồn sự thật theo trận — không commit dữ liệu thô)
+data/v2/**
+!data/v2/README.md
+
 # Local / tooling
 .claude/
 vite.config.ts.timestamp-*.mjs
