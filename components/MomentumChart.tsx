@@ -615,6 +615,83 @@ const GameEventMarkers = ({
     })}</>;
 };
 
+/** Nhãn Δ line-drop — HTML phía trên plot, không nằm trong SVG (tránh bị nến/⚽ che). */
+const OuLineDropDeltaStrip = ({
+    markers,
+    containerWidth,
+    xDomain,
+    leftGutterPx = 45,
+    rightGutterPx = 10,
+}: {
+    markers: Array<{ minute: number; label: string; color: string }>;
+    containerWidth?: number;
+    xDomain: [number, number];
+    leftGutterPx?: number;
+    rightGutterPx?: number;
+}) => {
+    if (!containerWidth || markers.length === 0) return null;
+    const [xMin, xMax] = xDomain;
+    const span = Math.max(xMax - xMin, 1e-6);
+    const plotW = Math.max(containerWidth - leftGutterPx - rightGutterPx, 1);
+    const leftOf = (minute: number) => leftGutterPx + ((minute - xMin) / span) * plotW;
+
+    // Cùng phút nhiều Δ → xếp lệch nhẹ để không đè nhau.
+    const stackAt: Record<number, number> = {};
+    return (
+        <>
+            {markers.map((m, i) => {
+                const stack = stackAt[m.minute] ?? 0;
+                stackAt[m.minute] = stack + 1;
+                return (
+                    <span
+                        key={`ou-delta-strip-${m.minute}-${i}-${m.label}`}
+                        className="absolute z-30 pointer-events-none select-none rounded px-1 py-0.5 text-[10px] font-bold leading-none shadow-sm bg-amber-50 text-amber-900 border border-amber-600 dark:bg-amber-950/95 dark:text-amber-200 dark:border-amber-500"
+                        style={{
+                            left: `${leftOf(m.minute) + stack * 4}px`,
+                            top: 0,
+                            transform: 'translateX(-50%)',
+                        }}
+                        title={`Phút ${m.minute}' · ${m.label}`}
+                    >
+                        {m.label}
+                    </span>
+                );
+            })}
+        </>
+    );
+};
+
+const OuLineDropDeltaStripHost: React.FC<{
+    markers: Array<{ minute: number; label: string; color: string }>;
+    xDomain: [number, number];
+    leftGutterPx?: number;
+}> = ({ markers, xDomain, leftGutterPx = 45 }) => {
+    const ref = useRef<HTMLDivElement>(null);
+    const [width, setWidth] = useState(0);
+    useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const observer = new ResizeObserver((entries) => {
+            if (entries[0]) setWidth(entries[0].contentRect.width);
+        });
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
+    if (markers.length === 0) return null;
+    return (
+        <div ref={ref} className="relative h-5 w-full mb-0.5 shrink-0">
+            {width > 0 ? (
+                <OuLineDropDeltaStrip
+                    markers={markers}
+                    containerWidth={width}
+                    xDomain={xDomain}
+                    leftGutterPx={leftGutterPx}
+                />
+            ) : null}
+        </div>
+    );
+};
+
 const AVG_BAR_ABOVE = '#f59e0b';
 const AVG_BAR_BELOW = '#34d399';
 const AVG_BAR_EQUAL = '#a78bfa';
@@ -1474,6 +1551,11 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
             {halfSubtitle ? (
                 <p className="text-[10px] font-semibold text-amber-600/90 dark:text-amber-400/90 mb-2 uppercase tracking-wide">{halfSubtitle}</p>
             ) : null}
+            <OuLineDropDeltaStripHost
+                markers={ouLineDropDeltaMarkers}
+                xDomain={xDomain}
+                leftGutterPx={leftGutterPx}
+            />
             <div
                 ref={setPlotRef}
                 data-ou-chart-plot
@@ -1484,7 +1566,7 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                 onPointerCancel={minuteCrosshair ? onPlotPointerUp : undefined}
             >
                 <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart margin={{ top: 44, right: 10, bottom: 36, left: -15 }}>
+                    <ComposedChart margin={{ top: 20, right: 10, bottom: 36, left: -15 }}>
                         <CartesianGrid stroke="#f1f5f9" strokeOpacity={0.1} strokeDasharray="3 3" vertical={false} />
                         <XAxis
                             xAxisId={0}
@@ -1694,31 +1776,6 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                                     strokeWidth={1.5}
                                     strokeDasharray="3 3"
                                     strokeOpacity={0.9}
-                                    label={(props: {
-                                        viewBox?: { x?: number; y?: number; width?: number; height?: number };
-                                    }) => {
-                                        const vb = props.viewBox;
-                                        if (!vb || typeof vb.x !== 'number' || typeof vb.y !== 'number') {
-                                            return null;
-                                        }
-                                        // Ngay trên cột X, lệch lên khỏi vùng nến/pattern (~14px).
-                                        const cx = vb.x + (typeof vb.width === 'number' ? vb.width / 2 : 0);
-                                        const ty = vb.y - 2;
-                                        return (
-                                            <text
-                                                x={cx}
-                                                y={ty}
-                                                textAnchor="middle"
-                                                dominantBaseline="auto"
-                                                fill={m.color}
-                                                fontSize={11}
-                                                fontWeight={700}
-                                                style={{ pointerEvents: 'none' }}
-                                            >
-                                                {m.label}
-                                            </text>
-                                        );
-                                    }}
                                 />
                             ))}
                         {compareActive && (
