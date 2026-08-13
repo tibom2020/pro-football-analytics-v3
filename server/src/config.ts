@@ -129,7 +129,17 @@ export const config = {
     dataDir: process.env.MATCH_V2_DATA_DIR || 'data/v2',
     /** Chu kỳ gọi lịch sử odds. Không tự giảm khi truncation — chỉ báo. */
     pollIntervalMs: parseInt(process.env.MATCH_V2_POLL_INTERVAL_MS || '60000', 10),
-    enabled: process.env.FEATURE_MATCH_V2 !== 'false',
+    /**
+     * Local (`NODE_ENV` ≠ production): bật mặc định.
+     * VPS/production: tắt mặc định — set FEATURE_MATCH_V2=true nếu cần ghi data/v2.
+     * Ghi đè tường minh: FEATURE_MATCH_V2=true|false.
+     */
+    enabled: (() => {
+      const flag = process.env.FEATURE_MATCH_V2;
+      if (flag === 'true') return true;
+      if (flag === 'false') return false;
+      return process.env.NODE_ENV !== 'production';
+    })(),
   },
 
   features: {

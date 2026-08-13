@@ -29,6 +29,13 @@ data/v2/
 3. **Mở một trận trên Dashboard** → tự `POST /api/match-v2/start`; header hiện **Đang lưu v2**.
 4. **Back / đóng tab** → tự `stop`.
 
+Local/`npm run dev` **bật mặc định**. VPS (`NODE_ENV=production` + build frontend) **tắt mặc định**.
+
+Ghi đè (tuỳ chọn):
+
+- `server/.env`: `FEATURE_MATCH_V2=true|false`
+- root `.env.local`: `VITE_FEATURE_MATCH_V2=true|false`
+
 Collector poll `v2/event/odds` + snapshot inplay mỗi **60 giây** (độc lập với refresh 15s của Dashboard).
 
 Debug tay (không bắt buộc):
@@ -55,7 +62,8 @@ Hoặc `POST /api/match-v2/report` với `{ "matchId": "..." }`.
 |------|----------|---------|
 | `MATCH_V2_DATA_DIR` | `data/v2` | Thư mục gốc (relative tới repo root) |
 | `MATCH_V2_POLL_INTERVAL_MS` | `60000` | Chu kỳ poll |
-| `FEATURE_MATCH_V2` | bật | Set `false` để tắt route |
+| `FEATURE_MATCH_V2` | local bật / prod tắt | `true`\|`false` ghi đè; không set → theo `NODE_ENV` |
+| `VITE_FEATURE_MATCH_V2` | DEV bật / build tắt | `true`\|`false` ghi đè; không set → theo Vite `DEV` |
 
 ## Kiểm nhanh chất lượng thu
 

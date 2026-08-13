@@ -6,6 +6,10 @@ export type { ChartAlertMarker } from '../types';
 import { formatMinuteAxisTick } from './chartAxisFormat';
 import { OU_LINE_DROP_PRICE_MAX } from '../services/ou-line-drop-alert';
 import {
+    detectOuOverLineDropDeltas,
+    formatOuOverLineDropDeltaLabel,
+} from '../services/ou-line-over-delta';
+import {
     TYPICAL_MINUTE_RANGE,
     type MinuteAgg,
 } from '../services/odds-tick-chart-data';
@@ -59,6 +63,14 @@ function candleLinkRoseEnough(prev: number, curr: number): boolean {
 const LOW_OVER_CANDLE_FILL = '#f59e0b';
 const LOW_OVER_CANDLE_STROKE = '#b45309';
 const LOW_OVER_LABEL_FILL = '#b45309';
+
+/** Nến Tài peak (giá cao nhất/phút) — vàng khi ≤ 1.775. */
+export const OU_HIGH_OVER_YELLOW_PRICE_MAX = 1.775;
+
+/** So sánh odds với ngưỡng sau làm tròn 3 chữ số (tránh float). */
+function isOddsAtOrBelow(odds: number, max: number): boolean {
+    return Number(odds.toFixed(3)) <= Number(max.toFixed(3));
+}
 
 // --- Shared Helper Components ---
 
@@ -164,7 +176,11 @@ const CustomTooltip = ({ active, payload, label, underXiuMode, ahChapMode, secon
 };
 
 const CustomCandle = (props: any) => {
-    const { cx, cy, fill, payload, secondary, underXiuMode, ahChapMode } = props;
+    const { cx, cy, fill, payload, secondary, underXiuMode, ahChapMode, lowOverPriceMax } = props;
+    const hotMax =
+        typeof lowOverPriceMax === 'number' && Number.isFinite(lowOverPriceMax)
+            ? lowOverPriceMax
+            : OU_LINE_DROP_PRICE_MAX;
     const oddsValue =
         payload.__candleOddsValue ??
         payload.chapOdds ??
@@ -206,8 +222,8 @@ const CustomCandle = (props: any) => {
               : null;
     const isLowHot =
         ahChapMode
-            ? chapOdds != null && chapOdds <= OU_LINE_DROP_PRICE_MAX
-            : !underXiuMode && over != null && over <= OU_LINE_DROP_PRICE_MAX;
+            ? chapOdds != null && isOddsAtOrBelow(chapOdds, hotMax)
+            : !underXiuMode && over != null && isOddsAtOrBelow(over, hotMax);
     const hotLabel = ahChapMode ? chapOdds : over;
 
     const candleFill = isLowHot ? LOW_OVER_CANDLE_FILL : fill;
@@ -1038,6 +1054,11 @@ interface MomentumChartProps {
     /** Biên độ + số lần đổi giá / phút (từ tick) — strip dưới nến OU. */
     minuteAggs?: MinuteAgg[];
     showMinuteVolatility?: boolean;
+    /**
+     * Ngưỡng nến vàng (Tài/chấp ≤ max). Mặc định 1.725 (line-drop).
+     * Chart Tài peak: truyền `OU_HIGH_OVER_YELLOW_PRICE_MAX` (1.775).
+     */
+    lowOverPriceMax?: number;
 }
 
 export const MomentumChart: React.FC<MomentumChartProps> = ({
@@ -1070,6 +1091,7 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
     awayTeamName,
     minuteAggs,
     showMinuteVolatility = true,
+    lowOverPriceMax = OU_LINE_DROP_PRICE_MAX,
 }) => {
     const chartAreaRef = useRef<HTMLDivElement>(null);
     const [localSelectedMinute, setLocalSelectedMinute] = useState<number | null>(null);
@@ -1295,6 +1317,30 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
         return out;
     }, [ahChapMode, sortedMarketData]);
 
+    /** Vạch + nhãn Δ khi line OU giảm (Tài cuối line cũ → Tài đầu line mới). */
+    const ouLineDropDeltaMarkers = useMemo(() => {
+        if (ahChapMode || underXiuMode) {
+            return [] as Array<{ minute: number; label: string; color: string }>;
+        }
+        const pts = sortedMarketData
+            .filter(
+                (p) =>
+                    typeof p.minute === 'number' &&
+                    typeof p.handicap === 'number' &&
+                    typeof p.over === 'number',
+            )
+            .map((p) => ({
+                minute: p.minute as number,
+                handicap: p.handicap as number,
+                over: p.over as number,
+            }));
+        return detectOuOverLineDropDeltas(pts).map((d) => ({
+            minute: d.minute,
+            label: formatOuOverLineDropDeltaLabel(d.delta),
+            color: '#d97706',
+        }));
+    }, [ahChapMode, underXiuMode, sortedMarketData]);
+
     const latestChapPoint = useMemo(() => {
         if (!ahChapMode || sortedMarketData.length === 0) return null;
         return sortedMarketData[sortedMarketData.length - 1] as OddsSnap;
@@ -1362,13 +1408,20 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
             ) : null}
             {!ahChapMode &&
             !underXiuMode &&
-            marketData.some((e: any) => typeof e.over === 'number' && e.over <= OU_LINE_DROP_PRICE_MAX) ? (
+            marketData.some(
+                (e: any) => typeof e.over === 'number' && isOddsAtOrBelow(e.over, lowOverPriceMax),
+            ) ? (
                 <p className="text-[10px] text-amber-700 dark:text-amber-400 mb-1 flex items-center gap-1.5">
                     <span
                         className="inline-block w-2.5 h-2.5 rounded-sm shrink-0"
                         style={{ backgroundColor: LOW_OVER_CANDLE_FILL }}
                     />
-                    Nến vàng = Tài ≤ {OU_LINE_DROP_PRICE_MAX} (có ghi giá phía trên)
+                    Nến vàng = Tài ≤ {lowOverPriceMax} (có ghi giá phía trên)
+                </p>
+            ) : null}
+            {!ahChapMode && !underXiuMode && ouLineDropDeltaMarkers.length > 0 ? (
+                <p className="text-[10px] text-amber-800/90 dark:text-amber-300/90 mb-1">
+                    Δ = Tài đầu line mới − Tài cuối line cũ (khi line giảm)
                 </p>
             ) : null}
             {ahChapMode ? (
@@ -1387,14 +1440,15 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                     </span>
                     <span className="text-slate-400">· HDP≈0 đảo màu</span>
                     {marketData.some(
-                        (e: any) => typeof e.chapOdds === 'number' && e.chapOdds <= OU_LINE_DROP_PRICE_MAX,
+                        (e: any) =>
+                            typeof e.chapOdds === 'number' && isOddsAtOrBelow(e.chapOdds, lowOverPriceMax),
                     ) ? (
                         <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400">
                             <span
                                 className="inline-block w-2.5 h-2.5 rounded-sm shrink-0"
                                 style={{ backgroundColor: LOW_OVER_CANDLE_FILL }}
                             />
-                            Vàng = chấp ≤ {OU_LINE_DROP_PRICE_MAX}
+                            Vàng = chấp ≤ {lowOverPriceMax}
                         </span>
                     ) : null}
                     {ahLineChangeMarkers.length > 0 ? (
@@ -1430,7 +1484,7 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                 onPointerCancel={minuteCrosshair ? onPlotPointerUp : undefined}
             >
                 <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart margin={{ top: 36, right: 10, bottom: 36, left: -15 }}>
+                    <ComposedChart margin={{ top: 44, right: 10, bottom: 36, left: -15 }}>
                         <CartesianGrid stroke="#f1f5f9" strokeOpacity={0.1} strokeDasharray="3 3" vertical={false} />
                         <XAxis
                             xAxisId={0}
@@ -1486,17 +1540,23 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                             name="Thị trường"
                             data={marketDataForChart}
                             shape={(p: Record<string, unknown>) => (
-                                <CustomCandle {...p} underXiuMode={underXiuMode} ahChapMode={ahChapMode} />
+                                <CustomCandle
+                                    {...p}
+                                    underXiuMode={underXiuMode}
+                                    ahChapMode={ahChapMode}
+                                    lowOverPriceMax={lowOverPriceMax}
+                                />
                             )}
                             cursor={minuteCrosshair ? 'pointer' : undefined}
                             onClick={(pt: { payload?: { minute?: number } }) => handleCandleClick(pt?.payload)}
                         >
                             {marketDataForChart.map((e: any, i: number) => {
                                 const low = ahChapMode
-                                    ? typeof e.chapOdds === 'number' && e.chapOdds <= OU_LINE_DROP_PRICE_MAX
+                                    ? typeof e.chapOdds === 'number' &&
+                                      isOddsAtOrBelow(e.chapOdds, lowOverPriceMax)
                                     : !underXiuMode &&
                                       typeof e.over === 'number' &&
-                                      e.over <= OU_LINE_DROP_PRICE_MAX;
+                                      isOddsAtOrBelow(e.over, lowOverPriceMax);
                                 return (
                                     <Cell key={`c-${i}`} fill={low ? LOW_OVER_CANDLE_FILL : e.color} />
                                 );
@@ -1599,25 +1659,65 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                             })}
                         {[...ahLineChangeMarkers, ...extraMarkers]
                             .filter((m) => typeof m.minute === 'number' && Number.isFinite(m.minute))
-                            .map((m, i) => (
+                            .map((m, i) => {
+                                const isAh = ahLineChangeMarkers.some(
+                                    (a) => a.minute === m.minute && a.label === m.label,
+                                );
+                                return (
                                 <ReferenceLine
                                     key={`extra-${m.minute}-${i}-${m.label ?? ''}`}
                                     xAxisId={0}
                                     yAxisId="left"
                                     x={m.minute}
                                     stroke={m.color ?? '#f97316'}
-                                    strokeWidth={ahLineChangeMarkers.some((a) => a.minute === m.minute && a.label === m.label) ? 1.5 : 2}
-                                    strokeDasharray={
-                                        ahLineChangeMarkers.some((a) => a.minute === m.minute && a.label === m.label)
-                                            ? '3 3'
-                                            : undefined
-                                    }
+                                    strokeWidth={isAh ? 1.5 : 2}
+                                    strokeDasharray={isAh ? '3 3' : undefined}
                                     strokeOpacity={0.9}
                                     label={{
                                         value: m.label ?? '📍',
                                         position: 'insideTopRight',
                                         fill: m.color ?? '#f97316',
                                         fontSize: 10,
+                                    }}
+                                />
+                                );
+                            })}
+                        {ouLineDropDeltaMarkers
+                            .filter((m) => typeof m.minute === 'number' && Number.isFinite(m.minute))
+                            .map((m, i) => (
+                                <ReferenceLine
+                                    key={`ou-delta-${m.minute}-${i}-${m.label}`}
+                                    xAxisId={0}
+                                    yAxisId="left"
+                                    x={m.minute}
+                                    stroke={m.color}
+                                    strokeWidth={1.5}
+                                    strokeDasharray="3 3"
+                                    strokeOpacity={0.9}
+                                    label={(props: {
+                                        viewBox?: { x?: number; y?: number; width?: number; height?: number };
+                                    }) => {
+                                        const vb = props.viewBox;
+                                        if (!vb || typeof vb.x !== 'number' || typeof vb.y !== 'number') {
+                                            return null;
+                                        }
+                                        // Ngay trên cột X, lệch lên khỏi vùng nến/pattern (~14px).
+                                        const cx = vb.x + (typeof vb.width === 'number' ? vb.width / 2 : 0);
+                                        const ty = vb.y - 2;
+                                        return (
+                                            <text
+                                                x={cx}
+                                                y={ty}
+                                                textAnchor="middle"
+                                                dominantBaseline="auto"
+                                                fill={m.color}
+                                                fontSize={11}
+                                                fontWeight={700}
+                                                style={{ pointerEvents: 'none' }}
+                                            >
+                                                {m.label}
+                                            </text>
+                                        );
                                     }}
                                 />
                             ))}

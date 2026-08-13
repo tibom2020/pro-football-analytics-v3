@@ -63,7 +63,7 @@ import {
     savePinnedAiAnalysis,
 } from '../services/pinned-ai-analysis-store';
 import { calculateAPIScore } from '../services/traditionalFactors';
-import { MomentumChart } from './MomentumChart';
+import { MomentumChart, OU_HIGH_OVER_YELLOW_PRICE_MAX } from './MomentumChart';
 import { OddsTickVolatilityChart } from './OddsTickVolatilityChart';
 import { MatchNotesPanel } from './MatchNotesPanel';
 import { ensureGoalNotifyPermission, notifyGoal } from '../services/goal-notify';
@@ -1589,6 +1589,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                                             gameEvents={gameEventsH1}
                                             homeTeamName={liveMatch.home.name}
                                             awayTeamName={liveMatch.away.name}
+                                            lowOverPriceMax={OU_HIGH_OVER_YELLOW_PRICE_MAX}
                                         />
                                     ) : (
                                         <div className="flex items-center justify-center h-56 text-xs text-slate-400 dark:text-slate-500">
@@ -1644,6 +1645,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                                             gameEvents={gameEventsH2}
                                             homeTeamName={liveMatch.home.name}
                                             awayTeamName={liveMatch.away.name}
+                                            lowOverPriceMax={OU_HIGH_OVER_YELLOW_PRICE_MAX}
                                         />
                                     ) : (
                                         <div className="flex items-center justify-center h-56 text-xs text-slate-400 dark:text-slate-500">
@@ -1821,6 +1823,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                                             gameEvents={gameEventsH1}
                                             homeTeamName={liveMatch.home.name}
                                             awayTeamName={liveMatch.away.name}
+                                            lowOverPriceMax={OU_HIGH_OVER_YELLOW_PRICE_MAX}
                                         />
                                     ) : (
                                         <div className="flex items-center justify-center h-56 text-xs text-slate-400 dark:text-slate-500">
