@@ -61,3 +61,69 @@ export function detectOuOverLineDropDeltas(
 
   return out;
 }
+
+export type OuOverLineRunAvg = {
+  handicap: number;
+  minuteStart: number;
+  minuteEnd: number;
+  minuteCount: number;
+  avgOver: number;
+};
+
+/** Chip: `1.25 TB 1.825` */
+export function formatOuOverLineRunAvgLabel(run: Pick<OuOverLineRunAvg, 'handicap' | 'avgOver'>): string {
+  const h = Number(run.handicap.toFixed(2));
+  const hStr = Number.isInteger(h) ? h.toFixed(0) : String(h);
+  return `${hStr} TB ${run.avgOver.toFixed(3)}`;
+}
+
+/**
+ * TB Tài từng đoạn line liền kề: tổng over ÷ số phút (round 3).
+ * Cùng HDP nhưng bị cắt bởi line khác → 2 đoạn riêng.
+ */
+export function computeOuOverLineRunAvgs(
+  rows: readonly OuOverLineDropPoint[],
+): OuOverLineRunAvg[] {
+  const valid = rows.filter(
+    (r) =>
+      Number.isFinite(r.minute) &&
+      Number.isFinite(r.handicap) &&
+      Number.isFinite(r.over),
+  );
+  if (valid.length === 0) return [];
+
+  const sorted = [...valid].sort((a, b) => a.minute - b.minute);
+  const out: OuOverLineRunAvg[] = [];
+
+  let start = sorted[0]!;
+  let sum = start.over;
+  let count = 1;
+  let last = start;
+
+  const flush = () => {
+    out.push({
+      handicap: start.handicap,
+      minuteStart: start.minute,
+      minuteEnd: last.minute,
+      minuteCount: count,
+      avgOver: roundOdds3(sum / count),
+    });
+  };
+
+  for (let i = 1; i < sorted.length; i++) {
+    const curr = sorted[i]!;
+    if (Math.abs(curr.handicap - start.handicap) <= LINE_EPS) {
+      sum += curr.over;
+      count += 1;
+      last = curr;
+      continue;
+    }
+    flush();
+    start = curr;
+    sum = curr.over;
+    count = 1;
+    last = curr;
+  }
+  flush();
+  return out;
+}

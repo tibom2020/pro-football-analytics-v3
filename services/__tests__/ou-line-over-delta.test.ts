@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
+  computeOuOverLineRunAvgs,
   detectOuOverLineDropDeltas,
   formatOuOverLineDropDeltaLabel,
+  formatOuOverLineRunAvgLabel,
   roundOdds3,
 } from '../ou-line-over-delta';
 
@@ -54,5 +56,64 @@ describe('detectOuOverLineDropDeltas', () => {
       { minute: 11, handicap: 2.25, over: 1.8 },
     ]);
     expect(deltas).toHaveLength(0);
+  });
+});
+
+describe('computeOuOverLineRunAvgs', () => {
+  it('line 1.25 bốn phút → TB 1.825', () => {
+    const runs = computeOuOverLineRunAvgs([
+      { minute: 10, handicap: 1.25, over: 1.8 },
+      { minute: 11, handicap: 1.25, over: 1.85 },
+      { minute: 12, handicap: 1.25, over: 1.82 },
+      { minute: 13, handicap: 1.25, over: 1.83 },
+    ]);
+    expect(runs).toHaveLength(1);
+    expect(runs[0].avgOver).toBe(1.825);
+    expect(runs[0].minuteCount).toBe(4);
+    expect(formatOuOverLineRunAvgLabel(runs[0])).toBe('1.25 TB 1.825');
+  });
+
+  it('đổi line (giảm hoặc tăng) → 2 đoạn TB riêng', () => {
+    const down = computeOuOverLineRunAvgs([
+      { minute: 1, handicap: 2.5, over: 1.9 },
+      { minute: 2, handicap: 2.5, over: 1.88 },
+      { minute: 3, handicap: 2.25, over: 1.7 },
+    ]);
+    expect(down).toHaveLength(2);
+    expect(down[0].handicap).toBe(2.5);
+    expect(down[0].avgOver).toBe(1.89);
+    expect(down[1].handicap).toBe(2.25);
+    expect(down[1].avgOver).toBe(1.7);
+
+    const up = computeOuOverLineRunAvgs([
+      { minute: 1, handicap: 2.25, over: 1.7 },
+      { minute: 2, handicap: 2.5, over: 1.9 },
+    ]);
+    expect(up).toHaveLength(2);
+    expect(up[0].handicap).toBe(2.25);
+    expect(up[1].handicap).toBe(2.5);
+  });
+
+  it('cùng HDP bị cắt bởi line khác → 2 đoạn', () => {
+    const runs = computeOuOverLineRunAvgs([
+      { minute: 1, handicap: 2.5, over: 1.9 },
+      { minute: 2, handicap: 2.25, over: 1.7 },
+      { minute: 3, handicap: 2.5, over: 1.8 },
+    ]);
+    expect(runs).toHaveLength(3);
+    expect(runs[0].minuteCount).toBe(1);
+    expect(runs[2].avgOver).toBe(1.8);
+  });
+
+  it('bỏ phút over không hữu hạn', () => {
+    const runs = computeOuOverLineRunAvgs([
+      { minute: 1, handicap: 1, over: Number.NaN },
+      { minute: 2, handicap: 1, over: 1.9 },
+      { minute: 3, handicap: 1, over: 1.9 },
+    ]);
+    expect(runs).toHaveLength(1);
+    expect(runs[0].avgOver).toBe(1.9);
+    expect(runs[0].minuteCount).toBe(2);
+    expect(formatOuOverLineRunAvgLabel(runs[0])).toBe('1 TB 1.900');
   });
 });

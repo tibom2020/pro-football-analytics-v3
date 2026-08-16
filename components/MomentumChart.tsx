@@ -6,8 +6,10 @@ export type { ChartAlertMarker } from '../types';
 import { formatMinuteAxisTick } from './chartAxisFormat';
 import { OU_LINE_DROP_PRICE_MAX } from '../services/ou-line-drop-alert';
 import {
+    computeOuOverLineRunAvgs,
     detectOuOverLineDropDeltas,
     formatOuOverLineDropDeltaLabel,
+    formatOuOverLineRunAvgLabel,
 } from '../services/ou-line-over-delta';
 import {
     TYPICAL_MINUTE_RANGE,
@@ -682,6 +684,81 @@ const OuLineDropDeltaStripHost: React.FC<{
         <div ref={ref} className="relative h-5 w-full mb-0.5 shrink-0">
             {width > 0 ? (
                 <OuLineDropDeltaStrip
+                    markers={markers}
+                    containerWidth={width}
+                    xDomain={xDomain}
+                    leftGutterPx={leftGutterPx}
+                />
+            ) : null}
+        </div>
+    );
+};
+
+const OuLineRunAvgStrip = ({
+    markers,
+    containerWidth,
+    xDomain,
+    leftGutterPx = 45,
+    rightGutterPx = 10,
+}: {
+    markers: Array<{ minute: number; label: string }>;
+    containerWidth?: number;
+    xDomain: [number, number];
+    leftGutterPx?: number;
+    rightGutterPx?: number;
+}) => {
+    if (!containerWidth || markers.length === 0) return null;
+    const [xMin, xMax] = xDomain;
+    const span = Math.max(xMax - xMin, 1e-6);
+    const plotW = Math.max(containerWidth - leftGutterPx - rightGutterPx, 1);
+    const leftOf = (minute: number) => leftGutterPx + ((minute - xMin) / span) * plotW;
+    const stackAt: Record<string, number> = {};
+    return (
+        <>
+            {markers.map((m, i) => {
+                const k = String(m.minute);
+                const stack = stackAt[k] ?? 0;
+                stackAt[k] = stack + 1;
+                return (
+                    <span
+                        key={`ou-run-avg-${m.minute}-${i}-${m.label}`}
+                        className="absolute z-30 pointer-events-none select-none rounded px-1 py-0.5 text-[10px] font-bold leading-none shadow-sm bg-sky-50 text-sky-900 border border-sky-600 dark:bg-sky-950/95 dark:text-sky-200 dark:border-sky-500"
+                        style={{
+                            left: `${leftOf(m.minute) + stack * 4}px`,
+                            top: 0,
+                            transform: 'translateX(-50%)',
+                        }}
+                        title={m.label}
+                    >
+                        {m.label}
+                    </span>
+                );
+            })}
+        </>
+    );
+};
+
+const OuLineRunAvgStripHost: React.FC<{
+    markers: Array<{ minute: number; label: string }>;
+    xDomain: [number, number];
+    leftGutterPx?: number;
+}> = ({ markers, xDomain, leftGutterPx = 45 }) => {
+    const ref = useRef<HTMLDivElement>(null);
+    const [width, setWidth] = useState(0);
+    useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const observer = new ResizeObserver((entries) => {
+            if (entries[0]) setWidth(entries[0].contentRect.width);
+        });
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
+    if (markers.length === 0) return null;
+    return (
+        <div ref={ref} className="relative h-5 w-full mb-0.5 shrink-0">
+            {width > 0 ? (
+                <OuLineRunAvgStrip
                     markers={markers}
                     containerWidth={width}
                     xDomain={xDomain}
@@ -1418,6 +1495,29 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
         }));
     }, [ahChapMode, underXiuMode, sortedMarketData]);
 
+    const ouLineRunAvgMarkers = useMemo(() => {
+        if (ahChapMode || underXiuMode) {
+            return [] as Array<{ minute: number; label: string }>;
+        }
+        const pts = sortedMarketData
+            .filter(
+                (p) =>
+                    typeof p.minute === 'number' &&
+                    typeof p.handicap === 'number' &&
+                    typeof p.over === 'number' &&
+                    Number.isFinite(p.over),
+            )
+            .map((p) => ({
+                minute: p.minute as number,
+                handicap: p.handicap as number,
+                over: p.over as number,
+            }));
+        return computeOuOverLineRunAvgs(pts).map((r) => ({
+            minute: (r.minuteStart + r.minuteEnd) / 2,
+            label: formatOuOverLineRunAvgLabel(r),
+        }));
+    }, [ahChapMode, underXiuMode, sortedMarketData]);
+
     const latestChapPoint = useMemo(() => {
         if (!ahChapMode || sortedMarketData.length === 0) return null;
         return sortedMarketData[sortedMarketData.length - 1] as OddsSnap;
@@ -1501,6 +1601,11 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                     Δ = Tài đầu line mới − Tài cuối line cũ (khi line giảm)
                 </p>
             ) : null}
+            {!ahChapMode && !underXiuMode && ouLineRunAvgMarkers.length > 0 ? (
+                <p className="text-[10px] text-sky-800/90 dark:text-sky-300/90 mb-1">
+                    TB = tổng Tài ÷ số phút của đoạn line
+                </p>
+            ) : null}
             {ahChapMode ? (
                 <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-2 flex-wrap">
                     <span className="inline-flex items-center gap-1">
@@ -1551,6 +1656,11 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
             {halfSubtitle ? (
                 <p className="text-[10px] font-semibold text-amber-600/90 dark:text-amber-400/90 mb-2 uppercase tracking-wide">{halfSubtitle}</p>
             ) : null}
+            <OuLineRunAvgStripHost
+                markers={ouLineRunAvgMarkers}
+                xDomain={xDomain}
+                leftGutterPx={leftGutterPx}
+            />
             <OuLineDropDeltaStripHost
                 markers={ouLineDropDeltaMarkers}
                 xDomain={xDomain}
