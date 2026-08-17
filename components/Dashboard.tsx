@@ -1784,7 +1784,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                                     {showH1MarketsChart ? (
                                         <MomentumChart
                                             title="Tài H1 (1_6) · giá thấp nhất/phút"
-                                            halfSubtitle="Kèo riêng hiệp 1 — không phải slice 1_3"
                                             iconColor="text-violet-500"
                                             chartIdSuffix="ou-h1-markets"
                                             xDomain={xDomainH1}
@@ -1871,7 +1870,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                                         {showH1MarketsUnderChart ? (
                                             <MomentumChart
                                                 title="Giá Xỉu H1 (1_6)"
-                                                halfSubtitle="Kèo riêng hiệp 1 — không phải slice 1_3"
                                                 iconColor="text-rose-500"
                                                 chartIdSuffix="ou-under-h1-markets"
                                                 underXiuMode

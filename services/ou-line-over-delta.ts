@@ -70,11 +70,13 @@ export type OuOverLineRunAvg = {
   avgOver: number;
 };
 
-/** Chip: `1.25 TB 1.825` */
-export function formatOuOverLineRunAvgLabel(run: Pick<OuOverLineRunAvg, 'handicap' | 'avgOver'>): string {
+/** Chip: `1.25 TB 1.825 · 4'` */
+export function formatOuOverLineRunAvgLabel(
+  run: Pick<OuOverLineRunAvg, 'handicap' | 'avgOver' | 'minuteCount'>,
+): string {
   const h = Number(run.handicap.toFixed(2));
   const hStr = Number.isInteger(h) ? h.toFixed(0) : String(h);
-  return `${hStr} TB ${run.avgOver.toFixed(3)}`;
+  return `${hStr} TB ${run.avgOver.toFixed(3)} · ${run.minuteCount}'`;
 }
 
 /**

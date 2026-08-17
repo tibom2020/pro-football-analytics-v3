@@ -70,7 +70,7 @@ describe('computeOuOverLineRunAvgs', () => {
     expect(runs).toHaveLength(1);
     expect(runs[0].avgOver).toBe(1.825);
     expect(runs[0].minuteCount).toBe(4);
-    expect(formatOuOverLineRunAvgLabel(runs[0])).toBe('1.25 TB 1.825');
+    expect(formatOuOverLineRunAvgLabel(runs[0])).toBe("1.25 TB 1.825 · 4'");
   });
 
   it('đổi line (giảm hoặc tăng) → 2 đoạn TB riêng', () => {
@@ -114,6 +114,6 @@ describe('computeOuOverLineRunAvgs', () => {
     expect(runs).toHaveLength(1);
     expect(runs[0].avgOver).toBe(1.9);
     expect(runs[0].minuteCount).toBe(2);
-    expect(formatOuOverLineRunAvgLabel(runs[0])).toBe('1 TB 1.900');
+    expect(formatOuOverLineRunAvgLabel(runs[0])).toBe("1 TB 1.900 · 2'");
   });
 });

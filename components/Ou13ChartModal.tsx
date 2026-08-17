@@ -291,7 +291,6 @@ const H1MarketsPanel: React.FC<{
             {!isOuEmpty ? (
                 <MomentumChart
                     title="Tài/Xỉu H1 (1_6)"
-                    halfSubtitle={`${prefix}Kèo riêng hiệp 1 — không phải slice 1_3`}
                     iconColor="text-violet-500"
                     chartIdSuffix={`${idSuffix}-ou`}
                     marketData={marketData}

@@ -617,7 +617,98 @@ const GameEventMarkers = ({
     })}</>;
 };
 
-/** Nhãn Δ line-drop — HTML phía trên plot, không nằm trong SVG (tránh bị nến/⚽ che). */
+const TB_STRIP_ROW_HEIGHT_PX = 13;
+const TB_STRIP_LABEL_GAP_PX = 3;
+
+type StripMarkerInput = { minute: number; label: string };
+type PlacedStripMarker = StripMarkerInput & { leftPx: number; row: number; orderIndex: number };
+
+function minuteToPlotLeftPx(
+    minute: number,
+    containerWidth: number,
+    xDomain: [number, number],
+    leftGutterPx: number,
+    rightGutterPx: number,
+): number {
+    const [xMin, xMax] = xDomain;
+    const span = Math.max(xMax - xMin, 1e-6);
+    const plotW = Math.max(containerWidth - leftGutterPx - rightGutterPx, 1);
+    return leftGutterPx + ((minute - xMin) / span) * plotW;
+}
+
+function estimateTbStripLabelWidthPx(label: string): number {
+    return Math.max(40, label.length * 5.8 + 6);
+}
+
+/** Xếp chip TB theo thứ tự thời gian; hàng thấp nhất còn chỗ, không chồng ngang. */
+function layoutTbStripMarkers(
+    markers: StripMarkerInput[],
+    containerWidth: number,
+    xDomain: [number, number],
+    leftGutterPx: number,
+    rightGutterPx = 10,
+): { placed: PlacedStripMarker[]; rowCount: number } {
+    if (markers.length === 0) return { placed: [], rowCount: 0 };
+
+    const plotLeft = leftGutterPx;
+    const plotRight = containerWidth - rightGutterPx;
+
+    const withBounds = markers
+        .map((m, orderIndex) => {
+            const center = minuteToPlotLeftPx(m.minute, containerWidth, xDomain, leftGutterPx, rightGutterPx);
+            const width = estimateTbStripLabelWidthPx(m.label);
+            const halfW = width / 2;
+            const leftPx = Math.max(plotLeft + halfW, Math.min(plotRight - halfW, center));
+            return {
+                ...m,
+                orderIndex,
+                leftPx,
+                left: leftPx - halfW,
+                right: leftPx + halfW,
+            };
+        })
+        .sort((a, b) => a.minute - b.minute || a.orderIndex - b.orderIndex);
+
+    const rows: Array<Array<{ left: number; right: number }>> = [];
+    const placed: PlacedStripMarker[] = [];
+
+    for (const m of withBounds) {
+        let row = 0;
+        for (;;) {
+            if (row >= rows.length) {
+                rows.push([]);
+                break;
+            }
+            const overlaps = rows[row]!.some(
+                (seg) => !(m.right + TB_STRIP_LABEL_GAP_PX <= seg.left || m.left >= seg.right + TB_STRIP_LABEL_GAP_PX),
+            );
+            if (!overlaps) break;
+            row++;
+        }
+        rows[row]!.push({ left: m.left, right: m.right });
+        placed.push({ minute: m.minute, label: m.label, leftPx: m.leftPx, row, orderIndex: m.orderIndex });
+    }
+
+    placed.sort((a, b) => a.minute - b.minute || a.orderIndex - b.orderIndex || a.row - b.row);
+    return { placed, rowCount: rows.length };
+}
+
+function useStripContainerWidth(): [React.RefObject<HTMLDivElement>, number] {
+    const ref = useRef<HTMLDivElement>(null);
+    const [width, setWidth] = useState(0);
+    useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const observer = new ResizeObserver((entries) => {
+            if (entries[0]) setWidth(entries[0].contentRect.width);
+        });
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
+    return [ref, width];
+}
+
+/** Nhãn Δ line-drop — HTML phía trên plot; giữ một hàng cố định, lệch nhẹ khi trùng phút. */
 const OuLineDropDeltaStrip = ({
     markers,
     containerWidth,
@@ -632,12 +723,8 @@ const OuLineDropDeltaStrip = ({
     rightGutterPx?: number;
 }) => {
     if (!containerWidth || markers.length === 0) return null;
-    const [xMin, xMax] = xDomain;
-    const span = Math.max(xMax - xMin, 1e-6);
-    const plotW = Math.max(containerWidth - leftGutterPx - rightGutterPx, 1);
-    const leftOf = (minute: number) => leftGutterPx + ((minute - xMin) / span) * plotW;
+    const leftOf = (minute: number) => minuteToPlotLeftPx(minute, containerWidth, xDomain, leftGutterPx, rightGutterPx);
 
-    // Cùng phút nhiều Δ → xếp lệch nhẹ để không đè nhau.
     const stackAt: Record<number, number> = {};
     return (
         <>
@@ -668,17 +755,7 @@ const OuLineDropDeltaStripHost: React.FC<{
     xDomain: [number, number];
     leftGutterPx?: number;
 }> = ({ markers, xDomain, leftGutterPx = 45 }) => {
-    const ref = useRef<HTMLDivElement>(null);
-    const [width, setWidth] = useState(0);
-    useEffect(() => {
-        const el = ref.current;
-        if (!el) return;
-        const observer = new ResizeObserver((entries) => {
-            if (entries[0]) setWidth(entries[0].contentRect.width);
-        });
-        observer.observe(el);
-        return () => observer.disconnect();
-    }, []);
+    const [ref, width] = useStripContainerWidth();
     if (markers.length === 0) return null;
     return (
         <div ref={ref} className="relative h-5 w-full mb-0.5 shrink-0">
@@ -694,77 +771,38 @@ const OuLineDropDeltaStripHost: React.FC<{
     );
 };
 
-const OuLineRunAvgStrip = ({
-    markers,
-    containerWidth,
-    xDomain,
-    leftGutterPx = 45,
-    rightGutterPx = 10,
-}: {
-    markers: Array<{ minute: number; label: string }>;
-    containerWidth?: number;
-    xDomain: [number, number];
-    leftGutterPx?: number;
-    rightGutterPx?: number;
-}) => {
-    if (!containerWidth || markers.length === 0) return null;
-    const [xMin, xMax] = xDomain;
-    const span = Math.max(xMax - xMin, 1e-6);
-    const plotW = Math.max(containerWidth - leftGutterPx - rightGutterPx, 1);
-    const leftOf = (minute: number) => leftGutterPx + ((minute - xMin) / span) * plotW;
-    const stackAt: Record<string, number> = {};
-    return (
-        <>
-            {markers.map((m, i) => {
-                const k = String(m.minute);
-                const stack = stackAt[k] ?? 0;
-                stackAt[k] = stack + 1;
-                return (
-                    <span
-                        key={`ou-run-avg-${m.minute}-${i}-${m.label}`}
-                        className="absolute z-30 pointer-events-none select-none rounded px-1 py-0.5 text-[10px] font-bold leading-none shadow-sm bg-sky-50 text-sky-900 border border-sky-600 dark:bg-sky-950/95 dark:text-sky-200 dark:border-sky-500"
-                        style={{
-                            left: `${leftOf(m.minute) + stack * 4}px`,
-                            top: 0,
-                            transform: 'translateX(-50%)',
-                        }}
-                        title={m.label}
-                    >
-                        {m.label}
-                    </span>
-                );
-            })}
-        </>
-    );
-};
-
 const OuLineRunAvgStripHost: React.FC<{
     markers: Array<{ minute: number; label: string }>;
     xDomain: [number, number];
     leftGutterPx?: number;
 }> = ({ markers, xDomain, leftGutterPx = 45 }) => {
-    const ref = useRef<HTMLDivElement>(null);
-    const [width, setWidth] = useState(0);
-    useEffect(() => {
-        const el = ref.current;
-        if (!el) return;
-        const observer = new ResizeObserver((entries) => {
-            if (entries[0]) setWidth(entries[0].contentRect.width);
-        });
-        observer.observe(el);
-        return () => observer.disconnect();
-    }, []);
+    const [ref, width] = useStripContainerWidth();
+    const layout = useMemo(
+        () => (width > 0 ? layoutTbStripMarkers(markers, width, xDomain, leftGutterPx) : { placed: [], rowCount: 0 }),
+        [markers, width, xDomain, leftGutterPx],
+    );
     if (markers.length === 0) return null;
+    const stripHeight = layout.rowCount * TB_STRIP_ROW_HEIGHT_PX + 1;
     return (
-        <div ref={ref} className="relative h-5 w-full mb-0.5 shrink-0">
-            {width > 0 ? (
-                <OuLineRunAvgStrip
-                    markers={markers}
-                    containerWidth={width}
-                    xDomain={xDomain}
-                    leftGutterPx={leftGutterPx}
-                />
-            ) : null}
+        <div
+            ref={ref}
+            className="relative w-full mb-0 shrink-0 overflow-visible"
+            style={{ height: stripHeight > 0 ? stripHeight : TB_STRIP_ROW_HEIGHT_PX }}
+        >
+            {layout.placed.map((m) => (
+                <span
+                    key={`ou-run-avg-${m.orderIndex}-${m.minute}-${m.label}`}
+                    className="absolute z-30 pointer-events-none select-none rounded px-0.5 py-px text-[10px] font-bold leading-none shadow-sm bg-sky-50 text-sky-900 border border-sky-600 dark:bg-sky-950/95 dark:text-sky-200 dark:border-sky-500 whitespace-nowrap"
+                    style={{
+                        left: `${m.leftPx}px`,
+                        top: `${m.row * TB_STRIP_ROW_HEIGHT_PX}px`,
+                        transform: 'translateX(-50%)',
+                    }}
+                    title={m.label}
+                >
+                    {m.label}
+                </span>
+            ))}
         </div>
     );
 };
@@ -1582,29 +1620,6 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                         </span>
                     </span>
                 </div>
-            ) : null}
-            {!ahChapMode &&
-            !underXiuMode &&
-            marketData.some(
-                (e: any) => typeof e.over === 'number' && isOddsAtOrBelow(e.over, lowOverPriceMax),
-            ) ? (
-                <p className="text-[10px] text-amber-700 dark:text-amber-400 mb-1 flex items-center gap-1.5">
-                    <span
-                        className="inline-block w-2.5 h-2.5 rounded-sm shrink-0"
-                        style={{ backgroundColor: LOW_OVER_CANDLE_FILL }}
-                    />
-                    Nến vàng = Tài ≤ {lowOverPriceMax} (có ghi giá phía trên)
-                </p>
-            ) : null}
-            {!ahChapMode && !underXiuMode && ouLineDropDeltaMarkers.length > 0 ? (
-                <p className="text-[10px] text-amber-800/90 dark:text-amber-300/90 mb-1">
-                    Δ = Tài đầu line mới − Tài cuối line cũ (khi line giảm)
-                </p>
-            ) : null}
-            {!ahChapMode && !underXiuMode && ouLineRunAvgMarkers.length > 0 ? (
-                <p className="text-[10px] text-sky-800/90 dark:text-sky-300/90 mb-1">
-                    TB = tổng Tài ÷ số phút của đoạn line
-                </p>
             ) : null}
             {ahChapMode ? (
                 <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-2 flex-wrap">
