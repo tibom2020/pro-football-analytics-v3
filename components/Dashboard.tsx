@@ -95,6 +95,8 @@ import { safeSetItem } from '../services/safe-storage';
 const SHOW_UNDER_XIU_CHARTS_KEY = 'pfa_show_under_xiu_charts';
 /** Preference UI: hiện/ẩn biểu đồ biến động tick (Phase 3) — không thay chart cũ. */
 const SHOW_TICK_VOLATILITY_KEY = 'pfa_show_tick_volatility_chart';
+/** Preference UI: hiện/ẩn dải biên độ + số lần đổi giá dưới chart nến OU. */
+const SHOW_MINUTE_AGG_CHARTS_KEY = 'pfa_show_minute_agg_charts';
 
 function readShowUnderXiuCharts(): boolean {
     try {
@@ -110,6 +112,17 @@ function readShowUnderXiuCharts(): boolean {
 function readShowTickVolatility(): boolean {
     try {
         const raw = localStorage.getItem(SHOW_TICK_VOLATILITY_KEY);
+        if (raw === '0' || raw === 'false') return false;
+        if (raw === '1' || raw === 'true') return true;
+    } catch {
+        /* ignore */
+    }
+    return true;
+}
+
+function readShowMinuteAggCharts(): boolean {
+    try {
+        const raw = localStorage.getItem(SHOW_MINUTE_AGG_CHARTS_KEY);
         if (raw === '0' || raw === 'false') return false;
         if (raw === '1' || raw === 'true') return true;
     } catch {
@@ -236,6 +249,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
     const [showUnderXiuCharts, setShowUnderXiuCharts] = useState(readShowUnderXiuCharts);
     /** Biểu đồ biến động tick (thêm mới) — mặc định hiện. */
     const [showTickVolatility, setShowTickVolatility] = useState(readShowTickVolatility);
+    /** Dải biên độ + số lần đổi giá dưới chart nến OU — mặc định hiện. */
+    const [showMinuteAggCharts, setShowMinuteAggCharts] = useState(readShowMinuteAggCharts);
     const [tickVolMarket, setTickVolMarket] = useState<'ou' | 'ah'>('ou');
     const [ouTickSeries, setOuTickSeries] = useState<{ inPlay: Tick[]; prematch: Tick[] }>({
         inPlay: [],
@@ -1510,6 +1525,42 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                                 <button
                                     type="button"
                                     onClick={() => {
+                                        setShowMinuteAggCharts((prev) => {
+                                            const next = !prev;
+                                            try {
+                                                localStorage.setItem(
+                                                    SHOW_MINUTE_AGG_CHARTS_KEY,
+                                                    next ? '1' : '0',
+                                                );
+                                            } catch {
+                                                /* ignore */
+                                            }
+                                            return next;
+                                        });
+                                    }}
+                                    className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${
+                                        showMinuteAggCharts
+                                            ? 'border-cyan-300 dark:border-cyan-800 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300'
+                                            : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300'
+                                    }`}
+                                    title={
+                                        showMinuteAggCharts
+                                            ? 'Ẩn biểu đồ biên độ và số lần đổi giá'
+                                            : 'Hiện biểu đồ biên độ và số lần đổi giá'
+                                    }
+                                >
+                                    {showMinuteAggCharts ? (
+                                        <EyeOff className="w-3.5 h-3.5" />
+                                    ) : (
+                                        <Eye className="w-3.5 h-3.5" />
+                                    )}
+                                    {showMinuteAggCharts
+                                        ? 'Ẩn biên độ / đổi giá'
+                                        : 'Hiện biên độ / đổi giá'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
                                         setShowUnderXiuCharts((prev) => {
                                             const next = !prev;
                                             try {
@@ -1563,6 +1614,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                                             homeTeamName={liveMatch.home.name}
                                             awayTeamName={liveMatch.away.name}
                                             minuteAggs={ouMinuteAggsH1}
+                                            showMinuteVolatility={showMinuteAggCharts}
                                         />
                                     ) : (
                                         <div className="flex items-center justify-center h-56 text-xs text-slate-400 dark:text-slate-500">
@@ -1599,6 +1651,62 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                                 </section>
                             </div>
                             <div className="grid gap-4 lg:grid-cols-2">
+                                <section className="rounded-xl border border-violet-200 dark:border-violet-900/50 bg-white/50 dark:bg-slate-900/30 p-1">
+                                    <p className="text-[11px] font-bold text-violet-700/90 dark:text-violet-400/90 uppercase tracking-wide px-3 pt-2 pb-1">
+                                        Tài H1 (1_6) · giá thấp nhất/phút
+                                    </p>
+                                    {showH1MarketsChart ? (
+                                        <MomentumChart
+                                            title="Tài H1 (1_6) · giá thấp nhất/phút"
+                                            iconColor="text-violet-500"
+                                            chartIdSuffix="ou-h1-markets"
+                                            xDomain={xDomainH1}
+                                            xTicks={ticksH1Memo}
+                                            marketData={h1MarketsOuChartData}
+                                            sortedMarketData={sortedH1MarketsOuChartData}
+                                            yAxisConfig={h1MarketsOuYAxisConfig}
+                                            shotEvents={shotEventsH1}
+                                            gameEvents={gameEventsH1}
+                                            homeTeamName={liveMatch.home.name}
+                                            awayTeamName={liveMatch.away.name}
+                                            minuteAggs={h1OuMinuteAggs}
+                                            showMinuteVolatility={showMinuteAggCharts}
+                                        />
+                                    ) : (
+                                        <div className="flex items-center justify-center h-56 text-xs text-slate-400 dark:text-slate-500">
+                                            Chưa có dữ liệu kèo H1 (1_6)
+                                        </div>
+                                    )}
+                                </section>
+                                <section className="rounded-xl border border-violet-200 dark:border-violet-900/50 bg-white/50 dark:bg-slate-900/30 p-1">
+                                    <p className="text-[11px] font-bold text-violet-700/90 dark:text-violet-400/90 uppercase tracking-wide px-3 pt-2 pb-1">
+                                        Tài H1 (1_6) · giá cao nhất/phút
+                                    </p>
+                                    {showH1MarketsHighOverChart ? (
+                                        <MomentumChart
+                                            title="Tài H1 (1_6) · giá cao nhất/phút"
+                                            halfSubtitle="Kèo riêng hiệp 1 — peak over mỗi phút"
+                                            iconColor="text-violet-600"
+                                            chartIdSuffix="ou-high-h1-markets"
+                                            xDomain={xDomainH1}
+                                            xTicks={ticksH1Memo}
+                                            marketData={h1MarketsHighOverChartData}
+                                            sortedMarketData={sortedH1MarketsHighOverChartData}
+                                            yAxisConfig={h1MarketsHighOverYAxisConfig}
+                                            shotEvents={shotEventsH1}
+                                            gameEvents={gameEventsH1}
+                                            homeTeamName={liveMatch.home.name}
+                                            awayTeamName={liveMatch.away.name}
+                                            lowOverPriceMax={OU_HIGH_OVER_YELLOW_PRICE_MAX}
+                                        />
+                                    ) : (
+                                        <div className="flex items-center justify-center h-56 text-xs text-slate-400 dark:text-slate-500">
+                                            Chưa có dữ liệu Tài cao nhất H1 (1_6)
+                                        </div>
+                                    )}
+                                </section>
+                            </div>
+                            <div className="grid gap-4 lg:grid-cols-2">
                                 <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/30 p-1">
                                     <p className="text-[11px] font-bold text-sky-700/90 dark:text-sky-400/90 uppercase tracking-wide px-3 pt-2 pb-1">
                                         Hiệp 2 · Tài (1_3) · giá thấp nhất/phút
@@ -1619,6 +1727,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                                             homeTeamName={liveMatch.home.name}
                                             awayTeamName={liveMatch.away.name}
                                             minuteAggs={ouMinuteAggsH2}
+                                            showMinuteVolatility={showMinuteAggCharts}
                                         />
                                     ) : (
                                         <div className="flex items-center justify-center h-56 text-xs text-slate-400 dark:text-slate-500">
@@ -1776,61 +1885,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                                     </section>
                                 </div>
                             ) : null}
-                            <div className="grid gap-4 lg:grid-cols-2">
-                                <section className="rounded-xl border border-violet-200 dark:border-violet-900/50 bg-white/50 dark:bg-slate-900/30 p-1">
-                                    <p className="text-[11px] font-bold text-violet-700/90 dark:text-violet-400/90 uppercase tracking-wide px-3 pt-2 pb-1">
-                                        Tài H1 (1_6) · giá thấp nhất/phút
-                                    </p>
-                                    {showH1MarketsChart ? (
-                                        <MomentumChart
-                                            title="Tài H1 (1_6) · giá thấp nhất/phút"
-                                            iconColor="text-violet-500"
-                                            chartIdSuffix="ou-h1-markets"
-                                            xDomain={xDomainH1}
-                                            xTicks={ticksH1Memo}
-                                            marketData={h1MarketsOuChartData}
-                                            sortedMarketData={sortedH1MarketsOuChartData}
-                                            yAxisConfig={h1MarketsOuYAxisConfig}
-                                            shotEvents={shotEventsH1}
-                                            gameEvents={gameEventsH1}
-                                            homeTeamName={liveMatch.home.name}
-                                            awayTeamName={liveMatch.away.name}
-                                            minuteAggs={h1OuMinuteAggs}
-                                        />
-                                    ) : (
-                                        <div className="flex items-center justify-center h-56 text-xs text-slate-400 dark:text-slate-500">
-                                            Chưa có dữ liệu kèo H1 (1_6)
-                                        </div>
-                                    )}
-                                </section>
-                                <section className="rounded-xl border border-violet-200 dark:border-violet-900/50 bg-white/50 dark:bg-slate-900/30 p-1">
-                                    <p className="text-[11px] font-bold text-violet-700/90 dark:text-violet-400/90 uppercase tracking-wide px-3 pt-2 pb-1">
-                                        Tài H1 (1_6) · giá cao nhất/phút
-                                    </p>
-                                    {showH1MarketsHighOverChart ? (
-                                        <MomentumChart
-                                            title="Tài H1 (1_6) · giá cao nhất/phút"
-                                            halfSubtitle="Kèo riêng hiệp 1 — peak over mỗi phút"
-                                            iconColor="text-violet-600"
-                                            chartIdSuffix="ou-high-h1-markets"
-                                            xDomain={xDomainH1}
-                                            xTicks={ticksH1Memo}
-                                            marketData={h1MarketsHighOverChartData}
-                                            sortedMarketData={sortedH1MarketsHighOverChartData}
-                                            yAxisConfig={h1MarketsHighOverYAxisConfig}
-                                            shotEvents={shotEventsH1}
-                                            gameEvents={gameEventsH1}
-                                            homeTeamName={liveMatch.home.name}
-                                            awayTeamName={liveMatch.away.name}
-                                            lowOverPriceMax={OU_HIGH_OVER_YELLOW_PRICE_MAX}
-                                        />
-                                    ) : (
-                                        <div className="flex items-center justify-center h-56 text-xs text-slate-400 dark:text-slate-500">
-                                            Chưa có dữ liệu Tài cao nhất H1 (1_6)
-                                        </div>
-                                    )}
-                                </section>
-                            </div>
                             <div className="grid gap-4 lg:grid-cols-2">
                                 <section className="rounded-xl border border-violet-200 dark:border-violet-900/50 bg-white/50 dark:bg-slate-900/30 p-1">
                                     <p className="text-[11px] font-bold text-violet-700/90 dark:text-violet-400/90 uppercase tracking-wide px-3 pt-2 pb-1">
