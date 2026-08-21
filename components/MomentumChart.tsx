@@ -522,85 +522,23 @@ const OverlayContainer: React.FC<OverlayProps> = ({ children }) => {
     );
 };
 
-const ShotBalls = ({ shots, containerWidth, xDomain, leftGutterPx = 45, rightGutterPx = 35 }: { shots: any[]; containerWidth?: number; xDomain: [number, number]; leftGutterPx?: number; rightGutterPx?: number }) => {
-    if (!containerWidth || shots.length === 0) return null;
-    const [xMin, xMax] = xDomain;
-    const span = Math.max(xMax - xMin, 1e-6);
-    const calculateLeft = (minute: number) => {
-        const chartAreaWidth = containerWidth - leftGutterPx - rightGutterPx;
-        const leftOffset = leftGutterPx;
-        return leftOffset + ((minute - xMin) / span) * chartAreaWidth - 10;
-    };
-    const shotsByMinute = shots.reduce((acc: Record<number, ('on' | 'off')[]>, shot) => {
-        if (!acc[shot.minute]) acc[shot.minute] = [];
-        acc[shot.minute].push(shot.type);
-        return acc;
-    }, {} as Record<number, ('on' | 'off')[]>);
-    return <>{Object.entries(shotsByMinute).map(([minute, types]) => (types as ('on' | 'off')[]).map((type, index) => (<div key={`${minute}-${index}`} className={`ball-icon ${type === 'on' ? 'ball-on' : 'ball-off'}`} style={{ left: `${calculateLeft(Number(minute))}px`, top: `${4 + index * 22}px` }} title={`Shot ${type}-target at ${minute}'`}>⚽</div>)))}</>;
-};
-
 const GameEventMarkers = ({
     events,
     containerWidth,
     xDomain,
     leftGutterPx = 45,
-    rightGutterPx = 35,
-    homeTeamName,
-    awayTeamName,
+    rightGutterPx = 10,
 }: {
     events: any[];
     containerWidth?: number;
     xDomain: [number, number];
     leftGutterPx?: number;
     rightGutterPx?: number;
-    homeTeamName?: string;
-    awayTeamName?: string;
 }) => {
     if (!containerWidth || events.length === 0) return null;
-    const [xMin, xMax] = xDomain;
-    const span = Math.max(xMax - xMin, 1e-6);
-    const calculateLeft = (minute: number) => {
-        const chartAreaWidth = containerWidth - leftGutterPx - rightGutterPx;
-        const leftOffset = leftGutterPx;
-        return leftOffset + ((minute - xMin) / span) * chartAreaWidth;
-    };
-    const shortTeamName = (name?: string, max = 10) => {
-        const t = (name ?? '').trim();
-        if (!t) return '';
-        return t.length <= max ? t : `${t.slice(0, max - 1)}…`;
-    };
-    const goalTeamLabel = (team?: 'home' | 'away') => {
-        if (team === 'home') return shortTeamName(homeTeamName) || 'Nhà';
-        if (team === 'away') return shortTeamName(awayTeamName) || 'Khách';
-        return '?';
-    };
-    const goalsAtMinute: Record<string, number> = {};
+    const calculateLeft = (minute: number) =>
+        minuteToPlotLeftPx(minute, containerWidth, xDomain, leftGutterPx, rightGutterPx);
     return <>{events.map((event, i) => {
-        if (event.type === 'goal') {
-            const teamKey = event.team ?? '?';
-            const key = `${event.minute}-${teamKey}`;
-            const stack = goalsAtMinute[key] ?? 0;
-            goalsAtMinute[key] = stack + 1;
-            const offsetPx = stack * 14;
-            const label = goalTeamLabel(event.team);
-            const teamCls =
-                event.team === 'home'
-                    ? 'chart-goal-team-label--home'
-                    : event.team === 'away'
-                      ? 'chart-goal-team-label--away'
-                      : 'chart-goal-team-label--unknown';
-            return (
-                <div
-                    key={`goal-${event.minute}-${teamKey}-${i}`}
-                    className="game-event-goal-stack"
-                    style={{ left: `${calculateLeft(event.minute) + offsetPx}px`, top: '2px', transform: 'translateX(-50%)' }}
-                    title={`Bàn thắng ${event.minute}' · ${label}`}
-                >
-                    <span className={`chart-goal-team-label ${teamCls}`}>{label}</span>
-                    <div className="chart-goal-ball flex items-center justify-center">⚽</div>
-                </div>
-            );
-        }
         if (event.type === 'corner') {
             return (
                 <div
@@ -615,6 +553,151 @@ const GameEventMarkers = ({
         }
         return null;
     })}</>;
+};
+
+const SHOT_BALL_SLOT_PX = 22;
+const GOAL_STACK_SLOT_PX = 38;
+const SHOT_STRIP_COLLIDE_GAP_PX = 2;
+
+type ShotGoalStripItem =
+    | { kind: 'shot'; minute: number; index: number; on: boolean; leftPx: number; row: number }
+    | { kind: 'goal'; minute: number; index: number; team?: 'home' | 'away'; leftPx: number; row: number };
+
+function layoutShotGoalStripItems(
+    shots: Array<{ minute?: number; type?: string }>,
+    goals: Array<{ minute?: number; team?: 'home' | 'away' }>,
+    containerWidth: number,
+    xDomain: [number, number],
+    leftGutterPx: number,
+): { placed: ShotGoalStripItem[]; rowCount: number } {
+    const pending: Array<Omit<ShotGoalStripItem, 'leftPx' | 'row'> & { width: number }> = [];
+    shots.forEach((shot, index) => {
+        const minute = Number(shot.minute);
+        if (!Number.isFinite(minute)) return;
+        pending.push({ kind: 'shot', minute, index, on: shot.type === 'on', width: SHOT_BALL_SLOT_PX });
+    });
+    goals.forEach((event, index) => {
+        const minute = Number(event.minute);
+        if (!Number.isFinite(minute)) return;
+        pending.push({ kind: 'goal', minute, index, team: event.team, width: GOAL_STACK_SLOT_PX });
+    });
+    pending.sort((a, b) => a.minute - b.minute || (a.kind === b.kind ? a.index - b.index : a.kind === 'shot' ? -1 : 1));
+    const rowRight: number[] = [];
+    const placed: ShotGoalStripItem[] = [];
+    for (const item of pending) {
+        const leftPx = minuteToPlotLeftPx(item.minute, containerWidth, xDomain, leftGutterPx, 10);
+        const half = item.width / 2;
+        let row = 0;
+        while (row < rowRight.length && rowRight[row]! + SHOT_STRIP_COLLIDE_GAP_PX > leftPx - half) {
+            row += 1;
+        }
+        if (row === rowRight.length) rowRight.push(Number.NEGATIVE_INFINITY);
+        rowRight[row] = leftPx + half;
+        if (item.kind === 'shot') {
+            placed.push({ kind: 'shot', minute: item.minute, index: item.index, on: item.on, leftPx, row });
+        } else {
+            placed.push({ kind: 'goal', minute: item.minute, index: item.index, team: item.team, leftPx, row });
+        }
+    }
+    return { placed, rowCount: Math.max(1, rowRight.length) };
+}
+
+const ChartShotGoalStripHost: React.FC<{
+    shots: any[];
+    events: any[];
+    xDomain: [number, number];
+    leftGutterPx?: number;
+    homeTeamName?: string;
+    awayTeamName?: string;
+}> = ({ shots, events, xDomain, leftGutterPx = 45, homeTeamName, awayTeamName }) => {
+    const [ref, width] = useStripContainerWidth();
+    const goals = events.filter((e) => e.type === 'goal');
+    if (shots.length === 0 && goals.length === 0) return null;
+    const layout =
+        width > 0
+            ? layoutShotGoalStripItems(shots, goals, width, xDomain, leftGutterPx)
+            : { placed: [] as ShotGoalStripItem[], rowCount: 1 };
+    const rowPx = goals.length > 0 ? GOAL_STACK_SLOT_PX : SHOT_BALL_SLOT_PX;
+    const stripHeight = layout.rowCount * rowPx + 6;
+    return (
+        <div
+            ref={ref}
+            className="relative w-full mb-0.5 shrink-0 overflow-visible"
+            style={{ height: stripHeight }}
+        >
+            {width > 0 ? (
+                <ChartShotGoalStrip
+                    placed={layout.placed}
+                    rowPx={rowPx}
+                    homeTeamName={homeTeamName}
+                    awayTeamName={awayTeamName}
+                />
+            ) : null}
+        </div>
+    );
+};
+
+const ChartShotGoalStrip = ({
+    placed,
+    rowPx,
+    homeTeamName,
+    awayTeamName,
+}: {
+    placed: ShotGoalStripItem[];
+    rowPx: number;
+    homeTeamName?: string;
+    awayTeamName?: string;
+}) => {
+    const shortTeamName = (name?: string, max = 10) => {
+        const t = (name ?? '').trim();
+        if (!t) return '';
+        return t.length <= max ? t : `${t.slice(0, max - 1)}…`;
+    };
+    const goalTeamLabel = (team?: 'home' | 'away') => {
+        if (team === 'home') return shortTeamName(homeTeamName) || 'Nhà';
+        if (team === 'away') return shortTeamName(awayTeamName) || 'Khách';
+        return '?';
+    };
+    return (
+        <>
+            {placed.map((item) => {
+                if (item.kind === 'shot') {
+                    return (
+                        <div
+                            key={`shot-strip-${item.minute}-${item.index}`}
+                            className={`ball-icon ${item.on ? 'ball-on' : 'ball-off'}`}
+                            style={{ left: `${item.leftPx}px`, top: `${item.row * rowPx + 2}px` }}
+                            title={`Sút ${item.on ? 'trúng đích' : 'lệch'} ${item.minute}'`}
+                        >
+                            ⚽
+                        </div>
+                    );
+                }
+                const label = goalTeamLabel(item.team);
+                const teamCls =
+                    item.team === 'home'
+                        ? 'chart-goal-team-label--home'
+                        : item.team === 'away'
+                          ? 'chart-goal-team-label--away'
+                          : 'chart-goal-team-label--unknown';
+                return (
+                    <div
+                        key={`goal-strip-${item.minute}-${item.index}`}
+                        className="game-event-goal-stack"
+                        style={{
+                            left: `${item.leftPx}px`,
+                            top: `${item.row * rowPx}px`,
+                            transform: 'translateX(-50%)',
+                        }}
+                        title={`Bàn thắng ${item.minute}' · ${label}`}
+                    >
+                        <span className={`chart-goal-team-label ${teamCls}`}>{label}</span>
+                        <div className="chart-goal-ball flex items-center justify-center">⚽</div>
+                    </div>
+                );
+            })}
+        </>
+    );
 };
 
 const TB_STRIP_ROW_HEIGHT_PX = 13;
@@ -699,6 +782,8 @@ function useStripContainerWidth(): [React.RefObject<HTMLDivElement>, number] {
     useEffect(() => {
         const el = ref.current;
         if (!el) return;
+        const apply = () => setWidth(el.clientWidth);
+        apply();
         const observer = new ResizeObserver((entries) => {
             if (entries[0]) setWidth(entries[0].contentRect.width);
         });
@@ -1681,6 +1766,14 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                 xDomain={xDomain}
                 leftGutterPx={leftGutterPx}
             />
+            <ChartShotGoalStripHost
+                shots={shotEvents}
+                events={gameEvents}
+                xDomain={xDomain}
+                leftGutterPx={leftGutterPx}
+                homeTeamName={homeTeamName}
+                awayTeamName={awayTeamName}
+            />
             <div
                 ref={setPlotRef}
                 data-ou-chart-plot
@@ -1918,13 +2011,10 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                     </ComposedChart>
                 </ResponsiveContainer>
                 <OverlayContainer>
-                    <ShotBalls shots={shotEvents} xDomain={xDomain} leftGutterPx={leftGutterPx} />
                     <GameEventMarkers
                         events={gameEvents}
                         xDomain={xDomain}
                         leftGutterPx={leftGutterPx}
-                        homeTeamName={homeTeamName}
-                        awayTeamName={awayTeamName}
                     />
                 </OverlayContainer>
             </div>

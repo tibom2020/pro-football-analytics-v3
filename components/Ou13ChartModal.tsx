@@ -56,23 +56,19 @@ export interface Ou13ChartBundle {
     userNotes?: UserNoteLite[];
 }
 
-/** Suy ra shot events (⚽ trên/lệch đích) từ delta counter lũy kế giữa 2 phút liền nhau cùng hiệp. */
+/** Suy ra shot events (⚽ trên/lệch đích) từ delta counter lũy kế (cả trận, gồm phút trống). */
 function deriveShotEvents(stats: MinuteStatRow[]): ShotEventLite[] {
     const out: ShotEventLite[] = [];
-    for (const half of [1, 2] as const) {
-        const rows = stats.filter((r) => r.half === half).sort((a, b) => a.minute - b.minute);
-        let prevOn = 0;
-        let prevOff = 0;
-        rows.forEach((r, i) => {
-            const on = (r.onTarget[0] ?? 0) + (r.onTarget[1] ?? 0);
-            const off = (r.offTarget[0] ?? 0) + (r.offTarget[1] ?? 0);
-            if (i > 0) {
-                for (let k = 0; k < on - prevOn; k++) out.push({ minute: r.minute, half, type: 'on' });
-                for (let k = 0; k < off - prevOff; k++) out.push({ minute: r.minute, half, type: 'off' });
-            }
-            prevOn = on;
-            prevOff = off;
-        });
+    const rows = [...stats].sort((a, b) => a.half - b.half || a.minute - b.minute);
+    let prevOn = 0;
+    let prevOff = 0;
+    for (const r of rows) {
+        const on = (r.onTarget[0] ?? 0) + (r.onTarget[1] ?? 0);
+        const off = (r.offTarget[0] ?? 0) + (r.offTarget[1] ?? 0);
+        for (let k = 0; k < on - prevOn; k++) out.push({ minute: r.minute, half: r.half, type: 'on' });
+        for (let k = 0; k < off - prevOff; k++) out.push({ minute: r.minute, half: r.half, type: 'off' });
+        prevOn = on;
+        prevOff = off;
     }
     return out;
 }

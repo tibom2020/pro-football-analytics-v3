@@ -127,6 +127,10 @@ describe('listOuLowOverRows', () => {
 
 describe('halfPeriodShotTotalsAt', () => {
   it('trả null khi không có history', () => {
-    expect(halfPeriodShotTotalsAt(null, 1, 10)).toEqual({ onTarget: null, totalShots: null });
+    expect(halfPeriodShotTotalsAt(null, 1, 10)).toEqual({
+      onTarget: null,
+      totalShots: null,
+      dangerousAttacks: null,
+    });
   });
 });

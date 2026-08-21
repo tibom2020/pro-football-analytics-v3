@@ -128,7 +128,7 @@ export const config = {
     /** Absolute hoặc relative tới REPO_ROOT. Mặc định `data/v2`. */
     dataDir: process.env.MATCH_V2_DATA_DIR || 'data/v2',
     /** Chu kỳ gọi lịch sử odds. Không tự giảm khi truncation — chỉ báo. */
-    pollIntervalMs: parseInt(process.env.MATCH_V2_POLL_INTERVAL_MS || '60000', 10),
+    pollIntervalMs: parseInt(process.env.MATCH_V2_POLL_INTERVAL_MS || '90000', 10),
     /**
      * Local (`NODE_ENV` ≠ production): bật mặc định.
      * VPS/production: tắt mặc định — set FEATURE_MATCH_V2=true nếu cần ghi data/v2.

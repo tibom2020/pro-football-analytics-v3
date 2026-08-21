@@ -28,7 +28,7 @@ const B365_API_ODDS = "https://api.b365api.com/v2/event/odds";
 
 // --- Client-side Rate Limiting Configuration ---
 // Minimum interval between API calls — reduced to 2s so requests within a tab don't queue up for 20s.
-const MIN_API_CALL_INTERVAL = 2 * 1000;
+const MIN_API_CALL_INTERVAL = 3 * 1000;
 let lastApiCallTime = 0; // Timestamp of the last API call initiated
 
 /**
@@ -118,11 +118,7 @@ function withB365Token(baseUrl: string, token: string): string {
  * Performs a proxied fetch and handles common API/Proxy errors with retry logic for 429.
  * Applies client-side rate limit before each fetch attempt.
  */
-const safeFetch = async (url: string, retries = 0): Promise<any> => {
-  const MAX_RETRIES = 3;
-  const INITIAL_RETRY_DELAY_MS = 2000; // 2 seconds
-
-  // Apply client-side rate limit before attempting fetch
+const safeFetch = async (url: string): Promise<any> => {
   await enforceRateLimit();
 
   // Luồng 1 (mặc định): Browser → server AI → Cloudflare Worker → B365 (Worker xử lý CORS / một số mạng).
@@ -142,17 +138,9 @@ const safeFetch = async (url: string, retries = 0): Promise<any> => {
     }
 
     if (response.status === 429) {
-      if (retries < MAX_RETRIES) {
-        const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, retries);
-        console.warn(`Quá nhiều yêu cầu (429) từ Proxy. Đang thử lại sau ${delay / 1000} giây... (Lần thử: ${retries + 1}/${MAX_RETRIES})`);
-        await new Promise(res => setTimeout(res, delay));
-        return safeFetch(url, retries + 1); // Retry the fetch
-      } else {
-        // Updated 429 error message
-        throw new Error(
-          "Giới hạn tần suất (429) sau nhiều lần thử. Nếu đang dùng Cloudflare Worker, kiểm tra rate limit Worker; nếu chỉ dev local, thử `VITE_B365_SKIP_WORKER=true` để gọi B365 trực tiếp từ server Node.",
-        );
-      }
+      throw new Error(
+        'Giới hạn B365 3600 request/giờ (429). Proxy sẽ dùng cache cũ nếu còn; đợi rồi tải lại, bớt tab trận đang mở.',
+      );
     }
 
     if (!response.ok) {

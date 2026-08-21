@@ -40,7 +40,7 @@ function clearStoredB365Token(): void {
 }
 
 const App = () => {
-  const REFRESH_INTERVAL_MS = 30_000;
+  const REFRESH_INTERVAL_MS = 60_000;
 
   const [token, setToken] = useState('');
   const [hasToken, setHasToken] = useState(false);
@@ -250,7 +250,9 @@ const App = () => {
     const startFetching = async () => {
       if (isMounted) {
         await fetchEventsData();
-        intervalId = window.setInterval(() => { if (isMounted) fetchEventsData(); }, REFRESH_INTERVAL_MS);
+        intervalId = window.setInterval(() => {
+          if (isMounted && !document.hidden) void fetchEventsData();
+        }, REFRESH_INTERVAL_MS);
       }
     };
     void startFetching();

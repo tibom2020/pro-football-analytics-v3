@@ -19,6 +19,8 @@ export interface OuLineDropAlertBody {
   statsLines?: string[];
   perTeamApiLines?: string[];
   oddsTwoTeamLines?: string[];
+  /** Ngữ cảnh chart thấp/cao theo hiệp. */
+  lineChartLines?: string[];
   eventTimeMs?: number;
 }
 
@@ -109,6 +111,7 @@ export function createOuLineDropAlertRouter(telegram: TelegramSender): Router {
         statsLines: Array.isArray(body.statsLines) ? body.statsLines : [],
         perTeamApiLines: Array.isArray(body.perTeamApiLines) ? body.perTeamApiLines : undefined,
         oddsTwoTeamLines: Array.isArray(body.oddsTwoTeamLines) ? body.oddsTwoTeamLines : undefined,
+        lineChartLines: Array.isArray(body.lineChartLines) ? body.lineChartLines : undefined,
         alertTitle,
         alertMessage,
         alertType: 'ou_line_drop',

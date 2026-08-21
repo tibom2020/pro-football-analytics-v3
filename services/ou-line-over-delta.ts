@@ -62,6 +62,24 @@ export function detectOuOverLineDropDeltas(
   return out;
 }
 
+/** Δ âm mạnh nhất (số nhỏ nhất). Không có Δ < 0 → undefined. */
+export function strongestNegativeDelta(
+  rows: readonly OuOverLineDropPoint[],
+): number | undefined {
+  const deltas = detectOuOverLineDropDeltas(rows)
+    .map((d) => d.delta)
+    .filter((d) => Number.isFinite(d) && d < 0);
+  if (deltas.length === 0) return undefined;
+  return Math.min(...deltas);
+}
+
+/** Ngưỡng nổi bật trên trang chủ: |Δ| ≥ 0.350 (Δ ≤ −0.350). */
+export const STRONG_NEG_DELTA_HIGHLIGHT = -0.35;
+
+export function isStrongNegDeltaHighlight(delta: number | undefined): boolean {
+  return typeof delta === 'number' && Number.isFinite(delta) && delta <= STRONG_NEG_DELTA_HIGHLIGHT;
+}
+
 export type OuOverLineRunAvg = {
   handicap: number;
   minuteStart: number;
@@ -80,7 +98,8 @@ export function formatOuOverLineRunAvgLabel(
 }
 
 /**
- * TB Tài từng đoạn line liền kề: tổng over ÷ số phút (round 3).
+ * TB Tài từng đoạn line liền kề: tổng over ÷ số nến có giá (round 3).
+ * `minuteCount` = phút cuối − phút đầu + 1 (gồm phút trống không nến).
  * Cùng HDP nhưng bị cắt bởi line khác → 2 đoạn riêng.
  */
 export function computeOuOverLineRunAvgs(
@@ -102,12 +121,15 @@ export function computeOuOverLineRunAvgs(
   let count = 1;
   let last = start;
 
-  const flush = () => {
+  const flush = (endMinute: number) => {
+    const end = Math.max(last.minute, endMinute);
+    const span = Math.round(end) - Math.round(start.minute) + 1;
     out.push({
       handicap: start.handicap,
       minuteStart: start.minute,
-      minuteEnd: last.minute,
-      minuteCount: count,
+      minuteEnd: end,
+      /** Số phút tồn tại (gồm phút trống không nến), không phải số nến. */
+      minuteCount: Math.max(1, span),
       avgOver: roundOdds3(sum / count),
     });
   };
@@ -120,12 +142,13 @@ export function computeOuOverLineRunAvgs(
       last = curr;
       continue;
     }
-    flush();
+    // Line đổi: đoạn cũ tồn tại tới phút liền trước nến line mới (kể cả phút trống).
+    flush(curr.minute - 1);
     start = curr;
     sum = curr.over;
     count = 1;
     last = curr;
   }
-  flush();
+  flush(last.minute);
   return out;
 }

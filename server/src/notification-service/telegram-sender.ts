@@ -40,6 +40,8 @@ export interface NhatKyAlertPayload {
   perTeamApiLines?: string[];
   /** Tài/Xỉu + chấp, nhãn 2 đội. */
   oddsTwoTeamLines?: string[];
+  /** Line 1_3/1_6 thấp nhất vs cao nhất (chart). */
+  lineChartLines?: string[];
   /** Chuỗi phút chuông báo động (áp lực). */
   pressureBellHistoryMinutes?: string;
   /** Chuỗi phút cường độ giảm giá OU. */
@@ -197,6 +199,13 @@ export class TelegramSender {
         : payload.oddsLines.length > 0
           ? `📈 *Kèo hiện có:*\n${payload.oddsLines.map((l) => `• ${this.escapeMarkdown(l)}`).join('\n')}`
           : '';
+    const chartLines = Array.isArray(payload.lineChartLines)
+      ? payload.lineChartLines.filter((l) => typeof l === 'string' && l.trim())
+      : [];
+    const chartBlock =
+      chartLines.length > 0
+        ? `📉 *Line chart:*\n${chartLines.map((l) => `• ${this.escapeMarkdown(l)}`).join('\n')}`
+        : '';
     const perTeamBlock =
       Array.isArray(payload.perTeamApiLines) && payload.perTeamApiLines.length > 0
         ? `📡 *Chỉ số từng đội (API):*\n${payload.perTeamApiLines.map((l) => `• ${this.escapeMarkdown(l)}`).join('\n')}`
@@ -222,6 +231,7 @@ export class TelegramSender {
       `📍 Tỷ số: *${this.escapeMarkdown(payload.score)}* | Phút: *${payload.minute}'*`,
       ``,
       oddsBlock,
+      chartBlock ? `\n${chartBlock}` : '',
       perTeamBlock ? `\n${perTeamBlock}` : '',
       statsBlock ? `\n${statsBlock}` : '',
       ``,

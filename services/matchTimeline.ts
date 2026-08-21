@@ -18,6 +18,31 @@ export function decodeStatTimelineKey(key: number): { half: MatchHalf; minute: n
   return { half: 1, minute: key };
 }
 
+/** H2: đồng hồ reset (0–44) vs liên tục (≥45). */
+export type H2ClockMode = 'reset' | 'continuous';
+
+export function detectH2ClockMode(h2RawMinutes: readonly number[]): H2ClockMode {
+  if (h2RawMinutes.some((m) => m >= 45)) return 'continuous';
+  return 'reset';
+}
+
+/**
+ * Phút trên trục biểu đồ: H2 luôn 45…90+ (đồng hồ liên tục).
+ * Feed reset H2 (tm 0–44) → cộng 45. Feed liên tục → giữ nguyên (≥45).
+ */
+export function chartMinuteForHalf(
+  half: MatchHalf,
+  minute: number,
+  h2Mode: H2ClockMode = 'reset',
+): number {
+  const m = Math.max(0, Math.round(minute));
+  if (half === 2) {
+    if (h2Mode === 'continuous') return m;
+    return m < 45 ? m + 45 : m;
+  }
+  return m;
+}
+
 /** B365 thường dùng tt: 1 = hiệp 1, 2 = hiệp 2 (có thể khác nhà cung cấp). */
 export function isSecondHalfTimer(timer?: MatchInfo['timer']): boolean {
   if (!timer) return false;

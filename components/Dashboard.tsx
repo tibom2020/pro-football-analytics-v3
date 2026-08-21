@@ -24,6 +24,7 @@ import {
     resolveStatsHalfFromSnapshots,
     type MatchHalf,
 } from '../services/matchTimeline';
+import { deriveShotEventsFromStatsHistory, chartMinuteForLiveEvent } from '../services/shot-events';
 import {
     colorOddsSeriesForPressure,
     colorOddsSeriesForUnderXiu,
@@ -33,7 +34,7 @@ import {
     halfChartDomainMax,
     minuteTicks,
 } from '../services/odds-pressure-series';
-import { ArrowLeft, RefreshCw, Moon, Sun, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Moon, Sun, Eye, EyeOff, Radio } from 'lucide-react';
 import { LiveStatsTable } from './LiveStatsTable';
 import { OuLowPriceTable } from './OuLowPriceTable';
 import { Ou13ChartModal } from './Ou13ChartModal';
@@ -76,6 +77,7 @@ import {
     type OuTipSnapshot,
     OU_LINE_DROP_PRICE_MAX,
 } from '../services/ou-line-drop-alert';
+import { buildOuLineDropChartLines } from '../services/ou-line-drop-chart-context';
 import { TelegramBindButton } from './TelegramBindButton';
 import { StatBox } from './StatDisplay';
 import {
@@ -150,12 +152,6 @@ function buildOuAlertStatsExtras(match: MatchInfo): {
   return { statsLines, perTeamApiLines };
 }
 
-interface ShotEvent {
-    minute: number;
-    type: 'on' | 'off';
-    half: MatchHalf;
-}
-
 type GoalScorerTeam = 'home' | 'away';
 
 interface GameEvent {
@@ -220,7 +216,7 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, theme = 'dark', onToggleTheme }) => {
-    const AUTO_REFRESH_INTERVAL_MS = 15_000;
+    const AUTO_REFRESH_INTERVAL_MS = 30_000;
     const [liveMatch, setLiveMatch] = useState<MatchInfo>(() => ({ ...match, id: String(match.id) }));
 
     /** Mở tab trận → server tự thu data/v2; đóng tab → stop. */
@@ -232,6 +228,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
         b365Token: token,
     });
     const [isRefreshing, setIsRefreshing] = useState(false);
+    /** Poll B365 khi tab trình duyệt bị ẩn — mặc định tắt (tiết kiệm quota). */
+    const [pollWhenTabHidden, setPollWhenTabHidden] = useState(false);
     const [oddsHistory, setOddsHistory] = useState<OverUnderMinuteSnapshot[]>([]);
     /** Nến Tài 1_3 — mỗi phút giữ giá over cao nhất (tách khỏi lịch sử Tài đáy). */
     const [highOverOddsHistory, setHighOverOddsHistory] = useState<OverUnderMinuteSnapshot[]>([]);
@@ -279,12 +277,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
     const lastOuTipRef = useRef<Partial<Record<'1_3' | '1_6', OuTipSnapshot>>>({});
     const ouDropFiredRef = useRef<Set<string>>(new Set());
     const [statsHistory, setStatsHistory] = useState<Record<number, ProcessedStats>>({});
-    const [shotEvents, setShotEvents] = useState<ShotEvent[]>([]);
     const [gameEvents, setGameEvents] = useState<GameEvent[]>([]);
 
     const statsHistoryRef = useRef(statsHistory);
     const gameEventsRef = useRef(gameEvents);
     const liveMatchRef = useRef(liveMatch);
+    const oddsHistoryRef = useRef(oddsHistory);
+    const highOverOddsHistoryRef = useRef(highOverOddsHistory);
+    const h1OuOddsHistoryRef = useRef(h1OuOddsHistory);
+    const h1HighOverOddsHistoryRef = useRef(h1HighOverOddsHistory);
     useEffect(() => {
         statsHistoryRef.current = statsHistory;
     }, [statsHistory]);
@@ -294,6 +295,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
     useEffect(() => {
         liveMatchRef.current = liveMatch;
     }, [liveMatch]);
+    useEffect(() => {
+        oddsHistoryRef.current = oddsHistory;
+    }, [oddsHistory]);
+    useEffect(() => {
+        highOverOddsHistoryRef.current = highOverOddsHistory;
+    }, [highOverOddsHistory]);
+    useEffect(() => {
+        h1OuOddsHistoryRef.current = h1OuOddsHistory;
+    }, [h1OuOddsHistory]);
+    useEffect(() => {
+        h1HighOverOddsHistoryRef.current = h1HighOverOddsHistory;
+    }, [h1HighOverOddsHistory]);
 
     const maxGoalsSeen = useRef<number | null>(null);
     const maxCornersSeen = useRef<number | null>(null);
@@ -557,11 +570,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                 return fallback;
             }
         };
-        setStatsHistory(safeParse<Record<number, ProcessedStats>>(localStorage.getItem(`statsHistory_${match.id}`), {}));
+        const loadedStats = safeParse<Record<number, ProcessedStats>>(
+            localStorage.getItem(`statsHistory_${match.id}`),
+            {},
+        );
+        setStatsHistory(loadedStats);
         const hydratedGe = safeParse<GameEvent[]>(localStorage.getItem(`gameEvents_${match.id}`), []).map((e) => {
             let half: MatchHalf = e.half ?? 1;
             if (e.type === 'goal' && half === 1 && e.minute >= 50) half = 2;
-            return { ...e, half };
+            return { ...e, half, minute: chartMinuteForLiveEvent(half, e.minute, loadedStats) };
         });
         setGameEvents(dedupeGoalMarkersByHalfMinute(hydratedGe));
         setH1OuOddsHistory(safeParse<OverUnderMinuteSnapshot[]>(localStorage.getItem(OU_H1_KEY(match.id)), []));
@@ -1103,6 +1120,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                     if (hit16) hits.push(hit16);
                 }
 
+                const ou13LowForAlert = mergeOuSnapshotsKeepLowestOver(
+                    oddsHistoryRef.current,
+                    normalizedOu,
+                );
+                const ou13HighForAlert = mergeOuSnapshotsKeepHighestOver(
+                    highOverOddsHistoryRef.current,
+                    normalizedOuHighOver,
+                );
+                const ou16LowForAlert =
+                    normalizedH1Ou.length > 0
+                        ? mergeOuSnapshotsKeepLowestOver(h1OuOddsHistoryRef.current, normalizedH1Ou)
+                        : h1OuOddsHistoryRef.current;
+                const ou16HighForAlert =
+                    normalizedH1OuHighOver.length > 0
+                        ? mergeOuSnapshotsKeepHighestOver(
+                              h1HighOverOddsHistoryRef.current,
+                              normalizedH1OuHighOver,
+                          )
+                        : h1HighOverOddsHistoryRef.current;
+
                 if (hits.length > 0) {
                     const m = details ?? liveMatchRef.current;
                     const matchLabel = `${m.home.name} vs ${m.away.name}`;
@@ -1129,6 +1166,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
 
                         const marketLabel =
                             hit.market === '1_3' ? 'Tài/Xỉu FT (1_3)' : 'Tài/Xỉu H1 (1_6)';
+                        const alertHalf: 1 | 2 =
+                            hit.market === '1_6' ? 1 : hit.curr.half === 2 ? 2 : 1;
+                        const lineChartLines = buildOuLineDropChartLines({
+                            half: alertHalf,
+                            dropped: {
+                                market: hit.market,
+                                prevHandicap: hit.prev.handicap,
+                                newHandicap: hit.curr.handicap,
+                                minute: hit.curr.minute || minute,
+                                overDelta: hit.curr.over - hit.prev.over,
+                            },
+                            ou13Low: ou13LowForAlert,
+                            ou13High: ou13HighForAlert,
+                            ou16Low: ou16LowForAlert,
+                            ou16High: ou16HighForAlert,
+                            statsHistory: statsHistoryRef.current,
+                        });
                         void postOuLineDropAlert({
                             matchId: String(liveMatch.id),
                             matchName: matchLabel,
@@ -1145,6 +1199,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                             oddsTwoTeamLines: [
                                 `${marketLabel}: ${hit.prev.handicap.toFixed(2)} → ${hit.curr.handicap.toFixed(2)} | Tài @${hit.curr.over.toFixed(3)} | Xỉu @${hit.curr.under.toFixed(3)}`,
                             ],
+                            lineChartLines,
                         });
                     }
                 }
@@ -1173,33 +1228,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
 
     useEffect(() => {
         handleRefresh();
-        const id = window.setInterval(handleRefresh, AUTO_REFRESH_INTERVAL_MS);
-        return () => clearInterval(id);
-    }, [handleRefresh, AUTO_REFRESH_INTERVAL_MS]);
+        const tick = () => {
+            if (typeof document !== 'undefined' && document.hidden && !pollWhenTabHidden) return;
+            void handleRefresh();
+        };
+        const id = window.setInterval(tick, AUTO_REFRESH_INTERVAL_MS);
+        const onVis = () => {
+            if (!document.hidden) void handleRefresh();
+        };
+        document.addEventListener('visibilitychange', onVis);
+        return () => {
+            clearInterval(id);
+            document.removeEventListener('visibilitychange', onVis);
+        };
+    }, [handleRefresh, AUTO_REFRESH_INTERVAL_MS, pollWhenTabHidden]);
 
-    useEffect(() => {
-        const timeline = Object.keys(statsHistory)
-            .map(Number)
-            .map((k) => ({ key: k, ...decodeStatTimelineKey(k), stats: statsHistory[k] }))
-            .sort((a, b) => (a.half - b.half) || (a.minute - b.minute));
-        if (timeline.length < 2) return;
-        const newS: ShotEvent[] = [];
-        for (let i = 1; i < timeline.length; i++) {
-            if (timeline[i].half !== timeline[i - 1].half) continue;
-            const t = timeline[i].minute;
-            const pt = timeline[i - 1].minute;
-            if (t - pt > 5) continue;
-            const s = timeline[i].stats;
-            const ps = timeline[i - 1].stats;
-            if (!s || !ps) continue;
-            const dOn = (s.on_target[0] + s.on_target[1]) - (ps.on_target[0] + ps.on_target[1]);
-            const dOff = (s.off_target[0] + s.off_target[1]) - (ps.off_target[0] + ps.off_target[1]);
-            const h = timeline[i].half;
-            for (let j = 0; j < dOn; j++) newS.push({ minute: t, type: 'on', half: h });
-            for (let j = 0; j < dOff; j++) newS.push({ minute: t, type: 'off', half: h });
-        }
-        setShotEvents(newS);
-    }, [statsHistory]);
+    const shotEvents = useMemo(
+        () => deriveShotEventsFromStatsHistory(statsHistory),
+        [statsHistory],
+    );
 
     useEffect(() => {
         const getS = (m: MatchInfo) => parseMatchScores(m.ss).reduce((a, b) => a + b, 0);
@@ -1227,17 +1274,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
             oddsHistory,
             Object.keys(statsHistory),
         );
+        const chartMin = chartMinuteForLiveEvent(half, min, statsHistory);
         const newE: GameEvent[] = [];
         if (goals > maxGoalsSeen.current) {
             const prevH = prevHomeScore.current ?? homeNow;
             const prevA = prevAwayScore.current ?? awayNow;
             const homeDiff = Math.max(0, homeNow - prevH);
             const awayDiff = Math.max(0, awayNow - prevA);
-            for (let i = 0; i < homeDiff; i++) newE.push({ minute: min, type: 'goal', half, team: 'home' });
-            for (let i = 0; i < awayDiff; i++) newE.push({ minute: min, type: 'goal', half, team: 'away' });
+            for (let i = 0; i < homeDiff; i++) newE.push({ minute: chartMin, type: 'goal', half, team: 'home' });
+            for (let i = 0; i < awayDiff; i++) newE.push({ minute: chartMin, type: 'goal', half, team: 'away' });
             const assigned = homeDiff + awayDiff;
             const remaining = goals - maxGoalsSeen.current - assigned;
-            for (let i = 0; i < remaining; i++) newE.push({ minute: min, type: 'goal', half });
+            for (let i = 0; i < remaining; i++) newE.push({ minute: chartMin, type: 'goal', half });
             maxGoalsSeen.current = goals;
             prevHomeScore.current = homeNow;
             prevAwayScore.current = awayNow;
@@ -1267,7 +1315,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
         }
         const prevCorners = maxCornersSeen.current ?? 0;
         if (corners > prevCorners) {
-            for (let i = 0; i < corners - prevCorners; i++) newE.push({ minute: min, type: 'corner', half });
+            for (let i = 0; i < corners - prevCorners; i++) newE.push({ minute: chartMin, type: 'corner', half });
             maxCornersSeen.current = corners;
         }
         if (newE.length > 0) {
@@ -1390,6 +1438,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, match, onBack, them
                             gameEvents={gameEvents}
                             alertHistory={emptyAlertHistory}
                         />
+                        <button
+                            type="button"
+                            onClick={() => setPollWhenTabHidden((v) => !v)}
+                            className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold border transition-colors shrink-0 ${
+                                pollWhenTabHidden
+                                    ? 'bg-emerald-900/30 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border-emerald-500/40 dark:border-emerald-700/50'
+                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
+                            }`}
+                            title={
+                                pollWhenTabHidden
+                                    ? 'Đang refresh khi tab ẩn — bấm để tắt (tiết kiệm quota B365)'
+                                    : 'Bật refresh khi tab ẩn — theo dõi trận nền (~30s/lần, tốn quota B365)'
+                            }
+                        >
+                            <Radio className={`w-3.5 h-3.5 ${pollWhenTabHidden ? 'fill-current' : ''}`} />
+                            <span className="hidden sm:inline">
+                                {pollWhenTabHidden ? 'Theo dõi nền' : 'Nền'}
+                            </span>
+                        </button>
                         <button
                             type="button"
                             onClick={() => void handleRefresh()}

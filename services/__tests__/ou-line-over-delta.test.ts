@@ -4,7 +4,9 @@ import {
   detectOuOverLineDropDeltas,
   formatOuOverLineDropDeltaLabel,
   formatOuOverLineRunAvgLabel,
+  isStrongNegDeltaHighlight,
   roundOdds3,
+  strongestNegativeDelta,
 } from '../ou-line-over-delta';
 
 describe('roundOdds3', () => {
@@ -56,6 +58,44 @@ describe('detectOuOverLineDropDeltas', () => {
       { minute: 11, handicap: 2.25, over: 1.8 },
     ]);
     expect(deltas).toHaveLength(0);
+  });
+});
+
+describe('strongestNegativeDelta', () => {
+  it('không có line drop → undefined', () => {
+    expect(
+      strongestNegativeDelta([
+        { minute: 10, handicap: 2.5, over: 1.9 },
+        { minute: 11, handicap: 2.5, over: 1.85 },
+      ]),
+    ).toBeUndefined();
+  });
+
+  it('nhiều Δ âm → lấy số nhỏ nhất', () => {
+    const d = strongestNegativeDelta([
+      { minute: 10, handicap: 2.5, over: 1.9 },
+      { minute: 12, handicap: 2.25, over: 1.8 }, // −0.1
+      { minute: 20, handicap: 2.0, over: 1.45 }, // −0.35
+    ]);
+    expect(d).toBe(-0.35);
+  });
+
+  it('Δ dương không đếm', () => {
+    expect(
+      strongestNegativeDelta([
+        { minute: 10, handicap: 2.5, over: 1.7 },
+        { minute: 11, handicap: 2.25, over: 1.85 }, // +0.15
+      ]),
+    ).toBeUndefined();
+  });
+});
+
+describe('isStrongNegDeltaHighlight', () => {
+  it('Δ ≤ −0.350 → nổi bật', () => {
+    expect(isStrongNegDeltaHighlight(-0.35)).toBe(true);
+    expect(isStrongNegDeltaHighlight(-0.4)).toBe(true);
+    expect(isStrongNegDeltaHighlight(-0.349)).toBe(false);
+    expect(isStrongNegDeltaHighlight(undefined)).toBe(false);
   });
 });
 
@@ -115,5 +155,33 @@ describe('computeOuOverLineRunAvgs', () => {
     expect(runs[0].avgOver).toBe(1.9);
     expect(runs[0].minuteCount).toBe(2);
     expect(formatOuOverLineRunAvgLabel(runs[0])).toBe("1 TB 1.900 · 2'");
+  });
+
+  it('phút trống không nến vẫn tính vào thời gian tồn tại', () => {
+    const runs = computeOuOverLineRunAvgs([
+      { minute: 10, handicap: 2.5, over: 1.9 },
+      { minute: 11, handicap: 2.5, over: 1.88 },
+      { minute: 14, handicap: 2.5, over: 1.86 },
+    ]);
+    expect(runs).toHaveLength(1);
+    expect(runs[0].minuteStart).toBe(10);
+    expect(runs[0].minuteEnd).toBe(14);
+    expect(runs[0].minuteCount).toBe(5);
+    expect(runs[0].avgOver).toBe(1.88);
+    expect(formatOuOverLineRunAvgLabel(runs[0])).toBe("2.5 TB 1.880 · 5'");
+  });
+
+  it('khoảng trống trước nến line mới tính vào đoạn line cũ', () => {
+    const runs = computeOuOverLineRunAvgs([
+      { minute: 10, handicap: 2.5, over: 1.9 },
+      { minute: 11, handicap: 2.5, over: 1.88 },
+      { minute: 15, handicap: 2.25, over: 1.7 },
+    ]);
+    expect(runs).toHaveLength(2);
+    expect(runs[0].minuteStart).toBe(10);
+    expect(runs[0].minuteEnd).toBe(14);
+    expect(runs[0].minuteCount).toBe(5);
+    expect(runs[1].minuteStart).toBe(15);
+    expect(runs[1].minuteCount).toBe(1);
   });
 });

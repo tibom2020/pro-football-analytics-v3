@@ -346,20 +346,32 @@ export function normalizeMoneyLineSnapshots(
   return deduped;
 }
 
+function firstOpeningHandicap(
+  snapshots: OverUnderMinuteSnapshot[],
+  half: MatchHalf,
+): number | undefined {
+  const rows = snapshots
+    .filter((o) => o.half === half && Number.isFinite(o.handicap))
+    .sort((a, b) => a.minute - b.minute);
+  return rows.length > 0 ? rows[0].handicap : undefined;
+}
+
 /** Vạch mở 1_3 đầu H1/H2 — snapshot sớm nhất theo hiệp (mirror server openingLineAt). */
 export function computeOu13OpeningLines(
   snapshots: OverUnderMinuteSnapshot[],
 ): { h1OpenOu13?: number; h2OpenOu13?: number } {
-  const firstInHalf = (half: MatchHalf): number | undefined => {
-    const rows = snapshots
-      .filter((o) => o.half === half && Number.isFinite(o.handicap))
-      .sort((a, b) => a.minute - b.minute);
-    return rows.length > 0 ? rows[0].handicap : undefined;
-  };
-  const h1 = firstInHalf(1);
-  const h2 = firstInHalf(2);
+  const h1 = firstOpeningHandicap(snapshots, 1);
+  const h2 = firstOpeningHandicap(snapshots, 2);
   return {
     ...(h1 != null ? { h1OpenOu13: h1 } : {}),
     ...(h2 != null ? { h2OpenOu13: h2 } : {}),
   };
+}
+
+/** Vạch mở Tài/Xỉu H1 (1_6) — snapshot sớm nhất hiệp 1. */
+export function computeOu16OpeningLine(
+  snapshots: OverUnderMinuteSnapshot[],
+): { h1OpenOu16?: number } {
+  const h1 = firstOpeningHandicap(snapshots, 1);
+  return h1 != null ? { h1OpenOu16: h1 } : {};
 }

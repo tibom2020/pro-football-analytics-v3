@@ -17,6 +17,7 @@ export interface OuTipSnapshot {
   over: number;
   under: number;
   minute: number;
+  half?: 1 | 2;
 }
 
 export interface OuLineDropHit {
@@ -39,6 +40,8 @@ export interface OuLineDropNotifyPayload {
   statsLines?: string[];
   perTeamApiLines?: string[];
   oddsTwoTeamLines?: string[];
+  /** Ngữ cảnh chart thấp/cao 1_3 (và 1_6 nếu H1). */
+  lineChartLines?: string[];
 }
 
 /** Lấy tip (snapshot mới nhất) từ chuỗi OU đã normalize. */
@@ -58,6 +61,7 @@ export function tipFromOuHistory(rows: OverUnderMinuteSnapshot[]): OuTipSnapshot
     over: last.over,
     under: last.under,
     minute: last.minute,
+    half: last.half === 2 ? 2 : 1,
   };
 }
 
@@ -152,9 +156,10 @@ export function halfPeriodShotTotalsAt(
   statsHistory: Record<number, ProcessedStats> | null | undefined,
   half: 1 | 2,
   minute: number,
-): { onTarget: number | null; totalShots: number | null } {
+): { onTarget: number | null; totalShots: number | null; dangerousAttacks: number | null } {
+  const empty = { onTarget: null, totalShots: null, dangerousAttacks: null };
   const timeline = buildStatTimeline(statsHistory);
-  if (timeline.length === 0) return { onTarget: null, totalShots: null };
+  if (timeline.length === 0) return empty;
 
   let at = findBestStatInHalf(timeline, half, minute);
 
@@ -163,10 +168,11 @@ export function halfPeriodShotTotalsAt(
     const otherHalf: 1 | 2 = half === 1 ? 2 : 1;
     at = findBestStatInHalf(timeline, otherHalf, minute);
   }
-  if (!at) return { onTarget: null, totalShots: null };
+  if (!at) return empty;
 
   let onTarget = sumPair(at.on_target);
   let offTarget = sumPair(at.off_target);
+  let dangerousAttacks = sumPair(at.dangerous_attacks);
 
   if (half === 2) {
     const h1Snaps = timeline.filter((e) => e.half === 1);
@@ -174,11 +180,12 @@ export function halfPeriodShotTotalsAt(
     if (lastH1?.stats) {
       onTarget = Math.max(0, onTarget - sumPair(lastH1.stats.on_target));
       offTarget = Math.max(0, offTarget - sumPair(lastH1.stats.off_target));
+      dangerousAttacks = Math.max(0, dangerousAttacks - sumPair(lastH1.stats.dangerous_attacks));
     }
     // Không có H1: giữ số tuyệt đối tại mốc (cùng hành vi halfPeriodStats khi thiếu anchor).
   }
 
-  return { onTarget, totalShots: onTarget + offTarget };
+  return { onTarget, totalShots: onTarget + offTarget, dangerousAttacks };
 }
 
 /**

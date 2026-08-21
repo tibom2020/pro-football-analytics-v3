@@ -1,3 +1,4 @@
+import { fetchB365Cached } from '../b365-upstream.js';
 import { config } from '../config.js';
 import { logger } from '../logger.js';
 import { flattenOddsResponse, selectNewOddsRecords } from './ingest.js';
@@ -197,6 +198,13 @@ export class MatchOddsCollector {
   private async fetchJson<T>(url: string): Promise<{ ok: boolean; http: number; ms: number; data?: T; error?: string }> {
     const started = Date.now();
     try {
+      if (this.fetchImpl === fetch) {
+        const result = await fetchB365Cached(url, this.fetchImpl);
+        if (!result.ok) {
+          return { ok: false, http: result.http, ms: result.ms || Date.now() - started, error: result.error };
+        }
+        return { ok: true, http: result.http, ms: result.ms, data: result.data as T };
+      }
       const res = await this.fetchImpl(url, { signal: AbortSignal.timeout(20_000) });
       const ms = Date.now() - started;
       if (!res.ok) return { ok: false, http: res.status, ms, error: `http ${res.status}` };
