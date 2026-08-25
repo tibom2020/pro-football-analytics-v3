@@ -4,7 +4,9 @@ import {
   detectOuOverLineDropDeltas,
   formatOuOverLineDropDeltaLabel,
   formatOuOverLineRunAvgLabel,
-  isStrongNegDeltaHighlight,
+  isStrongNegDeltaRed,
+  isStrongNegDeltaTelegram,
+  isStrongNegDeltaYellow,
   roundOdds3,
   strongestNegativeDelta,
 } from '../ou-line-over-delta';
@@ -90,12 +92,22 @@ describe('strongestNegativeDelta', () => {
   });
 });
 
-describe('isStrongNegDeltaHighlight', () => {
-  it('Δ ≤ −0.350 → nổi bật', () => {
-    expect(isStrongNegDeltaHighlight(-0.35)).toBe(true);
-    expect(isStrongNegDeltaHighlight(-0.4)).toBe(true);
-    expect(isStrongNegDeltaHighlight(-0.349)).toBe(false);
-    expect(isStrongNegDeltaHighlight(undefined)).toBe(false);
+describe('isStrongNegDeltaRed / Yellow', () => {
+  it('Δ ≤ −0.375; vàng Δ ≤ −0.400', () => {
+    expect(isStrongNegDeltaRed(-0.35)).toBe(true);
+    expect(isStrongNegDeltaRed(-0.349)).toBe(false);
+    expect(isStrongNegDeltaYellow(-0.4)).toBe(true);
+    expect(isStrongNegDeltaYellow(-0.399)).toBe(false);
+    expect(isStrongNegDeltaRed(-0.4)).toBe(true);
+    expect(isStrongNegDeltaYellow(-0.35)).toBe(false);
+    expect(isStrongNegDeltaRed(undefined)).toBe(false);
+  });
+});
+
+describe('isStrongNegDeltaTelegram', () => {
+  it('Telegram Δ ≤ −0.375', () => {
+    expect(isStrongNegDeltaTelegram(-0.375)).toBe(true);
+    expect(isStrongNegDeltaTelegram(-0.374)).toBe(false);
   });
 });
 

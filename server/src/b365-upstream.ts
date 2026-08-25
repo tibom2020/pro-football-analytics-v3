@@ -10,6 +10,9 @@ const inflight = new Map<string, Promise<FetchResult>>();
 
 const STALE_MAX_MS = 120_000;
 const COOLDOWN_429_MS = 30_000;
+const B365_RETRYABLE_HTTP = new Set([0, 502, 503, 504]);
+const B365_MAX_RETRIES = 2;
+const B365_RETRY_BASE_MS = 1_500;
 let cooldownUntil = 0;
 
 function redactUrl(url: string): string {
@@ -78,6 +81,26 @@ async function fetchOnce(url: string, fetchImpl: typeof fetch): Promise<FetchRes
   }
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchWithRetries(url: string, fetchImpl: typeof fetch): Promise<FetchResult> {
+  let last: FetchResult = { ok: false, http: 0, ms: 0, error: 'unknown' };
+  for (let attempt = 0; attempt <= B365_MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      const delay = B365_RETRY_BASE_MS * attempt;
+      logger.warn(`B365 retry ${attempt}/${B365_MAX_RETRIES} in ${delay}ms for ${redactUrl(url)}`);
+      await sleep(delay);
+    }
+    last = await fetchOnce(url, fetchImpl);
+    if (last.ok) return last;
+    if (last.http === 429) return last;
+    if (!B365_RETRYABLE_HTTP.has(last.http)) return last;
+  }
+  return last;
+}
+
 /**
  * Một lần gọi B365: cache theo endpoint, gộp request trùng, stale khi 429.
  * Quota ~3600/giờ — inplay 30s, odds 20s.
@@ -104,10 +127,11 @@ export async function fetchB365Cached(
 
   const job = (async () => {
     try {
-      const result = await fetchOnce(url, fetchImpl);
+      const result = await fetchWithRetries(url, fetchImpl);
       if (result.ok) return result;
       const stale = getStale(key);
       if (stale && (result.http === 429 || result.http >= 500 || result.http === 0)) {
+        logger.warn(`B365 serving stale cache for ${redactUrl(url)} after upstream ${result.http || 'error'}`);
         return { ok: true as const, http: 200, ms: result.ms, data: stale.data, cached: true };
       }
       return result;

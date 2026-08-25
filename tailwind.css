@@ -27,6 +27,61 @@
         @apply bg-gray-50 text-gray-500 border-2 border-gray-300; /* Light grey background, grey text, grey border */
     }
 
+    /* Gộp sút theo phút: bóng + (số lượng) */
+    .chart-shot-minute-group {
+        @apply absolute flex items-center gap-1 pointer-events-none;
+        z-index: 6;
+        transform: translateX(-50%);
+    }
+    .chart-shot-ball-count {
+        @apply inline-flex items-center gap-0.5 text-[9px] font-bold tabular-nums leading-none whitespace-nowrap;
+    }
+    .chart-shot-ball-count__ball {
+        @apply w-5 h-5 flex shrink-0 items-center justify-center rounded-full text-sm leading-none font-bold;
+    }
+    .chart-shot-ball-count__ball--on {
+        @apply bg-blue-50 text-blue-800 border-[3px] border-blue-600;
+        box-shadow:
+            0 0 0 2px rgba(37, 99, 235, 0.45),
+            0 0 10px rgba(59, 130, 246, 0.35);
+    }
+    .dark .chart-shot-ball-count__ball--on {
+        @apply bg-white text-slate-800 border-[3px] border-sky-400;
+        box-shadow:
+            0 0 0 3px rgba(56, 189, 248, 0.55),
+            0 0 14px rgba(34, 211, 238, 0.45);
+    }
+    .chart-shot-ball-count__ball--off {
+        @apply bg-gray-50 text-gray-500 border-2 border-gray-300;
+    }
+    .chart-shot-ball-count__n--on {
+        @apply text-sky-700 dark:text-sky-300;
+    }
+    .chart-shot-ball-count__n--off {
+        @apply text-slate-500 dark:text-slate-400;
+    }
+
+    /* Gộp sút theo phút: trúng/lệch — legacy badge, không dùng */
+    .chart-shot-group-badge {
+        @apply absolute flex items-center justify-center gap-0.5 px-1 py-0.5 rounded-md text-[9px] font-black tabular-nums leading-none border;
+        z-index: 6;
+        transform: translateX(-50%);
+        @apply bg-slate-900/85 text-white border-slate-600/80;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+    }
+    .dark .chart-shot-group-badge {
+        @apply bg-slate-950/90 border-slate-500/70;
+    }
+    .chart-shot-group-on {
+        @apply text-sky-300;
+    }
+    .chart-shot-group-sep {
+        @apply text-slate-400 font-bold;
+    }
+    .chart-shot-group-off {
+        @apply text-slate-300;
+    }
+
     /* Styles for Game Events */
     .game-event-icon {
         @apply absolute flex items-center justify-center text-sm;

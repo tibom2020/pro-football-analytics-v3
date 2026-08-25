@@ -12,6 +12,13 @@ import {
     formatOuOverLineRunAvgLabel,
 } from '../services/ou-line-over-delta';
 import {
+    OU_ODDS_SUM_HIGHLIGHT,
+    computeAhOddsSumDeviationMarkers,
+    computeOuOddsSumDeviationMarkers,
+    isHighlightedTwoWayOddsSum,
+    twoWayOddsSum,
+} from '../services/ou-odds-sum-markers';
+import {
     TYPICAL_MINUTE_RANGE,
     type MinuteAgg,
 } from '../services/odds-tick-chart-data';
@@ -424,10 +431,28 @@ const MinuteCrosshairHud: React.FC<{
                             {fmtH(ou.handicap)}
                         </p>
                         {underXiuMode ? (
-                            <p className="text-gray-300">
-                                Odds Xỉu:{' '}
-                                <span className={overColor}>{fmtO(ou.under)}</span>
-                            </p>
+                            <>
+                                <p className="text-gray-300">
+                                    Odds Xỉu:{' '}
+                                    <span className={overColor}>{fmtO(ou.under)}</span>
+                                </p>
+                                {typeof ou.over === 'number' &&
+                                typeof ou.under === 'number' &&
+                                Number.isFinite(ou.over) &&
+                                Number.isFinite(ou.under) ? (
+                                    (() => {
+                                        const sum = twoWayOddsSum(ou.over, ou.under);
+                                        if (sum == null) return null;
+                                        const highlighted = isHighlightedTwoWayOddsSum(sum);
+                                        return (
+                                            <p className={highlighted ? 'text-fuchsia-300 font-semibold' : 'text-gray-500'}>
+                                                Tài + Xỉu: {sum.toFixed(2)}
+                                                {highlighted ? ` (= ${OU_ODDS_SUM_HIGHLIGHT})` : null}
+                                            </p>
+                                        );
+                                    })()
+                                ) : null}
+                            </>
                         ) : (
                             <>
                                 <p className="text-gray-300">
@@ -438,6 +463,22 @@ const MinuteCrosshairHud: React.FC<{
                                         Odds Xỉu: {fmtO(ou.under)}
                                     </p>
                                 )}
+                                {typeof ou.over === 'number' &&
+                                typeof ou.under === 'number' &&
+                                Number.isFinite(ou.over) &&
+                                Number.isFinite(ou.under) ? (
+                                    (() => {
+                                        const sum = twoWayOddsSum(ou.over, ou.under);
+                                        if (sum == null) return null;
+                                        const highlighted = isHighlightedTwoWayOddsSum(sum);
+                                        return (
+                                            <p className={highlighted ? 'text-fuchsia-300 font-semibold' : 'text-gray-500'}>
+                                                Tài + Xỉu: {sum.toFixed(2)}
+                                                {highlighted ? ` (= ${OU_ODDS_SUM_HIGHLIGHT})` : null}
+                                            </p>
+                                        );
+                                    })()
+                                ) : null}
                             </>
                         )}
                     </div>
@@ -555,13 +596,39 @@ const GameEventMarkers = ({
     })}</>;
 };
 
-const SHOT_BALL_SLOT_PX = 22;
+const SHOT_GROUP_SLOT_PX = 28;
 const GOAL_STACK_SLOT_PX = 38;
 const SHOT_STRIP_COLLIDE_GAP_PX = 2;
 
 type ShotGoalStripItem =
-    | { kind: 'shot'; minute: number; index: number; on: boolean; leftPx: number; row: number }
+    | { kind: 'shotGroup'; minute: number; onCount: number; offCount: number; leftPx: number; row: number }
     | { kind: 'goal'; minute: number; index: number; team?: 'home' | 'away'; leftPx: number; row: number };
+
+function aggregateShotsByMinute(
+    shots: Array<{ minute?: number; type?: string }>,
+): Array<{ minute: number; onCount: number; offCount: number }> {
+    const map = new Map<number, { onCount: number; offCount: number }>();
+    for (const shot of shots) {
+        const minute = Number(shot.minute);
+        if (!Number.isFinite(minute)) continue;
+        const cur = map.get(minute) ?? { onCount: 0, offCount: 0 };
+        if (shot.type === 'on') cur.onCount += 1;
+        else cur.offCount += 1;
+        map.set(minute, cur);
+    }
+    return [...map.entries()]
+        .map(([minute, counts]) => ({ minute, ...counts }))
+        .sort((a, b) => a.minute - b.minute);
+}
+
+function estimateShotGroupWidthPx(onCount: number, offCount: number): number {
+    let w = 0;
+    const part = (n: number) => 22 + (String(n).length + 2) * 5.5;
+    if (onCount > 0) w += part(onCount);
+    if (offCount > 0) w += part(offCount);
+    if (onCount > 0 && offCount > 0) w += 4;
+    return Math.max(w, 28);
+}
 
 function layoutShotGoalStripItems(
     shots: Array<{ minute?: number; type?: string }>,
@@ -571,17 +638,26 @@ function layoutShotGoalStripItems(
     leftGutterPx: number,
 ): { placed: ShotGoalStripItem[]; rowCount: number } {
     const pending: Array<Omit<ShotGoalStripItem, 'leftPx' | 'row'> & { width: number }> = [];
-    shots.forEach((shot, index) => {
-        const minute = Number(shot.minute);
-        if (!Number.isFinite(minute)) return;
-        pending.push({ kind: 'shot', minute, index, on: shot.type === 'on', width: SHOT_BALL_SLOT_PX });
-    });
+    for (const group of aggregateShotsByMinute(shots)) {
+        if (group.onCount + group.offCount === 0) continue;
+        pending.push({
+            kind: 'shotGroup',
+            minute: group.minute,
+            onCount: group.onCount,
+            offCount: group.offCount,
+            width: estimateShotGroupWidthPx(group.onCount, group.offCount),
+        });
+    }
     goals.forEach((event, index) => {
         const minute = Number(event.minute);
         if (!Number.isFinite(minute)) return;
         pending.push({ kind: 'goal', minute, index, team: event.team, width: GOAL_STACK_SLOT_PX });
     });
-    pending.sort((a, b) => a.minute - b.minute || (a.kind === b.kind ? a.index - b.index : a.kind === 'shot' ? -1 : 1));
+    pending.sort((a, b) => {
+        if (a.minute !== b.minute) return a.minute - b.minute;
+        if (a.kind !== b.kind) return a.kind === 'shotGroup' ? -1 : 1;
+        return a.kind === 'goal' ? a.index - b.index : 0;
+    });
     const rowRight: number[] = [];
     const placed: ShotGoalStripItem[] = [];
     for (const item of pending) {
@@ -593,8 +669,15 @@ function layoutShotGoalStripItems(
         }
         if (row === rowRight.length) rowRight.push(Number.NEGATIVE_INFINITY);
         rowRight[row] = leftPx + half;
-        if (item.kind === 'shot') {
-            placed.push({ kind: 'shot', minute: item.minute, index: item.index, on: item.on, leftPx, row });
+        if (item.kind === 'shotGroup') {
+            placed.push({
+                kind: 'shotGroup',
+                minute: item.minute,
+                onCount: item.onCount,
+                offCount: item.offCount,
+                leftPx,
+                row,
+            });
         } else {
             placed.push({ kind: 'goal', minute: item.minute, index: item.index, team: item.team, leftPx, row });
         }
@@ -609,7 +692,9 @@ const ChartShotGoalStripHost: React.FC<{
     leftGutterPx?: number;
     homeTeamName?: string;
     awayTeamName?: string;
-}> = ({ shots, events, xDomain, leftGutterPx = 45, homeTeamName, awayTeamName }) => {
+    /** Vẽ trong vùng plot (sát trục X) thay vì strip phía trên chart. */
+    overlayMode?: boolean;
+}> = ({ shots, events, xDomain, leftGutterPx = 45, homeTeamName, awayTeamName, overlayMode = false }) => {
     const [ref, width] = useStripContainerWidth();
     const goals = events.filter((e) => e.type === 'goal');
     if (shots.length === 0 && goals.length === 0) return null;
@@ -617,12 +702,17 @@ const ChartShotGoalStripHost: React.FC<{
         width > 0
             ? layoutShotGoalStripItems(shots, goals, width, xDomain, leftGutterPx)
             : { placed: [] as ShotGoalStripItem[], rowCount: 1 };
-    const rowPx = goals.length > 0 ? GOAL_STACK_SLOT_PX : SHOT_BALL_SLOT_PX;
+    const hasGoals = goals.length > 0;
+    const rowPx = hasGoals ? GOAL_STACK_SLOT_PX : SHOT_GROUP_SLOT_PX;
     const stripHeight = layout.rowCount * rowPx + 6;
     return (
         <div
             ref={ref}
-            className="relative w-full mb-0.5 shrink-0 overflow-visible"
+            className={
+                overlayMode
+                    ? 'absolute bottom-9 left-0 right-0 pointer-events-none z-20 overflow-visible'
+                    : 'relative w-full mb-0.5 shrink-0 overflow-visible'
+            }
             style={{ height: stripHeight }}
         >
             {width > 0 ? (
@@ -661,15 +751,30 @@ const ChartShotGoalStrip = ({
     return (
         <>
             {placed.map((item) => {
-                if (item.kind === 'shot') {
+                if (item.kind === 'shotGroup') {
                     return (
                         <div
-                            key={`shot-strip-${item.minute}-${item.index}`}
-                            className={`ball-icon ${item.on ? 'ball-on' : 'ball-off'}`}
+                            key={`shot-group-${item.minute}`}
+                            className="chart-shot-minute-group"
                             style={{ left: `${item.leftPx}px`, top: `${item.row * rowPx + 2}px` }}
-                            title={`Sút ${item.on ? 'trúng đích' : 'lệch'} ${item.minute}'`}
+                            title={`Sút ${item.minute}': ${item.onCount} trúng đích · ${item.offCount} lệch`}
                         >
-                            ⚽
+                            {item.onCount > 0 ? (
+                                <span className="chart-shot-ball-count">
+                                    <span className="chart-shot-ball-count__ball chart-shot-ball-count__ball--on">⚽</span>
+                                    <span className="chart-shot-ball-count__n chart-shot-ball-count__n--on">
+                                        ({item.onCount})
+                                    </span>
+                                </span>
+                            ) : null}
+                            {item.offCount > 0 ? (
+                                <span className="chart-shot-ball-count">
+                                    <span className="chart-shot-ball-count__ball chart-shot-ball-count__ball--off">⚽</span>
+                                    <span className="chart-shot-ball-count__n chart-shot-ball-count__n--off">
+                                        ({item.offCount})
+                                    </span>
+                                </span>
+                            ) : null}
                         </div>
                     );
                 }
@@ -852,6 +957,42 @@ const OuLineDropDeltaStripHost: React.FC<{
                     leftGutterPx={leftGutterPx}
                 />
             ) : null}
+        </div>
+    );
+};
+
+const OuOddsSumDeviationStripHost: React.FC<{
+    markers: Array<{ minute: number; label: string }>;
+    xDomain: [number, number];
+    leftGutterPx?: number;
+}> = ({ markers, xDomain, leftGutterPx = 45 }) => {
+    const [ref, width] = useStripContainerWidth();
+    const layout = useMemo(
+        () => (width > 0 ? layoutTbStripMarkers(markers, width, xDomain, leftGutterPx) : { placed: [], rowCount: 0 }),
+        [markers, width, xDomain, leftGutterPx],
+    );
+    if (markers.length === 0) return null;
+    const stripHeight = layout.rowCount * TB_STRIP_ROW_HEIGHT_PX + 1;
+    return (
+        <div
+            ref={ref}
+            className="relative w-full mb-0 shrink-0 overflow-visible"
+            style={{ height: stripHeight > 0 ? stripHeight : TB_STRIP_ROW_HEIGHT_PX }}
+        >
+            {layout.placed.map((m) => (
+                <span
+                    key={`ou-sum-dev-${m.orderIndex}-${m.minute}-${m.label}`}
+                    className="absolute z-30 pointer-events-none select-none rounded px-0.5 py-px text-[10px] font-bold leading-none shadow-sm bg-fuchsia-50 text-fuchsia-900 border border-fuchsia-600 dark:bg-fuchsia-950/95 dark:text-fuchsia-200 dark:border-fuchsia-500 whitespace-nowrap"
+                    style={{
+                        left: `${m.leftPx}px`,
+                        top: `${m.row * TB_STRIP_ROW_HEIGHT_PX}px`,
+                        transform: 'translateX(-50%)',
+                    }}
+                    title={`Tổng odds = ${OU_ODDS_SUM_HIGHLIGHT} · ${m.label}`}
+                >
+                    {m.label}
+                </span>
+            ))}
         </div>
     );
 };
@@ -1618,6 +1759,41 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
         }));
     }, [ahChapMode, underXiuMode, sortedMarketData]);
 
+    const ouOddsSumDeviationMarkers = useMemo(() => {
+        if (ahChapMode) {
+            const pts = sortedMarketData
+                .filter(
+                    (p) =>
+                        typeof p.minute === 'number' &&
+                        typeof p.home === 'number' &&
+                        typeof p.away === 'number' &&
+                        Number.isFinite(p.home) &&
+                        Number.isFinite(p.away),
+                )
+                .map((p) => ({
+                    minute: p.minute as number,
+                    home: p.home as number,
+                    away: p.away as number,
+                }));
+            return computeAhOddsSumDeviationMarkers(pts);
+        }
+        const pts = sortedMarketData
+            .filter(
+                (p) =>
+                    typeof p.minute === 'number' &&
+                    typeof p.over === 'number' &&
+                    typeof p.under === 'number' &&
+                    Number.isFinite(p.over) &&
+                    Number.isFinite(p.under),
+            )
+            .map((p) => ({
+                minute: p.minute as number,
+                over: p.over as number,
+                under: p.under as number,
+            }));
+        return computeOuOddsSumDeviationMarkers(pts);
+    }, [ahChapMode, sortedMarketData]);
+
     const ouLineRunAvgMarkers = useMemo(() => {
         if (ahChapMode || underXiuMode) {
             return [] as Array<{ minute: number; label: string }>;
@@ -1756,6 +1932,22 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
             {halfSubtitle ? (
                 <p className="text-[10px] font-semibold text-amber-600/90 dark:text-amber-400/90 mb-2 uppercase tracking-wide">{halfSubtitle}</p>
             ) : null}
+            {ouOddsSumDeviationMarkers.length > 0 ? (
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1 text-fuchsia-700 dark:text-fuchsia-400">
+                        <span className="inline-block rounded px-0.5 text-[9px] font-bold leading-none bg-fuchsia-50 text-fuchsia-900 border border-fuchsia-600 dark:bg-fuchsia-950/95 dark:text-fuchsia-200 dark:border-fuchsia-500">
+                            Σ
+                        </span>
+                        Chip tím ={' '}
+                        {ahChapMode ? 'Nhà + Khách' : 'Tài + Xỉu'} = {OU_ODDS_SUM_HIGHLIGHT}
+                    </span>
+                </p>
+            ) : null}
+            <OuOddsSumDeviationStripHost
+                markers={ouOddsSumDeviationMarkers}
+                xDomain={xDomain}
+                leftGutterPx={leftGutterPx}
+            />
             <OuLineRunAvgStripHost
                 markers={ouLineRunAvgMarkers}
                 xDomain={xDomain}
@@ -1765,14 +1957,6 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                 markers={ouLineDropDeltaMarkers}
                 xDomain={xDomain}
                 leftGutterPx={leftGutterPx}
-            />
-            <ChartShotGoalStripHost
-                shots={shotEvents}
-                events={gameEvents}
-                xDomain={xDomain}
-                leftGutterPx={leftGutterPx}
-                homeTeamName={homeTeamName}
-                awayTeamName={awayTeamName}
             />
             <div
                 ref={setPlotRef}
@@ -2011,6 +2195,15 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({
                     </ComposedChart>
                 </ResponsiveContainer>
                 <OverlayContainer>
+                    <ChartShotGoalStripHost
+                        shots={shotEvents}
+                        events={gameEvents}
+                        xDomain={xDomain}
+                        leftGutterPx={leftGutterPx}
+                        homeTeamName={homeTeamName}
+                        awayTeamName={awayTeamName}
+                        overlayMode
+                    />
                     <GameEventMarkers
                         events={gameEvents}
                         xDomain={xDomain}

@@ -10,6 +10,7 @@ import { similarMatchesRouter } from './routes/similar-matches.js';
 import { createHistorySaveRouter } from './routes/history-save.js';
 import { createHermesBridgeRouter } from './routes/hermes-bridge.js';
 import { createOuLineDropAlertRouter } from './routes/ou-line-drop-alert.js';
+import { createStrongNegDeltaAlertRouter } from './routes/strong-neg-delta-alert.js';
 import { createMatchV2Router } from './routes/match-v2.js';
 import { createTelegramRouter } from './routes/telegram.js';
 import { TelegramSender } from './notification-service/telegram-sender.js';
@@ -74,6 +75,7 @@ app.use('/api/history', createHistorySaveRouter());
 app.use('/api/hermes', createHermesBridgeRouter());
 app.use('/api/telegram', createTelegramRouter(telegramSender));
 app.use('/api/alerts', createOuLineDropAlertRouter(telegramSender));
+app.use('/api/alerts', createStrongNegDeltaAlertRouter(telegramSender));
 if (config.matchV2.enabled) {
   app.use('/api/match-v2', createMatchV2Router());
 }
@@ -89,6 +91,9 @@ app.listen(config.port, () => {
   }
   logger.info(
     `OU line-drop alert: Tài ≤ ${config.alerts.ouLineDropPriceMax} (1_3/1_6 hạ line)`,
+  );
+  logger.info(
+    `Strong neg Δ Telegram: Δ ≤ ${config.alerts.strongNegDeltaTelegram} (trang chủ)`,
   );
   void loadRagStore(config.goalPredict.datasetPath, {
     metaPath: config.goalPredict.datasetMetaPath,

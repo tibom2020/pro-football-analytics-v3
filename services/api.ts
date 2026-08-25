@@ -27,26 +27,43 @@ const B365_API_INPLAY = "https://api.b365api.com/v3/events/inplay";
 const B365_API_ODDS = "https://api.b365api.com/v2/event/odds";
 
 // --- Client-side Rate Limiting Configuration ---
-// Minimum interval between API calls — reduced to 2s so requests within a tab don't queue up for 20s.
+/** Khoảng cách tối thiểu giữa các request odds (mỗi trận 1 request). */
+const MIN_ODDS_API_INTERVAL = 5 * 1000;
+/** Các API khác (inplay list, …). */
 const MIN_API_CALL_INTERVAL = 3 * 1000;
-let lastApiCallTime = 0; // Timestamp of the last API call initiated
+let lastApiCallTime = 0;
+let lastOddsApiCallTime = 0;
+
+const enforceRateLimit = async (minIntervalMs: number, getLast: () => number, setLast: (t: number) => void) => {
+  const now = Date.now();
+  const timeSinceLastCall = now - getLast();
+  if (timeSinceLastCall < minIntervalMs) {
+    const waitTime = minIntervalMs - timeSinceLastCall;
+    await new Promise((resolve) => setTimeout(resolve, waitTime));
+  }
+  setLast(Date.now());
+};
 
 /**
- * Ensures that API requests adhere to a strict client-side rate limit.
- * Will pause execution if the limit would be exceeded.
+ * Rate limit chung (inplay, details, …).
  */
-const enforceRateLimit = async () => {
-  const now = Date.now();
-  const timeSinceLastCall = now - lastApiCallTime;
+const enforceGeneralRateLimit = async () => {
+  await enforceRateLimit(
+    MIN_API_CALL_INTERVAL,
+    () => lastApiCallTime,
+    (t) => { lastApiCallTime = t; },
+  );
+};
 
-  if (timeSinceLastCall < MIN_API_CALL_INTERVAL) {
-    const waitTime = MIN_API_CALL_INTERVAL - timeSinceLastCall;
-    console.warn(`Client-side rate limit active. Waiting ${waitTime / 1000}s before next API call.`);
-    await new Promise(resolve => setTimeout(resolve, waitTime));
-  }
-  // Update last API call time *after* any potential wait, and *before* the fetch attempt.
-  // This marks the start of the "next" allowed interval.
-  lastApiCallTime = Date.now();
+/**
+ * Rate limit riêng odds — tránh timeout / 429 khi quét nhiều trận.
+ */
+const enforceOddsRateLimit = async () => {
+  await enforceRateLimit(
+    MIN_ODDS_API_INTERVAL,
+    () => lastOddsApiCallTime,
+    (t) => { lastOddsApiCallTime = t; },
+  );
 };
 
 
@@ -118,8 +135,9 @@ function withB365Token(baseUrl: string, token: string): string {
  * Performs a proxied fetch and handles common API/Proxy errors with retry logic for 429.
  * Applies client-side rate limit before each fetch attempt.
  */
-const safeFetch = async (url: string): Promise<any> => {
-  await enforceRateLimit();
+const safeFetch = async (url: string, opts?: { odds?: boolean }): Promise<any> => {
+  if (opts?.odds) await enforceOddsRateLimit();
+  else await enforceGeneralRateLimit();
 
   // Luồng 1 (mặc định): Browser → server AI → Cloudflare Worker → B365 (Worker xử lý CORS / một số mạng).
   // Luồng 2 (VITE_B365_SKIP_WORKER=true): Browser → server AI → B365 (đủ cho localhost, bỏ Worker).
@@ -140,6 +158,12 @@ const safeFetch = async (url: string): Promise<any> => {
     if (response.status === 429) {
       throw new Error(
         'Giới hạn B365 3600 request/giờ (429). Proxy sẽ dùng cache cũ nếu còn; đợi rồi tải lại, bớt tab trận đang mở.',
+      );
+    }
+
+    if (response.status === 502 || response.status === 503 || response.status === 504) {
+      throw new Error(
+        `B365 API tạm lỗi (${response.status}). Thường do api.b365api.com quá tải — thử Refresh lại sau 30 giây. Nếu vừa tải thành công gần đây, server có thể trả cache cũ.`,
       );
     }
 
@@ -251,7 +275,7 @@ export const getMatchOdds = async (token: string, eventId: string): Promise<Odds
   if (!token || !eventId) return null;
   try {
     const targetUrl = withB365Token(`${B365_API_ODDS}?event_id=${eventId}`, token);
-    const data = await safeFetch(targetUrl);
+    const data = await safeFetch(targetUrl, { odds: true });
 
     if (data === null) { // Handle graceful null return for empty response
       console.warn(`getMatchOdds: Nhận được phản hồi trống hoặc không có dữ liệu tỷ lệ cược cho sự kiện ${eventId}.`);

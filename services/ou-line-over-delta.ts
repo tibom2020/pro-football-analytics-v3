@@ -73,12 +73,37 @@ export function strongestNegativeDelta(
   return Math.min(...deltas);
 }
 
-/** Ngưỡng nổi bật trên trang chủ: |Δ| ≥ 0.350 (Δ ≤ −0.350). */
-export const STRONG_NEG_DELTA_HIGHLIGHT = -0.35;
+/** Ngưỡng nổi bật đỏ: Δ ≤ −0.350. Vàng (ưu tiên): Δ ≤ −0.400. Telegram: Δ ≤ −0.375. */
+export const STRONG_NEG_DELTA_RED = -0.35;
+export const STRONG_NEG_DELTA_YELLOW = -0.4;
+export const STRONG_NEG_DELTA_TELEGRAM = -0.375;
 
-export function isStrongNegDeltaHighlight(delta: number | undefined): boolean {
-  return typeof delta === 'number' && Number.isFinite(delta) && delta <= STRONG_NEG_DELTA_HIGHLIGHT;
+export function isStrongNegDeltaRed(delta: number | undefined): boolean {
+  return typeof delta === 'number' && Number.isFinite(delta) && delta <= STRONG_NEG_DELTA_RED;
 }
+
+export function isStrongNegDeltaYellow(delta: number | undefined): boolean {
+  return typeof delta === 'number' && Number.isFinite(delta) && delta <= STRONG_NEG_DELTA_YELLOW;
+}
+
+export function isStrongNegDeltaTelegram(delta: number | undefined): boolean {
+  return typeof delta === 'number' && Number.isFinite(delta) && delta <= STRONG_NEG_DELTA_TELEGRAM;
+}
+
+/** Δ âm mạnh nhất gộp từ nhiều chuỗi (vd. Tài đáy + Tài đỉnh). */
+export function mergeStrongestNegativeDelta(
+  ...values: (number | undefined)[]
+): number | undefined {
+  const deltas = values.filter(
+    (d): d is number => typeof d === 'number' && Number.isFinite(d) && d < 0,
+  );
+  if (deltas.length === 0) return undefined;
+  return Math.min(...deltas);
+}
+
+/** @deprecated dùng isStrongNegDeltaYellow — giữ alias. */
+export const STRONG_NEG_DELTA_HIGHLIGHT = STRONG_NEG_DELTA_YELLOW;
+export const isStrongNegDeltaHighlight = isStrongNegDeltaYellow;
 
 export type OuOverLineRunAvg = {
   handicap: number;

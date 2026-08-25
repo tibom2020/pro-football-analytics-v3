@@ -1,9 +1,17 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { MatchList } from './components/MatchList';
+import { useElapsedSince } from './hooks/useElapsedSince';
 import { Dashboard } from './components/Dashboard';
 import { MatchHistory } from './components/MatchHistory';
+import { DismissedMatchesPanel } from './components/DismissedMatchesPanel';
 import { MatchInfo } from './types';
+import {
+  dismissMatch,
+  DISMISSED_MATCHES_UPDATED_EVENT,
+  loadDismissed,
+  type DismissedMatchMap,
+} from './services/dismissed-matches';
 import { getInPlayEvents, getMatchDetails } from './services/api';
 import {
   B365_SERVER_TOKEN,
@@ -13,7 +21,7 @@ import {
   verifyB365Token,
 } from './services/b365-auth';
 import { checkServerHealth } from './services/ai-service';
-import { KeyRound, ShieldCheck, RefreshCw, ClipboardList, Moon, Sun, Search, LayoutDashboard, LogOut, Loader2, AlertCircle } from 'lucide-react';
+import { KeyRound, ShieldCheck, RefreshCw, ClipboardList, Moon, Sun, Search, LayoutDashboard, LogOut, Loader2, AlertCircle, EyeOff } from 'lucide-react';
 
 const B365_TOKEN_KEY = 'b365_token';
 
@@ -40,8 +48,6 @@ function clearStoredB365Token(): void {
 }
 
 const App = () => {
-  const REFRESH_INTERVAL_MS = 60_000;
-
   const [token, setToken] = useState('');
   const [hasToken, setHasToken] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -54,9 +60,17 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [mainView, setMainView] = useState<'matches' | 'matchHistory'>('matches');
+  const [mainView, setMainView] = useState<'matches' | 'matchHistory' | 'dismissed'>('matches');
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [dismissedMap, setDismissedMap] = useState<DismissedMatchMap>(() => loadDismissed());
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(() => {
+    try {
+      return localStorage.getItem('autoRefreshLiveMatches') === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
@@ -171,6 +185,20 @@ const App = () => {
   }, []);
 
   useEffect(() => {
+    const reloadDismissed = () => setDismissedMap(loadDismissed());
+    reloadDismissed();
+    window.addEventListener(DISMISSED_MATCHES_UPDATED_EVENT, reloadDismissed);
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === null || e.key === 'dismissedLiveMatches') reloadDismissed();
+    };
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener(DISMISSED_MATCHES_UPDATED_EVENT, reloadDismissed);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, []);
+
+  useEffect(() => {
     const syncFromStorage = () => {
       const t = readStoredB365Token();
       if (t) { setToken(t); setHasToken(true); }
@@ -203,6 +231,12 @@ const App = () => {
     });
   };
 
+  const handleDismissMatch = useCallback((match: MatchInfo) => {
+    setDismissedMap(dismissMatch(match));
+  }, []);
+
+  const dismissedCount = useMemo(() => Object.keys(dismissedMap).length, [dismissedMap]);
+
   useEffect(() => {
     if (!hasToken) return;
     const params = new URLSearchParams(window.location.search);
@@ -221,7 +255,11 @@ const App = () => {
     return () => { cancelled = true; };
   }, [hasToken, token]);
 
-  const fetchEventsData = useCallback(async () => {
+  const listElapsed = useElapsedSince({
+    enabled: hasToken && mainView === 'matches',
+  });
+
+  const fetchEventsData = useCallback(async (): Promise<MatchInfo[]> => {
     setLoading(true);
     setError(null);
     try {
@@ -232,32 +270,40 @@ const App = () => {
       } else if (data.length === 0 && token !== 'DEMO_MODE') {
         setError('Không tìm thấy trận đấu trực tiếp.');
       }
+      return data;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Đã xảy ra lỗi không xác định.';
       if (msg.includes('429')) setError('Giới hạn tần suất của Proxy đã đạt.');
       else if (msg.includes('Lỗi mạng hoặc CORS')) setError(msg);
       else setError(msg);
       setEvents([]);
+      return [];
     } finally {
       setLoading(false);
     }
   }, [token]);
 
-  useEffect(() => {
-    if (!hasToken) return;
-    let isMounted = true;
-    let intervalId: number | undefined;
-    const startFetching = async () => {
-      if (isMounted) {
-        await fetchEventsData();
-        intervalId = window.setInterval(() => {
-          if (isMounted && !document.hidden) void fetchEventsData();
-        }, REFRESH_INTERVAL_MS);
-      }
-    };
-    void startFetching();
-    return () => { isMounted = false; if (intervalId !== undefined) clearInterval(intervalId); };
-  }, [hasToken, fetchEventsData]);
+  const handleManualListRefresh = useCallback(async (): Promise<MatchInfo[]> => {
+    if (!hasToken) return [];
+    listElapsed.markStart();
+    return fetchEventsData();
+  }, [hasToken, fetchEventsData, listElapsed]);
+
+  const handleRefreshListForMatchList = useCallback(async (): Promise<MatchInfo[]> => {
+    const data = await handleManualListRefresh();
+    const dismissed = loadDismissed();
+    return data.filter((e) => !dismissed[e.id]);
+  }, [handleManualListRefresh]);
+
+  const handleToggleAutoRefresh = useCallback(() => {
+    setAutoRefreshEnabled((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('autoRefreshLiveMatches', next ? 'true' : 'false');
+      } catch { /* ignore */ }
+      return next;
+    });
+  }, []);
 
   const handleTokenSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -291,17 +337,26 @@ const App = () => {
     window.history.replaceState({}, '', window.location.pathname);
   };
 
+  const visibleEvents = useMemo(
+    () => events.filter((e) => !dismissedMap[e.id]),
+    [events, dismissedMap],
+  );
+
   const filteredEvents = useMemo(() => {
-    if (!searchQuery.trim()) return events;
+    if (!searchQuery.trim()) return visibleEvents;
     const q = searchQuery.toLowerCase().trim();
-    return events.filter((e) =>
+    return visibleEvents.filter((e) =>
       e.home.name.toLowerCase().includes(q) ||
       e.away.name.toLowerCase().includes(q) ||
       e.league.name.toLowerCase().includes(q),
     );
-  }, [events, searchQuery]);
+  }, [visibleEvents, searchQuery]);
 
-  const getHeaderText = () => (mainView === 'matches' ? 'Trực tiếp' : 'Đã xem');
+  const getHeaderText = () => {
+    if (mainView === 'matches') return 'Trực tiếp';
+    if (mainView === 'dismissed') return 'Bỏ qua';
+    return 'Đã xem';
+  };
 
   if (!hasToken) {
     if (authBootstrapping) {
@@ -410,6 +465,15 @@ const App = () => {
             <button onClick={() => setMainView('matchHistory')} className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${mainView === 'matchHistory' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'}`}>
               <ClipboardList className="w-5 h-5" /> Đã xem
             </button>
+            <button onClick={() => setMainView('dismissed')} className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${mainView === 'dismissed' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'}`}>
+              <EyeOff className="w-5 h-5 shrink-0" />
+              <span className="flex-1 text-left">Bỏ qua</span>
+              {dismissedCount > 0 ? (
+                <span className="min-w-[1.25rem] px-1.5 py-0.5 rounded-full text-[10px] font-black bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-center">
+                  {dismissedCount}
+                </span>
+              ) : null}
+            </button>
           </nav>
         </div>
         <div className="mt-auto p-6 space-y-2">
@@ -425,13 +489,19 @@ const App = () => {
       <main className="flex-1 flex flex-col h-full overflow-hidden bg-white dark:bg-slate-900 md:rounded-tl-3xl md:border-l border-gray-200/50 dark:border-slate-800">
         <header className="px-6 py-4 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center shrink-0">
           <div className="relative w-full max-w-md hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Tìm trận, giải..." className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-sm outline-none text-slate-700 dark:text-slate-200" />
+            {mainView === 'matches' ? (
+              <>
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Tìm trận, giải..." className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-sm outline-none text-slate-700 dark:text-slate-200" />
+              </>
+            ) : (
+              <h1 className="text-xl font-black text-slate-800 dark:text-white">{getHeaderText()}</h1>
+            )}
           </div>
           <h1 className="text-xl font-black text-slate-800 dark:text-white md:hidden">{getHeaderText()}</h1>
           <div className="flex items-center space-x-3 ml-auto">
             {mainView === 'matches' && (
-              <button onClick={fetchEventsData} disabled={loading} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg disabled:opacity-50">
+              <button onClick={() => void handleManualListRefresh()} disabled={loading} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg disabled:opacity-50">
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 <span className="hidden sm:inline">Refresh</span>
               </button>
@@ -450,18 +520,54 @@ const App = () => {
             </div>
           )}
           {mainView === 'matches' && (
-            <MatchList events={filteredEvents} token={token} onOpenAnalysisInNewTab={handleOpenAnalysisInNewTab} isLoading={loading && events.length === 0 && !error} searchQuery={searchQuery} onSearchChange={setSearchQuery} favorites={favorites} onToggleFavorite={handleToggleFavorite} />
+            <MatchList
+              events={filteredEvents}
+              token={token}
+              onOpenAnalysisInNewTab={handleOpenAnalysisInNewTab}
+              isLoading={loading && events.length === 0 && !error}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              favorites={favorites}
+              onToggleFavorite={handleToggleFavorite}
+              onDismissMatch={handleDismissMatch}
+              autoRefreshEnabled={autoRefreshEnabled}
+              onToggleAutoRefresh={handleToggleAutoRefresh}
+              onRefreshList={handleRefreshListForMatchList}
+              listRefresh={{
+                label: listElapsed.label,
+                paused: listElapsed.paused,
+                started: listElapsed.started,
+                busy: loading,
+                onRefresh: () => void handleManualListRefresh(),
+              }}
+            />
           )}
           {mainView === 'matchHistory' && <MatchHistory onSelectMatch={handleSelectMatch} />}
+          {mainView === 'dismissed' && (
+            <DismissedMatchesPanel
+              liveEvents={events}
+              onOpenAnalysisInNewTab={handleOpenAnalysisInNewTab}
+              onDismissedChange={setDismissedMap}
+            />
+          )}
         </div>
       </main>
 
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800 p-2 z-20">
         <div className="flex justify-around items-center">
-          <button onClick={() => setMainView('matches')} className={`flex flex-col items-center gap-1 p-2 rounded-xl ${mainView === 'matches' ? 'text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800' : 'text-slate-400'}`}>
+          <button onClick={() => setMainView('matches')} className={`flex flex-col items-center gap-1 p-2 rounded-xl min-w-0 flex-1 ${mainView === 'matches' ? 'text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800' : 'text-slate-400'}`}>
             <LayoutDashboard className="w-5 h-5" /><span className="text-[10px] font-semibold">Trực tiếp</span>
           </button>
-          <button onClick={() => setMainView('matchHistory')} className={`flex flex-col items-center gap-1 p-2 rounded-xl ${mainView === 'matchHistory' ? 'text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800' : 'text-slate-400'}`}>
+          <button onClick={() => setMainView('dismissed')} className={`relative flex flex-col items-center gap-1 p-2 rounded-xl min-w-0 flex-1 ${mainView === 'dismissed' ? 'text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800' : 'text-slate-400'}`}>
+            <EyeOff className="w-5 h-5" />
+            <span className="text-[10px] font-semibold">Bỏ qua</span>
+            {dismissedCount > 0 ? (
+              <span className="absolute top-1 right-2 min-w-[14px] h-[14px] px-0.5 rounded-full text-[8px] font-black bg-violet-500 text-white flex items-center justify-center">
+                {dismissedCount > 99 ? '99+' : dismissedCount}
+              </span>
+            ) : null}
+          </button>
+          <button onClick={() => setMainView('matchHistory')} className={`flex flex-col items-center gap-1 p-2 rounded-xl min-w-0 flex-1 ${mainView === 'matchHistory' ? 'text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800' : 'text-slate-400'}`}>
             <ClipboardList className="w-5 h-5" /><span className="text-[10px] font-semibold">Đã xem</span>
           </button>
         </div>

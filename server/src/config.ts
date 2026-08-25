@@ -91,6 +91,8 @@ export const config = {
     pollIntervalMs: parseInt(process.env.ODDS_POLL_INTERVAL_MS || '30000', 10),
     /** Ngưỡng giá Tài khi hạ line 1_3/1_6 (client + server validate). */
     ouLineDropPriceMax: parseFloat(process.env.OU_LINE_DROP_PRICE_MAX || '1.725'),
+    /** Ngưỡng Δ âm Telegram từ trang chủ (Δ ≤ giá trị này). */
+    strongNegDeltaTelegram: parseFloat(process.env.STRONG_NEG_DELTA_TELEGRAM || '-0.375'),
   },
 
   rateLimit: {
